@@ -243,9 +243,11 @@ da população (Fase 9) e os materiais entram com a construção (Fase 6).
 
 ## Fase 7 — Primeiro evento narrativo
 
+**Status:** evento inicial implementado; `typecheck` passou. A validação por testes e a revisão visual ainda estão pendentes.
+
 ### Tarefas
 
--   Resolver P-07 (PRNG) e P-10 (idioma e textos) antes de começar.
+-   ~~Resolver P-07 (PRNG) e P-10 (idioma e textos) antes de começar~~ (resolvidas em D-59 e D-60).
 -   Criar um evento com contexto e duas ou três escolhas.
 -   Definir pré-condições e efeitos estruturados (conjunto fechado de
     tipos de efeito).

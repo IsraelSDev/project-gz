@@ -16,6 +16,14 @@ export interface BuildingInstance {
 
 export type ResourceStock = Readonly<Record<ResourceId, number>>;
 
+export interface GameEventRecord {
+  readonly eventId: string;
+  readonly status: 'pending' | 'resolved';
+  readonly triggeredAtTick: number;
+  readonly resolvedAtTick?: number;
+  readonly choiceId?: string;
+}
+
 /**
  * Estado somente leitura da partida (docs/TECHNICAL_ARCHITECTURE.md §5.1). Campos como `rng`,
  * `population` e `events` entram quando o sistema que os usa existir. Seleção da interface, modo de
@@ -33,4 +41,8 @@ export interface GameState {
    * fixos e não usam o contador.
    */
   readonly nextEntityId: number;
+  /** Estado completo do PRNG xorshift32 (nunca zero), persistido para manter resultados reproduzíveis. */
+  readonly rng: number;
+  /** Eventos ativos e resolvidos; o registro é limitado para não crescer sem controle. */
+  readonly events: readonly GameEventRecord[];
 }

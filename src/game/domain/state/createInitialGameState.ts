@@ -48,6 +48,8 @@ export function createInitialGameState(scenario: ScenarioDefinition): GameState 
     resources: copyResources(scenario),
     buildings,
     nextEntityId: 1,
+    rng: 0x6d2b79f5,
+    events: [],
   });
 
   const stateIssues = validateGameState(state);

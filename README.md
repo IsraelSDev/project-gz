@@ -3,17 +3,19 @@
 Jogo 3D de estratégia e simulação de civilização alienígena, executado no navegador.
 Stack: TypeScript (estrito), Vite, React e Babylon.js.
 
-**Status:** Fases 1 a 6 do roadmap implementadas; a Fase 6 aguarda aprovação. Ao abrir o jogo você
+**Status:** Fases 1 a 6 implementadas; o primeiro evento da Fase 7 está implementado e aguarda
+validação. Ao abrir o jogo você
 vê a cena 3D (terreno alienígena, céu, vegetação provisória, a nave acidentada e três construções
 iniciais), tudo derivado de um `GameState` somente leitura, com uma HUD: barra de recursos, controles
 de tempo e painel da construção selecionada. A simulação tem um relógio de passo fixo (1 tick = 1 s
 de jogo, velocidades 1x, 2x e 4x) e a partida **começa pausada**. A economia mínima roda a cada tick:
 cada edifício produz e consome recursos (o painel da construção mostra as taxas) e a barra de recursos
-mostra o estado real. Com a simulação em andamento, **água e energia sobem**; alimentos e materiais
-ainda não mudam, até você construir a Estufa Hidropônica (alimentos) ou o Reciclador de Materiais.
+mostra o estado real. Após 60 ticks, surge um evento narrativo com duas escolhas que alteram
+recursos de forma reproduzível. Com a simulação em andamento, **água e energia sobem**; alimentos
+e materiais também mudam quando você resolve o evento ou constrói suas estruturas produtoras.
 Com o botão **Construir** você escolhe um edifício, vê a prévia no terreno (verde se a posição vale,
 vermelha e com um "X" se não vale), gira, confirma ou cancela; a construção custa recursos e só é
-cobrada quando é confirmada. **Ainda não há** população, eventos nem salvamento, e a construção é
+cobrada quando é confirmada. **Ainda não há** população nem salvamento, e a construção é
 instantânea (sem tempo de obra nem demolição).
 
 ## Controles da câmera
