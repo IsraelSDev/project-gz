@@ -75,7 +75,7 @@ export function placedCenterToWorld(placed: PlacedSpec, terrainSize: GridSize): 
  */
 export function worldToGridCell(point: WorldPoint, terrainSize: GridSize): GridPosition {
   return {
-    x: Math.round(point.x / CELL_SIZE + terrainSize.width / 2),
+    x: Math.floor(point.x / CELL_SIZE + terrainSize.width / 2),
     y: Math.floor(terrainSize.depth / 2 - point.z / CELL_SIZE),
   };
 }
