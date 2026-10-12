@@ -342,6 +342,12 @@ Recuperação da nave, saúde, cultura, comércio, diplomacia, facções, guerra
 
 **Auditoria e correções automatizadas concluídas; validação pública em navegador permanece pendente.** O relatório [PHASE12_RELEASE_READINESS.md](PHASE12_RELEASE_READINESS.md) registra a linha de base, problemas priorizados, correções, comandos executados e checklist de liberação. Não declarar compatibilidade de navegador nem metas de FPS antes de testes WebGL reais.
 
+## Fase 13 — Diplomacia e civilizações independentes
+
+**Verificação desta entrega:** `npm run validate` passou (typecheck, lint, Prettier, 49 arquivos de teste/741 testes e build). O bundle principal de produção mede 1.365,35 kB minificado / 349,24 kB gzip. Não houve teste manual em navegador/WebGL neste ambiente.
+
+**Status: implementada e validada por testes automatizados.** Três sociedades originais são reveladas ao explorar seus pontos de interesse; o primeiro contato usa o evento de sinal existente e o painel da HUD. Relações determinísticas suportam contato cordial ou hostil, solicitação única de informações, presente de 10 materiais e proposta de pacto bilateral de não agressão com aceitação ou recusa persistida. O líder vigente representa a colônia. O save avança para schema 5/content 0.8.0, com migração retrocompatível desde schema 4 e encadeamento dos formatos anteriores. Typecheck, lint, testes e build são verificados na entrega; nenhum sistema militar, conquista, comércio ou aliança foi implementado.
+
 ## Modelo de trabalho com o Claude Sonnet
 
 Para cada tarefa, fornecer: 1. Contexto do jogo. 2. Arquivos relevantes

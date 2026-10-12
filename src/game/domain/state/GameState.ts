@@ -5,7 +5,7 @@ import type { GridPosition, Rotation } from '@/shared/grid/types';
 import type { Character, CharacterRelationship, Government } from '@/game/content/characters';
 
 /** Versão do formato do estado. Migrações encadeadas são definidas em `application/saveMigrations.ts`. */
-export const GAME_STATE_SCHEMA_VERSION = 4;
+export const GAME_STATE_SCHEMA_VERSION = 5;
 
 export interface PopulationState {
   readonly survivors: number;
@@ -47,6 +47,39 @@ export interface ExplorationState {
   readonly discoveredPointIds: readonly string[];
 }
 
+export type DiplomaticContactStatus = 'unknown' | 'discovered' | 'contacted';
+export type DiplomaticTreatyStatus = 'none' | 'active' | 'rejected' | 'ended';
+export type DiplomaticAction =
+  | 'civilization-discovered'
+  | 'signal-deferred'
+  | 'contact-established'
+  | 'information-requested'
+  | 'gift-offered'
+  | 'pact-proposed'
+  | 'pact-accepted'
+  | 'pact-rejected'
+  | 'pact-ended';
+
+export interface DiplomaticHistoryEntry {
+  readonly tick: number;
+  readonly action: DiplomaticAction;
+  readonly relationshipChange: number;
+}
+
+export interface CivilizationDiplomacyState {
+  readonly civilizationId: string;
+  readonly contactStatus: DiplomaticContactStatus;
+  readonly relationshipScore: number;
+  readonly informationRequested: boolean;
+  readonly giftOffered: boolean;
+  readonly nonAggressionPact: DiplomaticTreatyStatus;
+  readonly history: readonly DiplomaticHistoryEntry[];
+}
+
+export interface DiplomacyState {
+  readonly civilizations: readonly CivilizationDiplomacyState[];
+}
+
 /**
  * Estado somente leitura da partida (docs/TECHNICAL_ARCHITECTURE.md §5.1). Seleção da interface, modo de
  * construção e estado do relógio NÃO fazem parte deste estado (§5.2 e §5.3).
@@ -72,4 +105,5 @@ export interface GameState {
   readonly relationships: readonly CharacterRelationship[];
   readonly research: ResearchState;
   readonly exploration: ExplorationState;
+  readonly diplomacy: DiplomacyState;
 }

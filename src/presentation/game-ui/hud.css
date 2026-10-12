@@ -604,6 +604,98 @@
   font-size: 0.75rem;
 }
 
+.diplomacy-roster {
+  display: grid;
+  gap: 0.375rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.diplomacy-roster__item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.4rem;
+  border: 1px solid var(--hud-border);
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--hud-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.diplomacy-roster__item[aria-pressed='true'],
+.diplomacy-roster__item:hover {
+  background: var(--hud-surface-hover);
+}
+
+.diplomacy-roster__item > span:last-child {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.diplomacy-roster__item small,
+.diplomacy-history small {
+  color: var(--hud-text-muted);
+  font-size: 0.75rem;
+}
+
+.diplomacy-avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2rem;
+  height: 1.7rem;
+  border: 2px solid var(--hud-accent);
+  border-radius: 48% 52% 44% 56%;
+  background: #76c9c4;
+  color: #173849;
+  font-size: 0.75rem;
+}
+
+.diplomacy-avatar[data-civilization='oruun-clans'] {
+  border-radius: 55% 45% 48% 52%;
+  background: #d58b65;
+}
+
+.diplomacy-avatar[data-civilization='ithari-gardeners'] {
+  border-radius: 50% 50% 38% 62%;
+  background: #a8d86b;
+}
+
+.diplomacy-detail {
+  display: grid;
+  gap: 0.3rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--hud-border);
+}
+
+.diplomacy-detail h3,
+.diplomacy-detail p,
+.diplomacy-history h4 {
+  margin: 0;
+}
+
+.diplomacy-actions {
+  display: grid;
+  gap: 0.375rem;
+}
+
+.diplomacy-history {
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--hud-border);
+}
+
+.diplomacy-history ol {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0.375rem 0 0;
+  padding-left: 1.2rem;
+}
+
 .character-roster__avatar {
   position: relative;
   display: grid;

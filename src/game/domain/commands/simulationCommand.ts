@@ -13,6 +13,10 @@ import {
 import { freezeDeep } from '@/game/domain/state/freezeDeep';
 import { handleStartResearch, START_RESEARCH } from '@/game/domain/research/researchCommands';
 import { handleExplorePoint, EXPLORE_POINT } from '@/game/domain/exploration/exploreCommand';
+import {
+  DIPLOMATIC_ACTION,
+  handleDiplomaticAction,
+} from '@/game/domain/diplomacy/diplomacyCommands';
 import type { GameState } from '@/game/domain/state/GameState';
 import { validateGameState } from '@/game/domain/state/validateGameState';
 import { err, ok, type Result } from '@/shared/result/result';
@@ -48,6 +52,8 @@ export type CommandErrorCode =
   | 'INVALID_STATE'
   | 'EVENT_NOT_ACTIVE'
   | 'INSUFFICIENT_RESOURCES'
+  | 'DIPLOMACY_REQUIREMENT_NOT_MET'
+  | 'DIPLOMACY_ALREADY_COMPLETED'
   | PlacementErrorCode;
 
 /** Resultado de aplicar um comando: o NOVO estado (o de entrada nunca é alterado) ou um erro. */
@@ -69,6 +75,7 @@ export const COMMAND_HANDLERS: CommandHandlers = {
   [REMOVE_CHARACTER_FROM_OFFICE]: handleRemoveCharacterFromOffice,
   [START_RESEARCH]: handleStartResearch,
   [EXPLORE_POINT]: handleExplorePoint,
+  [DIPLOMATIC_ACTION]: handleDiplomaticAction,
 };
 
 /**

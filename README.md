@@ -3,7 +3,7 @@
 Jogo 3D de estratégia e simulação de civilização alienígena, executado no navegador.
 Stack: TypeScript (estrito), Vite, React e Babylon.js.
 
-**Status:** Fases 1 a 11 implementadas. A Fase 12 auditou estabilidade, experiencia, desempenho disponivel e build de distribuicao; veja [o relatorio de prontidao](docs/PHASE12_RELEASE_READINESS.md). Typecheck, lint, formatacao, testes automatizados e build passam. A validacao em navegador desktop com WebGL real ainda nao foi executada neste ambiente.
+**Status:** Fases 1 a 13 implementadas. A Fase 12 auditou estabilidade, experiencia, desempenho disponivel e build de distribuicao; veja [o relatorio de prontidao](docs/PHASE12_RELEASE_READINESS.md). A Fase 13 adiciona diplomacia bilateral deterministica com civilizacoes independentes. Typecheck, lint, formatacao, testes automatizados e build passam. A validacao em navegador desktop com WebGL real ainda nao foi executada neste ambiente.
 
 A partida comeca pausada. Use a HUD para acompanhar recursos e sobrevivencia, construir estruturas, designar personagens, pesquisar tecnologias, explorar pontos de interesse, responder a eventos e salvar ou carregar o progresso. Os saves ficam em um slot local do navegador.
 

@@ -23,6 +23,7 @@ describe('modelo de estado da partida', () => {
         'buildings',
         'characters',
         'contentVersion',
+        'diplomacy',
         'events',
         'exploration',
         'government',

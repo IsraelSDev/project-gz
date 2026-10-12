@@ -132,7 +132,9 @@ describe('expansão de conteúdo da Fase 11', () => {
       events: [current.events[0]],
       research: undefined,
       exploration: undefined,
+      diplomacy: undefined,
     };
+    delete old.diplomacy;
     const migrated = decodeGameSave(
       JSON.stringify({ format: 'alien-civilization-save', formatVersion: 1, state: old }),
     );
@@ -144,10 +146,12 @@ describe('expansão de conteúdo da Fase 11', () => {
       progress: 0,
     });
     expect(migrated.value.events.some((event) => event.eventId === 'ruins-cache')).toBe(true);
-    const result = { ...migrated.value, exploration: { discoveredPointIds: ['crystal-spring'] } };
-    expect(decodeGameSave(encodeGameSave(result))).toMatchObject({
+    const result = executeSimulationCommand(migrated.value, explorePointCommand('crystal-spring'));
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(decodeGameSave(encodeGameSave(result.value))).toMatchObject({
       ok: true,
-      value: { exploration: result.exploration },
+      value: { exploration: result.value.exploration },
     });
   });
 });

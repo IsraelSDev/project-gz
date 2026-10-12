@@ -142,6 +142,7 @@ describe('sobrevivência agregada', () => {
     delete legacyState.relationships;
     delete legacyState.research;
     delete legacyState.exploration;
+    delete legacyState.diplomacy;
     legacyState.events = (legacyState.events as Array<{ eventId: string }>).filter(
       (event) => event.eventId === 'wreck-signal',
     );
@@ -153,8 +154,8 @@ describe('sobrevivência agregada', () => {
     expect(decoded.ok).toBe(true);
     if (!decoded.ok) return;
     expect(decoded.value).toMatchObject({
-      schemaVersion: 4,
-      contentVersion: '0.7.0',
+      schemaVersion: 5,
+      contentVersion: '0.8.0',
       tick: progressed.tick,
       resources: progressed.resources,
       buildings: progressed.buildings,
@@ -198,6 +199,7 @@ describe('sobrevivência agregada', () => {
     delete legacyState.relationships;
     delete legacyState.research;
     delete legacyState.exploration;
+    delete legacyState.diplomacy;
     legacyState.events = (legacyState.events as Array<{ eventId: string }>).filter(
       (event) => event.eventId === 'wreck-signal',
     );
@@ -206,7 +208,7 @@ describe('sobrevivência agregada', () => {
     );
     expect(migrated.ok).toBe(true);
     if (!migrated.ok) return;
-    expect(migrated.value.schemaVersion).toBe(4);
+    expect(migrated.value.schemaVersion).toBe(5);
     expect(migrated.value.characters).toHaveLength(4);
     expect(migrated.value).toMatchObject({ tick: 45, population: progressedPopulation });
     expect(decodeGameSave(encodeGameSave(migrated.value))).toMatchObject({

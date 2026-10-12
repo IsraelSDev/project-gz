@@ -17,6 +17,14 @@ export const POINTS_OF_INTEREST: Readonly<Record<string, PointOfInterest>> = {
     reward: { materials: 10 },
     requiredTechnologyId: 'protein-cultures',
   },
+  'luminous-grove': {
+    id: 'luminous-grove',
+    name: 'Bosque Luminescente',
+    description:
+      'Um jardim de fungos brilhantes cresce em padrões que parecem responder a visitantes.',
+    surveyCost: { energy: 10 },
+    reward: { food: 12 },
+  },
 };
 
 export interface PointOfInterest {
@@ -27,4 +35,4 @@ export interface PointOfInterest {
   readonly reward: ResourceRates;
   readonly requiredTechnologyId?: TechnologyId;
 }
-export type PointOfInterestId = 'crystal-spring' | 'echo-ruins';
+export type PointOfInterestId = 'crystal-spring' | 'echo-ruins' | 'luminous-grove';

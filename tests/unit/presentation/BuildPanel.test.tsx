@@ -415,6 +415,8 @@ describe('BuildPanel: mensagens e acessibilidade', () => {
     expect(Object.keys(ERROR_MESSAGES).sort()).toEqual(
       [
         'COMMAND_REJECTED',
+        'DIPLOMACY_ALREADY_COMPLETED',
+        'DIPLOMACY_REQUIREMENT_NOT_MET',
         'EVENT_NOT_ACTIVE',
         'INSUFFICIENT_RESOURCES',
         'INVALID_COMMAND',

@@ -1,4 +1,5 @@
 import type { ResourceRates } from '@/game/content/resources';
+import type { IndependentCivilizationId } from './independentCivilizations';
 
 /** Conteúdo narrativo da Fase 7. Textos do protótipo em pt-BR (D-60). */
 export const EVENT_DEFINITIONS = {
@@ -52,7 +53,69 @@ export const EVENT_DEFINITIONS = {
       },
     ],
   },
+  'signal-selari-commons': firstContactEvent(
+    'signal-selari-commons',
+    'Comunidade Selari',
+    'Um padrão de luz se repete perto da Nascente Cristalina. A comunidade que o emite parece aguardar uma resposta.',
+    'selari-commons',
+  ),
+  'signal-oruun-clans': firstContactEvent(
+    'signal-oruun-clans',
+    'Clãs Oruun',
+    'As ruínas respondem com um pulso grave. Há alguém do outro lado, observando a expedição.',
+    'oruun-clans',
+  ),
+  'signal-ithari-gardeners': firstContactEvent(
+    'signal-ithari-gardeners',
+    'Jardineiros Ithari',
+    'As luzes do bosque se alinham em uma saudação. Uma sociedade local percebeu a presença da colônia.',
+    'ithari-gardeners',
+  ),
 } as const satisfies Readonly<Record<string, EventDefinition>>;
+
+function firstContactEvent(
+  id: string,
+  name: string,
+  description: string,
+  civilizationId: IndependentCivilizationId,
+): EventDefinition {
+  return {
+    id,
+    title: `Sinal de ${name}`,
+    description,
+    trigger: { kind: 'civilization-discovered', civilizationId },
+    options: [
+      {
+        id: 'send-greeting',
+        label: 'Responder com uma saudação',
+        description: 'O líder da colônia abre um canal diplomático em tom cordial.',
+        cost: {},
+        effects: {},
+        consequence:
+          'O contato foi estabelecido; a reação inicial foi registrada no histórico diplomático.',
+        diplomacyEffect: { civilizationId, stance: 'warm' },
+      },
+      {
+        id: 'send-warning',
+        label: 'Responder com hostilidade',
+        description: 'A colônia estabelece contato, mas deixa claros seus limites.',
+        cost: {},
+        effects: {},
+        consequence: 'O contato foi estabelecido em estado hostil. Nenhum combate é iniciado.',
+        diplomacyEffect: { civilizationId, stance: 'guarded' },
+      },
+      {
+        id: 'defer-contact',
+        label: 'Manter o silêncio',
+        description: 'A equipe arquiva o sinal; ainda será possível iniciar contato depois.',
+        cost: {},
+        effects: {},
+        consequence:
+          'O sinal foi arquivado. A civilização continua disponível para contato no painel diplomático.',
+      },
+    ],
+  };
+}
 
 export interface EventOption {
   readonly id: string;
@@ -61,6 +124,10 @@ export interface EventOption {
   readonly cost: ResourceRates;
   readonly effects: ResourceRates;
   readonly consequence: string;
+  readonly diplomacyEffect?: {
+    readonly civilizationId: IndependentCivilizationId;
+    readonly stance: 'warm' | 'guarded';
+  };
 }
 
 export interface EventDefinition {
@@ -69,7 +136,11 @@ export interface EventDefinition {
   readonly description: string;
   readonly trigger:
     | { readonly kind: 'tick'; readonly minTick: number }
-    | { readonly kind: 'point-discovered'; readonly pointId: string };
+    | { readonly kind: 'point-discovered'; readonly pointId: string }
+    | {
+        readonly kind: 'civilization-discovered';
+        readonly civilizationId: IndependentCivilizationId;
+      };
   readonly options: readonly EventOption[];
 }
 

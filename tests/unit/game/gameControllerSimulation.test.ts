@@ -157,6 +157,7 @@ describe('GameController: estado inicial e tick', () => {
         'buildings',
         'characters',
         'contentVersion',
+        'diplomacy',
         'events',
         'exploration',
         'government',

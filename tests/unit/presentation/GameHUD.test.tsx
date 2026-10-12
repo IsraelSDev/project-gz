@@ -59,7 +59,20 @@ describe('GameHUD', () => {
 
     const levels = screen.getAllByRole('heading').map((heading) => heading.tagName);
 
-    expect(levels).toEqual(['H1', 'H2', 'H2', 'H3', 'H2', 'H3', 'H3', 'H2', 'H2', 'H2', 'H3']);
+    expect(levels).toEqual([
+      'H1',
+      'H2',
+      'H2',
+      'H3',
+      'H2',
+      'H3',
+      'H3',
+      'H2',
+      'H2',
+      'H2',
+      'H2',
+      'H3',
+    ]);
   });
 
   it('só oferece controles que funcionam: o de limpar a seleção aparece apenas com uma seleção', () => {

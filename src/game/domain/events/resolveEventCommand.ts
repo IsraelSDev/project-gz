@@ -1,9 +1,13 @@
-import { EVENT_DEFINITIONS, isEventId } from '@/game/content/events';
+import { getEventDefinition, isEventId } from '@/game/content/events';
 import { MAX_RESOURCE_AMOUNT, RESOURCE_IDS } from '@/game/content/resources';
 import type { CommandHandler, SimulationCommand } from '@/game/domain/commands/simulationCommand';
 import { freezeDeep } from '@/game/domain/state/freezeDeep';
 import type { GameEventState, ResourceStock } from '@/game/domain/state/GameState';
 import { err, ok } from '@/shared/result/result';
+import {
+  deferDiplomaticContact,
+  establishDiplomaticContact,
+} from '@/game/domain/diplomacy/diplomacyState';
 
 export const RESOLVE_EVENT = 'ResolveEvent';
 
@@ -43,7 +47,7 @@ export const handleResolveEvent: CommandHandler = (state, command) => {
   const eventState = state.events.find((event) => event.eventId === eventId);
   if (!eventState || eventState.status !== 'active') return err('EVENT_NOT_ACTIVE');
 
-  const definition = EVENT_DEFINITIONS[eventId];
+  const definition = getEventDefinition(eventId);
   const option = definition.options.find((candidate) => candidate.id === optionId);
   if (!option) return err('INVALID_COMMAND');
 
@@ -55,5 +59,14 @@ export const handleResolveEvent: CommandHandler = (state, command) => {
       ? { ...event, status: 'resolved', chosenOptionId: option.id, resolvedAtTick: state.tick }
       : event,
   );
-  return ok(freezeDeep({ ...state, resources, events }));
+  const withDiplomacy = option.diplomacyEffect
+    ? establishDiplomaticContact(
+        state,
+        option.diplomacyEffect.civilizationId,
+        option.diplomacyEffect.stance,
+      )
+    : eventId.startsWith('signal-') && optionId === 'defer-contact'
+      ? deferDiplomaticContact(state, eventId.slice('signal-'.length))
+      : state;
+  return ok(freezeDeep({ ...withDiplomacy, resources, events }));
 };

@@ -1296,3 +1296,11 @@ A migração de save encadeia v1/0.4.0 → v2/0.5.0 → v3/0.6.0. Saves v2 prese
 O schema 4/content 0.7.0 persiste research (tecnologias concluidas, projeto ativo e progresso) e exploration (IDs de pontos descobertos). Os catalogos de tecnologias e pontos de interesse usam IDs estaveis. StartResearch verifica pre-requisitos, laboratorio, cientista e recursos, cobrando o custo ao iniciar; a simulacao avanca a pesquisa deterministicamente apos a economia. A competencia de ciencia define pontos por tick.
 
 ExplorePoint valida disponibilidade, requisito e custo, e aplica recompensa e descoberta atomicamente; repetir descoberta e recusado. As Ruinas de Eco acionam o motor de eventos existente. Edificios com requisito tecnologico sao recusados no comando e desabilitados no catalogo ate o desbloqueio. Saves schema 3 migram para schema 4 sem alterar progresso anterior; eventos novos comecam disponiveis. O envelope continua na versao 1.
+
+## 25. Diplomacia e civilizacoes independentes (Fase 13)
+
+O schema 5/content 0.8.0 adiciona `diplomacy.civilizations` ao `GameState`. O conteudo define tres IDs estaveis e liga cada sociedade a um ponto de interesse. `ExplorePoint` registra a descoberta no mesmo comando que registra o ponto; o validador exige consistencia entre ambas. O estado guarda descoberta, contato, relacao, solicitacao de informacoes, presente, pacto bilateral e historico datado; definicoes culturais e limiares permanecem no catalogo estatico.
+
+`DiplomaticAction` e um comando revalidado no envio e na aplicacao. A saudacao usa a competencia do lider designado. Solicitacao de informacoes e presente sao unicos por sociedade; o presente custa 10 materiais. Uma proposta de nao agressao e aceita se a relacao alcanca o limiar daquela sociedade; recusas tambem ficam persistidas e nao sao reapresentadas. Encerrar pacto ativo reduz a relacao. Acoes nao avancam tick quando o jogo esta pausado.
+
+Eventos de primeiro sinal reutilizam o motor existente: saudacao cordial, resposta hostil sem combate ou adiamento. O contato pelo painel fecha um evento de sinal pendente; resolver um evento ja resolvido e recusado. V4/0.7.0 migra para v5/0.8.0 preservando exploracoes e derivando delas descobertas diplomaticas, alem de acrescentar eventos ausentes. Migre v1-v3 em cadeia por v4; IDs e efeitos nao se duplicam. O envelope de save permanece v1.

@@ -7,6 +7,11 @@ import {
   INITIAL_GOVERNMENT,
   INITIAL_RELATIONSHIPS,
 } from '@/game/content/characters';
+import { civilizationForDiscoveryPoint } from '@/game/content/independentCivilizations';
+import {
+  createInitialDiplomacy,
+  discoverIndependentCivilization,
+} from '@/game/domain/diplomacy/diplomacyState';
 
 /** Estado v1 aceito no save da Fase 8, antes de haver população. */
 export type LegacyGameStateV1 = Omit<
@@ -19,6 +24,7 @@ export type LegacyGameStateV1 = Omit<
   | 'relationships'
   | 'research'
   | 'exploration'
+  | 'diplomacy'
 > & {
   readonly schemaVersion: 1;
   readonly contentVersion: '0.4.0';
@@ -33,6 +39,7 @@ export type LegacyGameStateV2 = Omit<
   | 'relationships'
   | 'research'
   | 'exploration'
+  | 'diplomacy'
 > & {
   readonly schemaVersion: 2;
   readonly contentVersion: '0.5.0';
@@ -40,10 +47,18 @@ export type LegacyGameStateV2 = Omit<
 
 export type LegacyGameStateV3 = Omit<
   GameState,
-  'schemaVersion' | 'contentVersion' | 'research' | 'exploration'
+  'schemaVersion' | 'contentVersion' | 'research' | 'exploration' | 'diplomacy'
 > & {
   readonly schemaVersion: 3;
   readonly contentVersion: '0.6.0';
+};
+
+export type LegacyGameStateV4 = Omit<
+  GameState,
+  'schemaVersion' | 'contentVersion' | 'diplomacy'
+> & {
+  readonly schemaVersion: 4;
+  readonly contentVersion: '0.7.0';
 };
 
 /** Migração pura: não altera o objeto v1 nem reaplica o tick já persistido. */
@@ -74,11 +89,11 @@ export function migrateV2ToV3(state: LegacyGameStateV2): LegacyGameStateV3 {
 }
 
 /** Adiciona os sistemas da Fase 11 sem alterar tick, estoque, elenco ou recompensas antigas. */
-export function migrateV3ToV4(state: LegacyGameStateV3): GameState {
+export function migrateV3ToV4(state: LegacyGameStateV3): LegacyGameStateV4 {
   return {
     ...state,
     schemaVersion: 4,
-    contentVersion: INITIAL_SCENARIO.contentVersion,
+    contentVersion: '0.7.0',
     events: [
       ...state.events,
       ...Object.values(EVENT_DEFINITIONS)
@@ -90,5 +105,32 @@ export function migrateV3ToV4(state: LegacyGameStateV3): GameState {
     ],
     research: { unlockedTechnologyIds: [], activeTechnologyId: null, progress: 0 },
     exploration: { discoveredPointIds: [] },
+  };
+}
+
+/** Fase 13: preserva explorações anteriores e as projeta como descobertas diplomáticas. */
+export function migrateV4ToV5(state: LegacyGameStateV4): GameState {
+  let diplomacy = createInitialDiplomacy();
+  for (const pointId of state.exploration.discoveredPointIds) {
+    const civilization = civilizationForDiscoveryPoint(pointId);
+    if (civilization) {
+      diplomacy = discoverIndependentCivilization(diplomacy, civilization.id, state.tick);
+    }
+  }
+  const events = [
+    ...state.events,
+    ...Object.values(EVENT_DEFINITIONS)
+      .filter((definition) => !state.events.some((event) => event.eventId === definition.id))
+      .map((definition) => ({
+        eventId: definition.id as GameState['events'][number]['eventId'],
+        status: 'available' as const,
+      })),
+  ];
+  return {
+    ...state,
+    schemaVersion: 5,
+    contentVersion: INITIAL_SCENARIO.contentVersion,
+    events,
+    diplomacy,
   };
 }

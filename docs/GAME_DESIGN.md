@@ -264,10 +264,11 @@ governante.
 
 ### 8.8 Diplomacia e militar
 
-Planejados para etapas posteriores: - Contatos com outras comunidades e
-espécies. - Tratados, comércio, alianças, tributos e espionagem. -
-Recrutamento, equipamento, treinamento e defesa. - Conflitos com custos
-econômicos, humanos e políticos.
+Além da primeira camada da Fase 13, permanecem para etapas posteriores:
+comércio, alianças, tributos, espionagem, recrutamento, equipamento,
+treinamento, defesa e conflitos com custos econômicos, humanos e políticos.
+
+**Primeira camada diplomática (Fase 13):** três civilizações independentes originais são descobertas ao explorar pontos de interesse. O primeiro contato pode ser cordial, hostil ou adiado; o líder designado representa a colônia. A relação tem escala de -100 a 100 e categorias derivadas (hostil, tensa, neutra e amigável), com descoberta e contato representados separadamente. Uma solicitação de informações revela governo e desenvolvimento; um presente único custa 10 materiais; um pacto bilateral de não agressão é aceito deterministicamente quando a relação atinge o limiar de cada sociedade. O pacto pode ser encerrado e isso reduz a relação. Não há comércio, alianças militares, guerra ou diplomacia multilateral nesta camada.
 
 ## 9. Tempo e eventos
 

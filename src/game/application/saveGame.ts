@@ -11,7 +11,7 @@ import {
 } from '@/game/domain/state/GameState';
 import { freezeDeep } from '@/game/domain/state/freezeDeep';
 import { validateGameState } from '@/game/domain/state/validateGameState';
-import { migrateV1ToV2, migrateV2ToV3, migrateV3ToV4 } from './saveMigrations';
+import { migrateV1ToV2, migrateV2ToV3, migrateV3ToV4, migrateV4ToV5 } from './saveMigrations';
 import { err, ok, type Result } from '@/shared/result/result';
 
 export const SAVE_FORMAT = 'alien-civilization-save';
@@ -98,6 +98,28 @@ function copySaveState(value: unknown): Result<GameState, SaveError> {
       return err('CORRUPT_SAVE');
     return copySaveState(migrateV3ToV4(value as unknown as Parameters<typeof migrateV3ToV4>[0]));
   }
+  if (value.schemaVersion === 4) {
+    if (value.contentVersion !== '0.7.0') return err('INCOMPATIBLE_SAVE');
+    if (
+      !hasExactKeys(value, [
+        'schemaVersion',
+        'contentVersion',
+        'tick',
+        'resources',
+        'buildings',
+        'nextEntityId',
+        'events',
+        'population',
+        'characters',
+        'government',
+        'relationships',
+        'research',
+        'exploration',
+      ])
+    )
+      return err('CORRUPT_SAVE');
+    return copySaveState(migrateV4ToV5(value as unknown as Parameters<typeof migrateV4ToV5>[0]));
+  }
   if (value.schemaVersion !== GAME_STATE_SCHEMA_VERSION) return err('INCOMPATIBLE_SAVE');
   if (typeof value.contentVersion !== 'string') return err('CORRUPT_SAVE');
   if (value.contentVersion !== INITIAL_SCENARIO.contentVersion) return err('INCOMPATIBLE_SAVE');
@@ -116,6 +138,7 @@ function copySaveState(value: unknown): Result<GameState, SaveError> {
       'relationships',
       'research',
       'exploration',
+      'diplomacy',
     ]) ||
     !isRecord(value.resources) ||
     !hasExactKeys(value.resources, ['food', 'water', 'materials', 'energy']) ||
@@ -134,7 +157,10 @@ function copySaveState(value: unknown): Result<GameState, SaveError> {
     !Array.isArray(value.research.unlockedTechnologyIds) ||
     !isRecord(value.exploration) ||
     !hasExactKeys(value.exploration, ['discoveredPointIds']) ||
-    !Array.isArray(value.exploration.discoveredPointIds)
+    !Array.isArray(value.exploration.discoveredPointIds) ||
+    !isRecord(value.diplomacy) ||
+    !hasExactKeys(value.diplomacy, ['civilizations']) ||
+    !Array.isArray(value.diplomacy.civilizations)
   ) {
     return err('CORRUPT_SAVE');
   }
@@ -213,6 +239,7 @@ function copySaveState(value: unknown): Result<GameState, SaveError> {
     relationships: value.relationships as GameState['relationships'],
     research: value.research as unknown as GameState['research'],
     exploration: value.exploration as unknown as GameState['exploration'],
+    diplomacy: value.diplomacy as unknown as GameState['diplomacy'],
   });
   if (validateGameState(state).length > 0) return err('CORRUPT_SAVE');
 

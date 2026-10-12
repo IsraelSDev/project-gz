@@ -18,6 +18,7 @@ import {
   INITIAL_GOVERNMENT,
   INITIAL_RELATIONSHIPS,
 } from '@/game/content/characters';
+import { createInitialDiplomacy } from '@/game/domain/diplomacy/diplomacyState';
 
 function copyResources(scenario: ScenarioDefinition): ResourceStock {
   const entries = RESOURCE_IDS.map((id): [ResourceId, number] => [
@@ -70,6 +71,7 @@ export function createInitialGameState(scenario: ScenarioDefinition): GameState 
     relationships: INITIAL_RELATIONSHIPS,
     research: { unlockedTechnologyIds: [], activeTechnologyId: null, progress: 0 },
     exploration: { discoveredPointIds: [] },
+    diplomacy: createInitialDiplomacy(),
   });
 
   const stateIssues = validateGameState(state);

@@ -5,6 +5,11 @@ import { isRotation } from '@/shared/grid/gridMath';
 import type { CharacterSkill } from '@/game/content/characters';
 import { isTechnologyId, TECHNOLOGY_DEFINITIONS } from '@/game/content/technologies';
 import { POINTS_OF_INTEREST } from '@/game/content/pointsOfInterest';
+import {
+  INDEPENDENT_CIVILIZATIONS,
+  civilizationForDiscoveryPoint,
+  isIndependentCivilizationId,
+} from '@/game/content/independentCivilizations';
 import { GAME_STATE_SCHEMA_VERSION, type GameEventState, type GameState } from './GameState';
 
 const isWholeNumber = (value: unknown): value is number => Number.isSafeInteger(value);
@@ -75,6 +80,159 @@ export function validateGameState(state: GameState): readonly string[] {
       points.some((id) => !Object.hasOwn(POINTS_OF_INTEREST, id))
     )
       issues.push('Descobertas de exploração inválidas ou duplicadas.');
+  }
+
+  const diplomacy = state.diplomacy;
+  const discoveredPointIds = Array.isArray(state.exploration?.discoveredPointIds)
+    ? state.exploration.discoveredPointIds
+    : [];
+  if (
+    !diplomacy ||
+    typeof diplomacy !== 'object' ||
+    !hasExactKeys(diplomacy, ['civilizations']) ||
+    !Array.isArray(diplomacy.civilizations)
+  ) {
+    issues.push('diplomacy deve conter uma lista de civilizações válida.');
+  } else {
+    const entries = diplomacy.civilizations;
+    const knownIds = new Set<string>();
+    if (entries.length !== Object.keys(INDEPENDENT_CIVILIZATIONS).length) {
+      issues.push('diplomacy deve conter exatamente as civilizações conhecidas pelo conteúdo.');
+    }
+    for (const relation of entries) {
+      if (
+        !relation ||
+        typeof relation !== 'object' ||
+        !isIndependentCivilizationId(relation.civilizationId) ||
+        knownIds.has(relation.civilizationId)
+      ) {
+        issues.push('Estado diplomático com civilização desconhecida ou duplicada.');
+        continue;
+      }
+      knownIds.add(relation.civilizationId);
+      if (
+        !hasExactKeys(relation, [
+          'civilizationId',
+          'contactStatus',
+          'relationshipScore',
+          'informationRequested',
+          'giftOffered',
+          'nonAggressionPact',
+          'history',
+        ])
+      ) {
+        issues.push(`Estado diplomático de ${relation.civilizationId} tem campos inválidos.`);
+      }
+      if (!['unknown', 'discovered', 'contacted'].includes(relation.contactStatus)) {
+        issues.push(`Estado de contato inválido para ${relation.civilizationId}.`);
+      }
+      if (
+        !isWholeNumber(relation.relationshipScore) ||
+        relation.relationshipScore < -100 ||
+        relation.relationshipScore > 100
+      ) {
+        issues.push(`Pontuação diplomática inválida para ${relation.civilizationId}.`);
+      }
+      if (
+        typeof relation.informationRequested !== 'boolean' ||
+        typeof relation.giftOffered !== 'boolean'
+      ) {
+        issues.push(`Indicadores diplomáticos inválidos para ${relation.civilizationId}.`);
+      }
+      if (!['none', 'active', 'rejected', 'ended'].includes(relation.nonAggressionPact)) {
+        issues.push(`Estado do pacto inválido para ${relation.civilizationId}.`);
+      }
+      if (!Array.isArray(relation.history)) {
+        issues.push(`Histórico diplomático inválido para ${relation.civilizationId}.`);
+        continue;
+      }
+      let previousTick = -1;
+      let scoreFromHistory = 0;
+      const actionCounts = new Map<string, number>();
+      for (const entry of relation.history) {
+        if (
+          !entry ||
+          typeof entry !== 'object' ||
+          !hasExactKeys(entry, ['tick', 'action', 'relationshipChange']) ||
+          !isWholeNumber(entry.tick) ||
+          entry.tick < 0 ||
+          entry.tick < previousTick ||
+          entry.tick > state.tick ||
+          ![
+            'civilization-discovered',
+            'signal-deferred',
+            'contact-established',
+            'information-requested',
+            'gift-offered',
+            'pact-proposed',
+            'pact-accepted',
+            'pact-rejected',
+            'pact-ended',
+          ].includes(entry.action) ||
+          !isWholeNumber(entry.relationshipChange) ||
+          entry.relationshipChange < -100 ||
+          entry.relationshipChange > 100
+        ) {
+          issues.push(`Entrada de histórico inválida para ${relation.civilizationId}.`);
+          continue;
+        }
+        previousTick = entry.tick;
+        scoreFromHistory += entry.relationshipChange;
+        actionCounts.set(entry.action, (actionCounts.get(entry.action) ?? 0) + 1);
+      }
+      if (scoreFromHistory !== relation.relationshipScore) {
+        issues.push(`Pontuação e histórico diplomático divergem para ${relation.civilizationId}.`);
+      }
+      const count = (action: string) => actionCounts.get(action) ?? 0;
+      if (
+        count('civilization-discovered') !== (relation.contactStatus === 'unknown' ? 0 : 1) ||
+        count('contact-established') !== (relation.contactStatus === 'contacted' ? 1 : 0) ||
+        count('information-requested') !== (relation.informationRequested ? 1 : 0) ||
+        count('gift-offered') !== (relation.giftOffered ? 1 : 0) ||
+        count('pact-proposed') !== (relation.nonAggressionPact === 'none' ? 0 : 1) ||
+        count('pact-accepted') !== (relation.nonAggressionPact === 'active' ? 1 : 0) ||
+        count('pact-rejected') !== (relation.nonAggressionPact === 'rejected' ? 1 : 0) ||
+        count('pact-ended') !== (relation.nonAggressionPact === 'ended' ? 1 : 0)
+      ) {
+        issues.push(`Histórico e estado diplomático divergem para ${relation.civilizationId}.`);
+      }
+      if (
+        (relation.informationRequested ||
+          relation.giftOffered ||
+          relation.nonAggressionPact !== 'none') &&
+        relation.contactStatus !== 'contacted'
+      ) {
+        issues.push(`Ação diplomática exige contato estabelecido com ${relation.civilizationId}.`);
+      }
+      if (
+        relation.contactStatus === 'unknown' &&
+        (relation.relationshipScore !== 0 || relation.history.length !== 0)
+      ) {
+        issues.push(
+          `Civilização desconhecida não pode ter relação registrada: ${relation.civilizationId}.`,
+        );
+      }
+      const civilizationId: unknown = relation.civilizationId;
+      if (!isIndependentCivilizationId(civilizationId)) continue;
+      const discoveryPoint = INDEPENDENT_CIVILIZATIONS[civilizationId].discoveryPointId;
+      if ((relation.contactStatus !== 'unknown') !== discoveredPointIds.includes(discoveryPoint)) {
+        issues.push(
+          `Descoberta diplomática e ponto explorado divergem para ${relation.civilizationId}.`,
+        );
+      }
+    }
+    for (const pointId of discoveredPointIds) {
+      const civilization = civilizationForDiscoveryPoint(pointId);
+      if (
+        civilization &&
+        !entries.some(
+          (relation) =>
+            relation.civilizationId === civilization.id && relation.contactStatus !== 'unknown',
+        )
+      ) {
+        issues.push(`Ponto explorado sem descoberta diplomática correspondente: ${pointId}.`);
+      }
+    }
   }
   if (!isWholeNumber(state.tick) || state.tick < 0) {
     issues.push('tick deve ser um inteiro não negativo.');
