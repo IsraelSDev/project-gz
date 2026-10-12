@@ -118,9 +118,11 @@ describe('GameController: estado inicial e tick', () => {
     expect(listener).toHaveBeenCalledTimes(3);
     const after = controller.getSnapshot();
     expect(after).not.toBe(before);
-    expect(after.resources).toBe(before.resources);
+    // As construções não mudam a cada passo; os recursos mudam, porque a economia roda (Fase 5).
     expect(after.buildings).toBe(before.buildings);
+    expect(after.resources).not.toBe(before.resources);
     expect(Object.isFrozen(after)).toBe(true);
+    expect(Object.isFrozen(after.resources)).toBe(true);
   });
 
   it('o snapshot é estável entre leituras enquanto não há passo nem comando', () => {
@@ -151,7 +153,7 @@ describe('GameController: estado inicial e tick', () => {
 
     expect(json).not.toMatch(/paused|speed|selected/i);
     expect(Object.keys(controller.getSnapshot()).sort()).toEqual(
-      ['buildings', 'contentVersion', 'resources', 'schemaVersion', 'tick'].sort(),
+      ['buildings', 'contentVersion', 'nextEntityId', 'resources', 'schemaVersion', 'tick'].sort(),
     );
   });
 });
@@ -306,7 +308,9 @@ describe('GameController: comandos de simulação em andamento', () => {
     });
     controller.clock.advance(STEP_MS);
 
-    expect(controller.getSnapshot().resources).toBe(before.resources);
+    // Os comandos recusados não deixam rastro: os materiais (que a economia não toca) seguem iguais.
+    expect(controller.getSnapshot().resources.materials).toBe(before.resources.materials);
+    expect(controller.getSnapshot().buildings).toBe(before.buildings);
     expect(controller.getCommandLog()).toEqual([]);
   });
 

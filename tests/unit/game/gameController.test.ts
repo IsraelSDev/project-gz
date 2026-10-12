@@ -148,7 +148,33 @@ describe('seletor de detalhes da construção', () => {
       position: { x: 14, y: 20 },
       rotation: 0,
       occupied: { width: 3, depth: 3 },
+      production: [],
+      consumption: [
+        {
+          id: 'energy',
+          name: RESOURCE_DEFINITIONS.energy.name,
+          amountPerTick: definition.consumption.energy,
+        },
+      ],
     });
+  });
+
+  it('traz a produção e o consumo da definição, com o nome do recurso, na ordem do conteúdo', () => {
+    const extractor = selectBuildingDetails(state.buildings, 'building-extractor-01');
+    const solar = selectBuildingDetails(state.buildings, 'building-solar-01');
+    const extractorDefinition = getBuildingDefinition('water-extractor');
+    const solarDefinition = getBuildingDefinition('solar-array');
+
+    expect(extractor?.production).toEqual([
+      { id: 'water', name: 'Água', amountPerTick: extractorDefinition.production.water },
+    ]);
+    expect(extractor?.consumption).toEqual([
+      { id: 'energy', name: 'Energia', amountPerTick: extractorDefinition.consumption.energy },
+    ]);
+    expect(solar?.production).toEqual([
+      { id: 'energy', name: 'Energia', amountPerTick: solarDefinition.production.energy },
+    ]);
+    expect(solar?.consumption).toEqual([]);
   });
 
   it('informa a área ocupada já considerando a rotação', () => {

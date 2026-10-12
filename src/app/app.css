@@ -17,6 +17,10 @@
   --hud-accent: #8ff6ff;
   --hud-focus: #ffd48a;
   --hud-warning: #ffd48a;
+  /* Prévia de construção: as mesmas cores da cena (valid/invalid em palette.ts), claras o bastante
+     para ler sobre a superfície escura. O símbolo e o texto reforçam: a cor nunca é a única pista. */
+  --hud-valid: #5df2a3;
+  --hud-invalid: #ff7b88;
   --hud-on-accent: #14123a;
   --hud-radius: 0.625rem;
   --hud-shadow: 0 0.25rem 1rem rgba(8, 6, 28, 0.45);

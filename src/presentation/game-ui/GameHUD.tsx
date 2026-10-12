@@ -1,5 +1,9 @@
 import type { GameController } from '@/game/application/GameController';
+import type { BuildStore } from '@/session/buildStore';
 import type { SelectionStore } from '@/session/selectionStore';
+import type { BuildActions } from '../build/buildActions';
+import { BuildPanel } from '../build/BuildPanel';
+import { usePlacementActive } from '../hooks/useBuild';
 import { useClock } from '../hooks/useClock';
 import { ResourceBar } from '../hud/ResourceBar';
 import { TimeControls } from '../hud/TimeControls';
@@ -9,6 +13,9 @@ import './hud.css';
 export interface GameHUDProps {
   readonly controller: GameController;
   readonly selection: SelectionStore;
+  /** Estado de sessão do modo de construção e as ações do jogador nele. */
+  readonly build: BuildStore;
+  readonly buildActions: BuildActions;
   /** Chamado quando o jogador fecha o painel pelo botão (para devolver o foco ao jogo). */
   readonly onPanelDismissed?: () => void;
 }
@@ -18,8 +25,15 @@ export interface GameHUDProps {
  * ponteiro; só a barra superior e o painel o capturam, então o resto da tela continua entregando
  * cliques, arrastos e a roda do mouse ao canvas (câmera e seleção).
  */
-export function GameHUD({ controller, selection, onPanelDismissed }: GameHUDProps) {
+export function GameHUD({
+  controller,
+  selection,
+  build,
+  buildActions,
+  onPanelDismissed,
+}: GameHUDProps) {
   const { paused } = useClock(controller.clock);
+  const placing = usePlacementActive(build);
 
   return (
     <div className="hud">
@@ -30,6 +44,7 @@ export function GameHUD({ controller, selection, onPanelDismissed }: GameHUDProp
         <ResourceBar controller={controller} />
       </header>
       <div className="hud__side">
+        <BuildPanel controller={controller} build={build} actions={buildActions} />
         <BuildingDetailsPanel
           controller={controller}
           selection={selection}
@@ -37,8 +52,9 @@ export function GameHUD({ controller, selection, onPanelDismissed }: GameHUDProp
         />
       </div>
       <p className="hud__hint">
-        Arrastar: girar · Botão direito (ou Ctrl + arrastar) ou W A S D: mover · Roda do mouse: zoom
-        · Clique: selecionar · Esc: limpar a seleção
+        {placing
+          ? 'Arrastar: girar · W A S D: mover · Roda do mouse: zoom · Clique: fixar a posição · R: girar a prévia · Enter: confirmar · Esc: cancelar'
+          : 'Arrastar: girar · Botão direito (ou Ctrl + arrastar) ou W A S D: mover · Roda do mouse: zoom · Clique: selecionar · Esc: limpar a seleção'}
       </p>
     </div>
   );

@@ -19,6 +19,16 @@ export interface BuildingRenderSpec extends PlacedSpec {
   readonly definitionId: BuildingDefinitionId;
 }
 
+/**
+ * Prévia de construção (Fase 6): o edifício que o jogador está posicionando, onde ficaria e se o
+ * lugar vale. É só visual: vem pronta da aplicação (a regra de validade é do domínio) e nunca vira
+ * estado do jogo.
+ */
+export interface PlacementPreviewSpec extends PlacedSpec {
+  readonly definitionId: BuildingDefinitionId;
+  readonly valid: boolean;
+}
+
 export interface TerrainSpec {
   readonly sizeCells: GridSize;
   readonly buildableArea: GridRect;

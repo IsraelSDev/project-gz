@@ -30,10 +30,14 @@ export interface BuildingPicking {
  * (apertar e soltar sem arrastar) chama `onPick` com o `instanceId` da construção atingida ou com
  * `null` para qualquer outra coisa. O renderizador não conhece o store de seleção: quem o cria
  * injeta o callback.
+ *
+ * `isEnabled` permite suspender a seleção (no modo de construção o clique posiciona, não seleciona):
+ * com ela desligada, o clique é ignorado por completo e nenhum `onPick` é chamado.
  */
 export function createBuildingPicking(
   scene: Scene,
   onPick: (entityId: string | null) => void,
+  isEnabled: () => boolean = () => true,
 ): BuildingPicking {
   let press: { readonly x: number; readonly y: number } | null = null;
 
@@ -51,7 +55,7 @@ export function createBuildingPicking(
       return;
     }
     const moved = Math.hypot(scene.pointerX - start.x, scene.pointerY - start.y);
-    if (moved <= CLICK_TOLERANCE_PX) {
+    if (moved <= CLICK_TOLERANCE_PX && isEnabled()) {
       onPick(pickEntityId(scene, scene.pointerX, scene.pointerY));
     }
   }, PointerEventTypes.POINTERDOWN | PointerEventTypes.POINTERUP);

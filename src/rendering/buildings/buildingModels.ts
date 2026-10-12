@@ -4,7 +4,7 @@ import type { PropKit } from '../props/propKit';
 import { PALETTE } from '../scene/palette';
 import type { SceneMaterials } from '../scene/materials';
 
-const { metal, habitat, extractor, solar, glow } = PALETTE;
+const { metal, habitat, extractor, solar, farm, recycler, plant, glow } = PALETTE;
 
 /**
  * Modelo visual provisório de um edifício. Convenções: centrado na origem, base em y = 0, frente
@@ -241,9 +241,120 @@ const buildSolar: BuildingModelBuilder = (kit, materials, size) => {
   return { solid, glowing: [indicator] };
 };
 
+/** Estufa hidropônica: canteiros cobertos por uma estufa de vidro, plantas na frente e tanque ao lado. */
+const buildFarm: BuildingModelBuilder = (kit, materials, size) => {
+  const halfDepth = size.depth / 2;
+  const plants = [-1.6, -0.55, 0.5, 1.55].map((x) =>
+    kit.sphere({ diameter: 0.75, segments: 8 }, plant.leaf, {
+      x,
+      y: 0.75,
+      z: -(halfDepth - 0.45),
+      sy: 0.8,
+    }),
+  );
+  const solid = kit.merge('farm', [
+    kit.box({ w: size.width - 0.2, h: 0.2, d: size.depth - 0.2 }, metal.pad, { y: 0.1 }),
+    kit.box({ w: size.width - 1.2, h: 0.4, d: size.depth - 1.0 }, farm.soil, { y: 0.4, x: -0.3 }),
+    // estufa: estrutura, vidro e cumeeira
+    kit.box({ w: size.width - 1.8, h: 1.5, d: size.depth - 1.8 }, farm.glass, { y: 1.15, x: -0.3 }),
+    kit.box({ w: size.width - 1.6, h: 0.14, d: size.depth - 1.6 }, farm.frame, {
+      y: 1.95,
+      x: -0.3,
+    }),
+    kit.box({ w: size.width - 1.8, h: 0.5, d: 0.5 }, farm.glassDark, { y: 2.2, x: -0.3 }),
+    ...[-1.7, -0.3, 1.1].map((x) =>
+      kit.box({ w: 0.1, h: 1.6, d: size.depth - 1.7 }, farm.frame, { y: 1.15, x }),
+    ),
+    ...plants,
+    // tanque de nutrientes a leste
+    kit.cylinder({ height: 1.3, bottom: 1.0, tessellation: 16 }, extractor.tank, {
+      x: size.width / 2 - 0.9,
+      y: 0.85,
+      z: halfDepth - 1.0,
+    }),
+    kit.cylinder({ height: 0.15, bottom: 1.1, tessellation: 16 }, extractor.tankDark, {
+      x: size.width / 2 - 0.9,
+      y: 1.55,
+      z: halfDepth - 1.0,
+    }),
+  ]);
+  solid.material = materials.solid;
+
+  const lamps = kit.merge('farm-lamps', [
+    kit.sphere({ diameter: 0.22, segments: 6 }, glow.green, {
+      x: -0.3,
+      y: 2.55,
+      z: -(halfDepth - 1.0),
+    }),
+    kit.sphere({ diameter: 0.22, segments: 6 }, glow.green, {
+      x: -0.3,
+      y: 2.55,
+      z: halfDepth - 1.0,
+    }),
+  ]);
+  lamps.material = materials.glowGreen;
+
+  return { solid, glowing: [lamps] };
+};
+
+/** Reciclador de materiais: corpo robusto, tremonha e esteira voltadas ao sul, chaminé e caixas. */
+const buildRecycler: BuildingModelBuilder = (kit, materials, size) => {
+  const halfDepth = size.depth / 2;
+  const solid = kit.merge('recycler', [
+    kit.box({ w: size.width - 0.2, h: 0.2, d: size.depth - 0.2 }, metal.pad, { y: 0.1 }),
+    kit.box({ w: size.width - 1.0, h: 1.9, d: size.depth - 1.6 }, recycler.body, {
+      y: 1.15,
+      z: 0.5,
+    }),
+    kit.box({ w: size.width - 0.8, h: 0.16, d: size.depth - 1.4 }, recycler.bodyDark, {
+      y: 2.18,
+      z: 0.5,
+    }),
+    // tremonha inclinada e esteira voltadas para o sul (-Z)
+    kit.box({ w: 1.6, h: 0.9, d: 1.1 }, recycler.hopper, { y: 1.55, z: -(halfDepth - 0.8) }),
+    kit.box({ w: 1.2, h: 0.12, d: 1.8 }, metal.steel, {
+      y: 0.55,
+      z: -(halfDepth - 0.5),
+      rx: -0.35,
+    }),
+    // chaminé
+    kit.cylinder({ height: 2.0, bottom: 0.55, top: 0.4, tessellation: 12 }, metal.hullDark, {
+      x: size.width / 2 - 0.9,
+      y: 3.1,
+      z: 0.7,
+    }),
+    // caixas de material reciclado
+    kit.box({ w: 0.8, h: 0.7, d: 0.8 }, metal.hullLight, {
+      x: -(size.width / 2 - 0.55),
+      y: 0.55,
+      z: -0.4,
+    }),
+    kit.box({ w: 0.6, h: 0.5, d: 0.6 }, metal.accent, {
+      x: -(size.width / 2 - 0.5),
+      y: 0.45,
+      z: -1.2,
+    }),
+  ]);
+  solid.material = materials.solid;
+
+  const vent = kit.merge('recycler-vent', [
+    kit.sphere({ diameter: 0.3, segments: 6 }, glow.ember, {
+      x: size.width / 2 - 0.9,
+      y: 4.15,
+      z: 0.7,
+    }),
+    kit.box({ w: 1.0, h: 0.1, d: 0.1 }, glow.ember, { y: 1.6, z: -(halfDepth - 1.38) }),
+  ]);
+  vent.material = materials.glowEmber;
+
+  return { solid, glowing: [vent] };
+};
+
 /** Um construtor por definição: o compilador exige um modelo para cada `BuildingDefinitionId`. */
 export const BUILDING_MODELS: Record<BuildingDefinitionId, BuildingModelBuilder> = {
   'habitat-module': buildHabitat,
   'water-extractor': buildExtractor,
   'solar-array': buildSolar,
+  'hydroponic-farm': buildFarm,
+  'materials-recycler': buildRecycler,
 };
