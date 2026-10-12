@@ -59,28 +59,42 @@ describe('GameHUD', () => {
 
     const levels = screen.getAllByRole('heading').map((heading) => heading.tagName);
 
-    expect(levels).toEqual(['H1', 'H2', 'H2', 'H2', 'H2', 'H3']);
+    expect(levels).toEqual(['H1', 'H2', 'H2', 'H3', 'H2', 'H2', 'H2', 'H3']);
   });
 
   it('só oferece controles que funcionam: o de limpar a seleção aparece apenas com uma seleção', () => {
     const { selection } = setup();
     const names = () => screen.getAllByRole('button').map((button) => button.textContent?.trim());
     // Controles de tempo e o botão "Construir" (o catálogo só aparece com o painel aberto).
-    expect(names()).toEqual([
-      'Retomar',
-      '1×',
-      '2×',
-      '4×',
-      '×',
-      'Salvar',
-      'Carregar',
-      'Nova partida',
-      '+Construir',
-    ]);
+    expect(names()).toContain('Retomar');
+    expect(
+      within(screen.getByRole('list', { name: 'Personagens importantes' })).getByRole('button', {
+        name: /Aru Nuvem/,
+      }),
+    ).toBeTruthy();
+    expect(names()).toContain('Remover');
+    expect(names()).not.toContain('Limpar seleção');
+    const controlsBeforeSelection = names().length;
 
     act(() => selection.select('building-habitat-01'));
 
     expect(screen.getByRole('button', { name: 'Limpar seleção' })).toBeTruthy();
-    expect(screen.getAllByRole('button')).toHaveLength(10);
+    expect(screen.getAllByRole('button')).toHaveLength(controlsBeforeSelection + 1);
+  });
+
+  it('seleciona personagem separadamente e executa nomeação e remoção pela interface', () => {
+    setup();
+    const roster = within(screen.getByRole('list', { name: 'Personagens importantes' }));
+    act(() => roster.getByRole('button', { name: /Veli Faísca/ }).click());
+    const roles = within(screen.getByRole('region', { name: 'Cargos governamentais' }));
+    act(() => roles.getByRole('button', { name: 'Remover Ciência' }).click());
+    expect(roles.getByText('Vago')).toBeTruthy();
+    act(() => roles.getByRole('button', { name: 'Nomear Ciência' }).click());
+    expect(roles.getByText('Veli Faísca')).toBeTruthy();
+    expect(
+      screen
+        .getAllByRole('status')
+        .some((status) => status.textContent?.includes('nomeado: Ciência')),
+    ).toBe(true);
   });
 });

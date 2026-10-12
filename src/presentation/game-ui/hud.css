@@ -551,6 +551,142 @@
   color: var(--hud-warning);
 }
 
+/* --- Personagens e governo ------------------------------------------------------------------ */
+
+.character-panel__population,
+.character-detail > p,
+.character-panel__empty,
+.character-panel__feedback {
+  margin: 0;
+  color: var(--hud-text-muted);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.character-roster,
+.government-roles {
+  display: grid;
+  gap: 0.375rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.character-roster__item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.375rem;
+  border: 1px solid var(--hud-border);
+  border-radius: 0.375rem;
+  background: transparent;
+  color: var(--hud-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.character-roster__item[aria-pressed='true'] {
+  border-color: var(--hud-accent);
+  background: var(--hud-surface-hover);
+}
+
+.character-roster__item span:last-child,
+.government-role > span {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.character-roster__item small,
+.government-role small {
+  color: var(--hud-text-muted);
+  font-size: 0.75rem;
+}
+
+.character-roster__avatar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  border: 2px solid var(--hud-accent);
+  border-radius: 48% 52% 44% 56%;
+  background: #f1a7c2;
+  color: #30264d;
+}
+
+.character-roster__avatar[data-shape='tall'] {
+  width: 1.75rem;
+  height: 2.15rem;
+  border-radius: 48% 52% 40% 60%;
+  background: #8edce2;
+}
+
+.character-roster__avatar[data-shape='wide'] {
+  width: 2.2rem;
+  height: 1.8rem;
+  border-radius: 44% 56% 50% 50%;
+  background: #f4c86e;
+}
+
+.character-roster__avatar[data-shape='lumpy'] {
+  border-radius: 56% 44% 60% 40%;
+  background: #a9d889;
+}
+
+.character-roster__eyes,
+.character-roster__mouth {
+  position: absolute;
+  font-style: normal;
+  line-height: 1;
+}
+
+.character-roster__eyes {
+  top: 0.45rem;
+  font-size: 0.5rem;
+  letter-spacing: 0.08rem;
+}
+
+.character-roster__mouth {
+  top: 0.98rem;
+  font-size: 0.65rem;
+  font-weight: 800;
+}
+
+.character-detail {
+  display: grid;
+  gap: 0.25rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--hud-border);
+}
+
+.character-detail h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+.character-skills {
+  margin-top: 0.25rem;
+}
+
+.government-roles {
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--hud-border);
+}
+
+.government-role {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.character-panel__feedback {
+  min-height: 1.1em;
+  color: var(--hud-valid);
+}
+
 .event-panel__options {
   display: grid;
   gap: 0.5rem;

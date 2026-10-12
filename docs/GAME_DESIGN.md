@@ -192,6 +192,8 @@ Habitantes comuns podem usar uma simulação agregada para evitar custo
 excessivo. Não é obrigatório simular individualmente todos os habitantes
 desde o início. No MVP, a população é um valor agregado simplificado.
 
+**Primeira camada (Fase 10):** quatro personagens importantes compõem o elenco inicial e representam indivíduos dentro dos oito habitantes, sem substituir o contador agregado. Eles têm espécie, estágio de vida, competências de 0 a 5, traços, disponibilidade e estado de vida. A interface usa avatares CSS provisórios com silhuetas e expressões simples; competências e traços ainda não alteram a economia.
+
 ### 8.3 Economia
 
 Recursos iniciais sugeridos: - Alimentos. - Água. - Materiais. -
@@ -232,6 +234,8 @@ Sistemas futuros: - Forma de governo. - Leis e constituição. -
 Tributação e gastos públicos. - Cargos e competências administrativas. -
 Conselhos, facções e interesses. - Justiça, direitos e punições. -
 Legitimidade, protestos, revoltas e mudança de regime.
+
+**Primeira camada de governo (Fase 10):** uma liderança e três cargos exclusivos (ciência, engenharia e produção). A nomeação exige competência mínima 2; uma pessoa ocupa no máximo um cargo. Relações guardam afinidade, confiança e rivalidade em escala inteira de -5 a 5, sem efeitos simulados ainda.
 
 ### 8.6 Corte e dinastia
 

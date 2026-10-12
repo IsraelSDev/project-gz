@@ -32,6 +32,33 @@ export function advancePopulation(state: GameState): GameState {
     stableTicks,
     outcome,
   };
+  let characters = state.characters;
+  let government = state.government;
+  if (losesSurvivor) {
+    const lost = [...state.characters]
+      .filter((character) => character.alive)
+      .sort((a, b) => {
+        const score = (person: typeof a) =>
+          Object.values(person.skills).reduce((sum, skill) => sum + skill, 0);
+        return score(a) - score(b) || a.characterId.localeCompare(b.characterId);
+      })[0];
+    if (lost) {
+      characters = state.characters.map((character) =>
+        character.characterId === lost.characterId
+          ? { ...character, alive: false, available: false }
+          : character,
+      );
+      government = {
+        leaderId: government.leaderId === lost.characterId ? null : government.leaderId,
+        offices: Object.fromEntries(
+          Object.entries(government.offices).map(([office, holder]) => [
+            office,
+            holder === lost.characterId ? null : holder,
+          ]),
+        ) as typeof government.offices,
+      };
+    }
+  }
   const resources =
     food === 0 && water === 0
       ? state.resources
@@ -40,5 +67,5 @@ export function advancePopulation(state: GameState): GameState {
           food: state.resources.food - food,
           water: state.resources.water - water,
         });
-  return freezeDeep({ ...state, resources, population });
+  return freezeDeep({ ...state, resources, population, characters, government });
 }

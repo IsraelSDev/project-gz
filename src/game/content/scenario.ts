@@ -43,8 +43,8 @@ export interface ScenarioDefinition {
 
 export const INITIAL_SCENARIO = {
   id: 'crash-site',
-  // 0.5.0: capacidade habitacional e consumo agregado de sobrevivência (Fase 9).
-  contentVersion: '0.5.0',
+  // 0.6.0: elenco importante e cargos administrativos (Fase 10).
+  contentVersion: '0.6.0',
   terrain: {
     sizeCells: { width: 40, depth: 40 },
     buildableArea: { x: 12, y: 12, width: 16, depth: 16 },

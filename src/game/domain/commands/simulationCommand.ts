@@ -1,6 +1,12 @@
 import type { PlacementErrorCode } from '@/game/domain/construction/placement';
 import { handleResolveEvent, RESOLVE_EVENT } from '@/game/domain/events/resolveEventCommand';
 import {
+  APPOINT_CHARACTER,
+  handleAppointCharacter,
+  handleRemoveCharacterFromOffice,
+  REMOVE_CHARACTER_FROM_OFFICE,
+} from '@/game/domain/government/governmentCommands';
+import {
   handlePlaceBuilding,
   PLACE_BUILDING,
 } from '@/game/domain/construction/placeBuildingCommand';
@@ -57,6 +63,8 @@ export type CommandHandlers = Readonly<Record<string, CommandHandler>>;
 export const COMMAND_HANDLERS: CommandHandlers = {
   [PLACE_BUILDING]: handlePlaceBuilding,
   [RESOLVE_EVENT]: handleResolveEvent,
+  [APPOINT_CHARACTER]: handleAppointCharacter,
+  [REMOVE_CHARACTER_FROM_OFFICE]: handleRemoveCharacterFromOffice,
 };
 
 /**

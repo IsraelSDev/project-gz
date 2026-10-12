@@ -13,6 +13,11 @@ import {
 import { validateGameState } from './validateGameState';
 import { validateScenario } from './validateScenario';
 import { POPULATION_RULES } from '@/game/content/population';
+import {
+  INITIAL_CHARACTERS,
+  INITIAL_GOVERNMENT,
+  INITIAL_RELATIONSHIPS,
+} from '@/game/content/characters';
 
 function copyResources(scenario: ScenarioDefinition): ResourceStock {
   const entries = RESOURCE_IDS.map((id): [ResourceId, number] => [
@@ -60,6 +65,9 @@ export function createInitialGameState(scenario: ScenarioDefinition): GameState 
       stableTicks: 0,
       outcome: 'ongoing',
     },
+    characters: INITIAL_CHARACTERS,
+    government: INITIAL_GOVERNMENT,
+    relationships: INITIAL_RELATIONSHIPS,
   });
 
   const stateIssues = validateGameState(state);
