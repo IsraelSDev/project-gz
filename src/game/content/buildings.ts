@@ -12,6 +12,8 @@ export interface BuildingDefinition {
   readonly id: string;
   readonly name: string;
   readonly category: 'shelter' | 'infrastructure';
+  /** Capacidade agregada de sobreviventes, apenas para estruturas habitacionais. */
+  readonly housingCapacity?: number;
   /** Extensão em células com rotação 0 (width: eixo x, depth: eixo y do grid). */
   readonly footprint: GridSize;
   /**
@@ -33,15 +35,15 @@ export interface BuildingDefinition {
 }
 
 /*
- * Custos e taxas PROVISÓRIOS (D-48, D-55): números mínimos para a economia e a construção
- * funcionarem e serem testadas, não balanceamento final (pendência P-21). O consumo de alimentos é da
- * população (Fase 9): por ora a estufa produz alimentos que ninguém consome.
+ * Custos e taxas do protótipo (D-48, D-55, D-XX). O balanceamento inicial da Fase 9 é descrito na
+ * documentação; população e abrigo continuam agregados.
  */
 export const BUILDING_DEFINITIONS = {
   'habitat-module': {
     id: 'habitat-module',
     name: 'Módulo Habitacional',
     category: 'shelter',
+    housingCapacity: 8,
     footprint: { width: 3, depth: 3 },
     cost: { materials: 80 },
     production: {},

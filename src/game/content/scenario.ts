@@ -43,8 +43,8 @@ export interface ScenarioDefinition {
 
 export const INITIAL_SCENARIO = {
   id: 'crash-site',
-  // 0.3.0: produção e consumo dos edifícios (Fase 5). 0.4.0: custos e duas estruturas produtivas (Fase 6).
-  contentVersion: '0.4.0',
+  // 0.5.0: capacidade habitacional e consumo agregado de sobrevivência (Fase 9).
+  contentVersion: '0.5.0',
   terrain: {
     sizeCells: { width: 40, depth: 40 },
     buildableArea: { x: 12, y: 12, width: 16, depth: 16 },

@@ -12,6 +12,8 @@ import { TimeControls } from '../hud/TimeControls';
 import { BuildingDetailsPanel } from './BuildingDetailsPanel';
 import { EventPanel } from './EventPanel';
 import { SavePanel } from './SavePanel';
+import { PopulationPanel } from './PopulationPanel';
+import { TutorialPanel } from './TutorialPanel';
 import './hud.css';
 
 export interface GameHUDProps {
@@ -54,6 +56,8 @@ export function GameHUD({
         <ResourceBar controller={controller} />
       </header>
       <div className="hud__side">
+        <PopulationPanel controller={controller} />
+        <TutorialPanel />
         <SavePanel
           controller={controller}
           provider={saveProvider}

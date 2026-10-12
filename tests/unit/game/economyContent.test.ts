@@ -7,7 +7,7 @@ import { validateBuildingEconomy } from '@/game/domain/economy/validateBuildingE
 import { createInitialGameState } from '@/game/domain/state/createInitialGameState';
 import { validateGameState } from '@/game/domain/state/validateGameState';
 import {
-  expectedResourcesAfter,
+  expectedBuildingResourcesAfter,
   scenarioConsumptionPerTick,
   scenarioNetPerTick,
 } from '../../support/economyExpectations';
@@ -90,7 +90,7 @@ describe('economia do cenário inicial', () => {
 
     const next = advanceEconomy(state.resources, state.buildings);
 
-    expect(next).toEqual(expectedResourcesAfter(1));
+    expect(next).toEqual(expectedBuildingResourcesAfter(1));
   });
 
   it('muitos passos seguidos mantêm a mesma taxa líquida, sem falta nem valores inválidos', () => {
@@ -102,7 +102,7 @@ describe('economia do cenário inicial', () => {
       expect(validateGameState(state)).toEqual([]);
     }
 
-    expect(resources).toEqual(expectedResourcesAfter(100));
+    expect(resources).toEqual(expectedBuildingResourcesAfter(100));
   });
 
   it('o conteúdo atual só move os recursos que algum edifício produz ou consome', () => {

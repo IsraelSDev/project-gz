@@ -11,6 +11,7 @@ import {
 } from '@/game/domain/state/GameState';
 import { freezeDeep } from '@/game/domain/state/freezeDeep';
 import { validateGameState } from '@/game/domain/state/validateGameState';
+import { migrateV1ToV2 } from './saveMigrations';
 import { err, ok, type Result } from '@/shared/result/result';
 
 export const SAVE_FORMAT = 'alien-civilization-save';
@@ -44,6 +45,25 @@ function hasExactKeys(
 function copySaveState(value: unknown): Result<GameState, SaveError> {
   if (!isRecord(value)) return err('CORRUPT_SAVE');
   if (typeof value.schemaVersion !== 'number') return err('CORRUPT_SAVE');
+  if (value.schemaVersion === 1) {
+    if (value.contentVersion !== '0.4.0') return err('INCOMPATIBLE_SAVE');
+    if (
+      !hasExactKeys(value, [
+        'schemaVersion',
+        'contentVersion',
+        'tick',
+        'resources',
+        'buildings',
+        'nextEntityId',
+        'events',
+      ])
+    )
+      return err('CORRUPT_SAVE');
+    const upgraded = copySaveState({
+      ...migrateV1ToV2(value as unknown as Parameters<typeof migrateV1ToV2>[0]),
+    });
+    return upgraded;
+  }
   if (value.schemaVersion !== GAME_STATE_SCHEMA_VERSION) return err('INCOMPATIBLE_SAVE');
   if (typeof value.contentVersion !== 'string') return err('CORRUPT_SAVE');
   if (value.contentVersion !== INITIAL_SCENARIO.contentVersion) return err('INCOMPATIBLE_SAVE');
@@ -56,11 +76,14 @@ function copySaveState(value: unknown): Result<GameState, SaveError> {
       'buildings',
       'nextEntityId',
       'events',
+      'population',
     ]) ||
     !isRecord(value.resources) ||
     !hasExactKeys(value.resources, ['food', 'water', 'materials', 'energy']) ||
     !Array.isArray(value.buildings) ||
-    !Array.isArray(value.events)
+    !Array.isArray(value.events) ||
+    !isRecord(value.population) ||
+    !hasExactKeys(value.population, ['survivors', 'shortageTicks', 'stableTicks', 'outcome'])
   ) {
     return err('CORRUPT_SAVE');
   }
@@ -128,6 +151,12 @@ function copySaveState(value: unknown): Result<GameState, SaveError> {
     buildings,
     nextEntityId: value.nextEntityId as number,
     events,
+    population: {
+      survivors: value.population.survivors as number,
+      shortageTicks: value.population.shortageTicks as number,
+      stableTicks: value.population.stableTicks as number,
+      outcome: value.population.outcome as GameState['population']['outcome'],
+    },
   });
   if (validateGameState(state).length > 0) return err('CORRUPT_SAVE');
 

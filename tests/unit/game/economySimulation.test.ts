@@ -6,7 +6,7 @@ import { advanceSimulationStep } from '@/game/domain/simulation/advanceSimulatio
 import { createInitialGameState } from '@/game/domain/state/createInitialGameState';
 import type { GameState } from '@/game/domain/state/GameState';
 import { validateGameState } from '@/game/domain/state/validateGameState';
-import { expectedResourcesAfter, scenarioNetPerTick } from '../../support/economyExpectations';
+import { expectedResourcesAfter } from '../../support/economyExpectations';
 import { createFakeTimeEnvironment } from '../../support/fakeTimeEnvironment';
 import { executeTestCommand, setMaterials } from '../../support/testCommands';
 
@@ -19,7 +19,6 @@ import { executeTestCommand, setMaterials } from '../../support/testCommands';
 const STEP_MS = 1000;
 const initialState = () => createInitialGameState(INITIAL_SCENARIO);
 const start = () => INITIAL_SCENARIO.initialResources;
-const net = scenarioNetPerTick();
 
 function setup(options: { maxStepsPerAdvance?: number } = {}) {
   return createGameController(initialState(), { executeCommand: executeTestCommand, ...options });
@@ -57,7 +56,7 @@ describe('passo de simulação: ordem tick → comandos → economia (Arquitetur
     const next = advanceSimulationStep(initialState(), drainEnergy);
 
     expect(next.resources.energy).toBeGreaterThan(0);
-    expect(next.resources.water).toBe(start().water);
+    expect(next.resources.water).toBe(start().water - 2);
     expect(validateGameState(next)).toEqual([]);
   });
 
@@ -143,7 +142,7 @@ describe('economia e relógio: ticks e velocidade', () => {
 
     controller.clock.advance(3 * STEP_MS);
 
-    expect(waterByTick).toEqual([1, 2, 3].map((tick) => start().water + tick * net.water));
+    expect(waterByTick).toEqual([1, 2, 3].map((tick) => expectedResourcesAfter(tick).water));
     expect(controller.getSnapshot().buildings).toBe(buildings);
   });
 

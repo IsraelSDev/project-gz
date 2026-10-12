@@ -12,6 +12,7 @@ import {
 } from './GameState';
 import { validateGameState } from './validateGameState';
 import { validateScenario } from './validateScenario';
+import { POPULATION_RULES } from '@/game/content/population';
 
 function copyResources(scenario: ScenarioDefinition): ResourceStock {
   const entries = RESOURCE_IDS.map((id): [ResourceId, number] => [
@@ -53,6 +54,12 @@ export function createInitialGameState(scenario: ScenarioDefinition): GameState 
       eventId: eventId as EventId,
       status: 'available' as const,
     })),
+    population: {
+      survivors: POPULATION_RULES.initialSurvivors,
+      shortageTicks: 0,
+      stableTicks: 0,
+      outcome: 'ongoing',
+    },
   });
 
   const stateIssues = validateGameState(state);

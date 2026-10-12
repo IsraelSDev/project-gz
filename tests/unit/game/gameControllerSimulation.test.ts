@@ -158,6 +158,7 @@ describe('GameController: estado inicial e tick', () => {
         'contentVersion',
         'events',
         'nextEntityId',
+        'population',
         'resources',
         'schemaVersion',
         'tick',

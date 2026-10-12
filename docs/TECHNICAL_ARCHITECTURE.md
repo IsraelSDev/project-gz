@@ -1265,3 +1265,16 @@ comando ela é `INVALID_COMMAND`.
 - O evento inicial, `wreck-signal`, torna-se ativo no tick 60. Responder custa 4 de energia e concede 8 materiais; desmontar custa 2 materiais e concede 6 energia.
 - Não há sorteio nesta fase, então não há PRNG nem campo `rng` no estado (P-07 adiada até surgir necessidade real). Textos do protótipo ficam em pt-BR, sem i18n (D-60).
 - Testes em `events.test.ts` cobrem gatilho, tick mínimo, repetição, pausa, efeitos, recusa inválida/sem recursos, resolução única e determinismo. `EventPanel.test.tsx` cobre apresentação, affordability, envio e resultado.
+
+
+
+
+
+
+## Fase 9 - sobrevivência e migração de saves
+
+`GameState.schemaVersion` passa a 2 e guarda `population` (sobreviventes, contador de escassez, progresso de estabilidade e resultado). `contentVersion` passa a 0.5.0. A migração pura v1/0.4.0 para v2/0.5.0 preserva tick, estoques, edifícios, contador de entidades e eventos, acrescentando 8 sobreviventes e contadores zerados. A versão do envelope permanece 1. Saves v1 com conteúdo desconhecido são rejeitados sem substituir a partida ativa.
+
+Ordem do tick: incrementar tick, aplicar comandos pendentes, rodar produção e consumo dos edifícios, cobrar necessidades da população e avaliar eventos. Necessidades parciais consomem o estoque disponível; a falta de qualquer recurso conta como um tick de escassez, sem dívida. Cada 60 ticks seguidos em escassez remove 1 sobrevivente; abastecimento completo reinicia o contador. A vitória exige 900 ticks consecutivos abastecidos e alojados e pelo menos 6 sobreviventes; a derrota ocorre com zero sobreviventes. O controlador pausa em qualquer resultado.
+
+A capacidade habitacional deriva da soma de `housingCapacity` nas definições de edifícios presentes e não se duplica no save. O HUD mostra população, capacidade, estoques, necessidades do próximo tick, alertas, progresso e resultado.

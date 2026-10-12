@@ -294,10 +294,9 @@ mudança de esquema; a população da Fase 9 é a prevista.
 
 ## Fase 9 — Protótipo de sobrevivência jogável
 
-### Pré-requisito
+### Regras definidas
 
-Definir, no GDD, as condições de sucesso e fracasso de "estabilizar o
-acampamento" (P-08) e atualizar o MVP.
+As condições do objetivo estão definidas no GDD e em D-62: 900 ticks seguidos com comida, água e abrigo suficientes e pelo menos 6 sobreviventes para vencer; zero sobreviventes após escassez contínua para perder.
 
 ### Tarefas
 
@@ -316,6 +315,8 @@ acampamento" (P-08) e atualizar o MVP.
 -   É possível chegar a um resultado de sucesso ou fracasso.
 -   Salvamentos anteriores à população são migrados corretamente.
 -   O jogo não exige editar arquivos ou variáveis manualmente.
+
+Implementação e validação automatizada do ciclo concluídas. O critério de jogar por 15 a 30 minutos ainda precisa de playtest manual antes de marcar a Fase 9 como concluída.
 
 ## Fase 10 — Política, personagens e corte
 

@@ -69,6 +69,7 @@ describe('isolamento de renderização por fatia do estado', () => {
     const controller = createGameController({
       ...createInitialGameState(INITIAL_SCENARIO),
       buildings: [],
+      resources: { food: 0, water: 0, materials: 150, energy: 100 },
     });
     const { barRender, panelRender, timeRender } = mountHud(controller);
     act(() => controller.clock.resume());

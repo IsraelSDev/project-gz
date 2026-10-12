@@ -162,7 +162,9 @@ export function createGameController(
    * de comandos do passo.
    */
   const runStep = (): void => {
-    publish(advanceSimulationStep(state, applyPending));
+    const next = advanceSimulationStep(state, applyPending);
+    publish(next);
+    if (next.population.outcome !== 'ongoing') clock.pause();
   };
 
   const clock = createSimulationClock({

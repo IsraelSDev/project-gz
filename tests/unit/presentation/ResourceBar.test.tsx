@@ -217,7 +217,7 @@ describe('ResourceBar: acompanha a economia da simulação (Fase 5)', () => {
     expect(shownResources()).toEqual(expectedText(expectedResourcesAfter(3)));
   });
 
-  it('sem edifícios não há economia: os valores seguem iguais mesmo com a simulação em andamento', () => {
+  it('sem edifícios produtivos, a barra ainda acompanha o consumo dos sobreviventes', () => {
     const controller = createGameController({ ...initialState(), buildings: [] });
     render(<ResourceBar controller={controller} />);
     const atStart = shownResources();
@@ -228,6 +228,9 @@ describe('ResourceBar: acompanha a economia da simulação (Fase 5)', () => {
     });
 
     expect(controller.getSnapshot().tick).toBe(5);
-    expect(shownResources()).toEqual(atStart);
+    expect(shownResources()).not.toEqual(atStart);
+    expect(shownResources()).toEqual(
+      expectedText({ ...INITIAL_SCENARIO.initialResources, food: 290, water: 290 }),
+    );
   });
 });

@@ -31,6 +31,12 @@ export function validateBuildingContent(
     if (!CATEGORIES.includes(definition.category)) {
       issues.push(`${key}: categoria desconhecida "${String(definition.category)}".`);
     }
+    if (
+      definition.housingCapacity !== undefined &&
+      !isPositiveInteger(definition.housingCapacity)
+    ) {
+      issues.push(`${key}: housingCapacity deve ser um inteiro positivo.`);
+    }
     const { footprint } = definition;
     if (
       typeof footprint !== 'object' ||

@@ -29,6 +29,7 @@
   width: clamp(16rem, 24vw, 21rem);
   max-height: 100%;
   min-height: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -537,6 +538,17 @@
   color: var(--hud-text-muted);
   font-size: 0.875rem;
   line-height: 1.45;
+}
+
+.population-panel__status {
+  margin: 0.625rem 0 0;
+  color: var(--hud-valid);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.population-panel__status[data-danger='true'] {
+  color: var(--hud-warning);
 }
 
 .event-panel__options {

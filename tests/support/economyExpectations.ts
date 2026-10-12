@@ -36,12 +36,21 @@ export function scenarioConsumptionPerTick(): Readonly<Record<ResourceId, number
   return total;
 }
 
-/** Estoques esperados depois de `ticks` passos a partir do estado inicial do cenário. */
-export function expectedResourcesAfter(ticks: number): ResourceStock {
+/** Estoques esperados depois de `ticks` passos de edifícios, sem necessidades populacionais. */
+export function expectedBuildingResourcesAfter(ticks: number): ResourceStock {
   const net = scenarioNetPerTick();
   const result = zero();
   for (const id of RESOURCE_IDS) {
     result[id] = INITIAL_SCENARIO.initialResources[id] + ticks * net[id];
   }
+  return result;
+}
+
+/** Estoques esperados depois de `ticks` passos completos, incluindo sobrevivência. */
+export function expectedResourcesAfter(ticks: number): ResourceStock {
+  const result = { ...expectedBuildingResourcesAfter(ticks) };
+  // Cada passo também cobra 2 alimentos e 2 águas da população inicial de 8 sobreviventes.
+  result.food -= ticks * 2;
+  result.water -= ticks * 2;
   return result;
 }

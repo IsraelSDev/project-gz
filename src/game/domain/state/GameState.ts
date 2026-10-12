@@ -4,7 +4,16 @@ import type { ResourceId } from '@/game/content/resources';
 import type { GridPosition, Rotation } from '@/shared/grid/types';
 
 /** Versão do formato do estado. Incrementar ao alterar o formato (migrações: Fase 8). */
-export const GAME_STATE_SCHEMA_VERSION = 1;
+export const GAME_STATE_SCHEMA_VERSION = 2;
+
+export interface PopulationState {
+  readonly survivors: number;
+  /** Ticks consecutivos de escassez, limitado a 0..59. */
+  readonly shortageTicks: number;
+  /** Ticks consecutivos abastecidos e dentro da capacidade. */
+  readonly stableTicks: number;
+  readonly outcome: 'ongoing' | 'victory' | 'defeat';
+}
 
 /** Edifício construído. Dados de domínio apenas: meshes e materiais nunca entram no estado. */
 export interface BuildingInstance {
@@ -28,8 +37,7 @@ export interface GameEventState {
 }
 
 /**
- * Estado somente leitura da partida (docs/TECHNICAL_ARCHITECTURE.md §5.1). Campos como `rng`,
- * `population` e `events` entram quando o sistema que os usa existir. Seleção da interface, modo de
+ * Estado somente leitura da partida (docs/TECHNICAL_ARCHITECTURE.md §5.1). Seleção da interface, modo de
  * construção e estado do relógio NÃO fazem parte deste estado (§5.2 e §5.3).
  */
 export interface GameState {
@@ -46,4 +54,5 @@ export interface GameState {
   readonly nextEntityId: number;
   /** Estados de eventos do conteúdo (Fase 7), fora de qualquer componente visual. */
   readonly events: readonly GameEventState[];
+  readonly population: PopulationState;
 }

@@ -24,6 +24,7 @@ describe('modelo de estado da partida', () => {
         'contentVersion',
         'events',
         'nextEntityId',
+        'population',
         'resources',
         'schemaVersion',
         'tick',
@@ -122,13 +123,14 @@ describe('transição de estado por passo de simulação', () => {
   /** Estado sem edifícios: a economia não tem o que produzir nem consumir. */
   const withoutBuildings = (): GameState => ({ ...initial(), buildings: [] });
 
-  it('incrementa o tick em exatamente 1 e não altera mais nada quando a economia não tem o que fazer', () => {
+  it('incrementa o tick e cobra as necessidades quando não há edifícios produtivos', () => {
     const state = withoutBuildings();
 
     const next = advanceSimulationStep(state);
 
     expect(next.tick).toBe(state.tick + 1);
-    expect({ ...next, tick: 0 }).toEqual({ ...state, tick: 0 });
+    expect(next.resources).toEqual({ ...state.resources, food: 298, water: 298 });
+    expect(next.population).toEqual(state.population);
   });
 
   it('com edifícios, só o tick e os recursos mudam (a economia roda no passo, Fase 5)', () => {
@@ -138,7 +140,8 @@ describe('transição de estado por passo de simulação', () => {
 
     expect(next.tick).toBe(state.tick + 1);
     expect(next.resources).not.toEqual(state.resources);
-    expect({ ...next, tick: 0, resources: state.resources }).toEqual({ ...state, tick: 0 });
+    expect(next.population.stableTicks).toBe(1);
+    expect(next.buildings).toBe(state.buildings);
   });
 
   it('não altera o estado de entrada (pura)', () => {
@@ -163,12 +166,14 @@ describe('transição de estado por passo de simulação', () => {
     expect(next.buildings).toBe(state.buildings);
   });
 
-  it('mantém também a referência dos recursos quando a economia não os altera', () => {
+  it('troca os recursos por causa das necessidades mesmo sem economia de edifícios', () => {
     const state = withoutBuildings();
 
     const next = advanceSimulationStep(state);
 
-    expect(next.resources).toBe(state.resources);
+    expect(next.resources).not.toBe(state.resources);
+    expect(next.resources.food).toBe(state.resources.food - 2);
+    expect(next.resources.water).toBe(state.resources.water - 2);
     expect(next.buildings).toBe(state.buildings);
   });
 

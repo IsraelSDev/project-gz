@@ -45,6 +45,11 @@ describe('GameHUD', () => {
       within(screen.getByRole('list', { name: 'Recursos da colônia' })).getAllByRole('listitem'),
     ).toHaveLength(4);
     expect(screen.getByRole('complementary', { name: 'Construção selecionada' })).toBeTruthy();
+    expect(screen.getByRole('region', { name: 'Sobrevivência' }).textContent).toContain(
+      'Sobreviventes8',
+    );
+    expect(screen.getByRole('region', { name: 'Sobrevivência' }).textContent).toContain('Abrigo8');
+    expect(screen.getByRole('region', { name: 'Como sobreviver' })).toBeTruthy();
     expect(screen.getByText(/Arrastar: girar/).textContent).toContain('W A S D');
   });
 
@@ -54,7 +59,7 @@ describe('GameHUD', () => {
 
     const levels = screen.getAllByRole('heading').map((heading) => heading.tagName);
 
-    expect(levels).toEqual(['H1', 'H2', 'H2', 'H3']);
+    expect(levels).toEqual(['H1', 'H2', 'H2', 'H2', 'H2', 'H3']);
   });
 
   it('só oferece controles que funcionam: o de limpar a seleção aparece apenas com uma seleção', () => {
@@ -66,6 +71,7 @@ describe('GameHUD', () => {
       '1×',
       '2×',
       '4×',
+      '×',
       'Salvar',
       'Carregar',
       'Nova partida',
@@ -75,6 +81,6 @@ describe('GameHUD', () => {
     act(() => selection.select('building-habitat-01'));
 
     expect(screen.getByRole('button', { name: 'Limpar seleção' })).toBeTruthy();
-    expect(screen.getAllByRole('button')).toHaveLength(9);
+    expect(screen.getAllByRole('button')).toHaveLength(10);
   });
 });

@@ -311,11 +311,7 @@ item é entregue.
 | 15 | Tutorial mínimo.                                                                          | 9    |
 | 16 | Testes e build de produção.                                                               | todas |
 
-O salvamento (item 12) deixa de ser "se viável": está no Roadmap e só
-sai do MVP por decisão registrada em `DECISIONS.md`. As condições
-exatas de sucesso e fracasso do item 14 são definidas **antes da Fase 9**
-(pendência P-08) e valem apenas para o MVP; as condições do jogo
-completo continuam em aberto (seção 12).
+O salvamento (item 12) está no Roadmap e só sai do MVP por decisão registrada em `DECISIONS.md`. As condições do MVP foram definidas e implementadas na Fase 9 (D-62): vitória após 900 ticks seguidos com comida, água e abrigo para todos, mantendo ao menos 6 sobreviventes; derrota quando não restar nenhum sobrevivente após escassez contínua. O relógio pausa ao atingir um resultado. As condições do jogo completo continuam em aberto (seção 12).
 
 Fora do MVP: - Multiplayer. - Backend obrigatório. - Economia
 avançada. - Guerras completas. - Dinastias completas. - Diplomacia
@@ -347,7 +343,16 @@ Roadmap, depois do MVP).
 Não tratar as opções abaixo como decisões finais sem análise: - Nome
 definitivo do jogo. - Estilo de arte final e grau de realismo. -
 Dimensão do mapa e geração do terreno. - Condições definitivas de
-vitória e derrota do jogo completo (as do MVP: pendência P-08). -
+vitória e derrota do jogo completo (as do MVP: D-62). -
 Profundidade da simulação individual de habitantes. - Escopo e regras
 detalhadas de combate. - Possível modo online futuro. - Estratégia final
 de distribuição para PC.
+
+
+
+
+
+
+### Sobrevivência do MVP (Fase 9)
+
+A colônia começa com 8 sobreviventes e capacidade habitacional 8. A cada tick, depois da economia dos edifícios, cada grupo de até 4 sobreviventes consome 1 unidade de comida e 1 de água. O estoque disponível é consumido até zero; recursos nunca ficam negativos. A falta de qualquer um dos dois recursos por 60 ticks consecutivos remove 1 sobrevivente; abastecimento completo reinicia a contagem. A capacidade é a soma de `housingCapacity` nas estruturas construídas. A vitória exige 900 ticks consecutivos com abastecimento e abrigo para todos e pelo menos 6 sobreviventes. Zero sobreviventes significa derrota.

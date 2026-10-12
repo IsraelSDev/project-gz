@@ -28,6 +28,35 @@ export function validateGameState(state: GameState): readonly string[] {
   if (!isWholeNumber(state.nextEntityId) || state.nextEntityId < 1) {
     issues.push('nextEntityId deve ser um inteiro maior ou igual a 1.');
   }
+  if (!state.population || typeof state.population !== 'object') {
+    issues.push('population deve existir.');
+  } else {
+    if (!isWholeNumber(state.population.survivors) || state.population.survivors < 0) {
+      issues.push('population.survivors deve ser um inteiro não negativo.');
+    }
+    if (
+      !isWholeNumber(state.population.shortageTicks) ||
+      state.population.shortageTicks < 0 ||
+      state.population.shortageTicks >= 60
+    ) {
+      issues.push('population.shortageTicks deve estar entre 0 e 59.');
+    }
+    if (!isWholeNumber(state.population.stableTicks) || state.population.stableTicks < 0) {
+      issues.push('population.stableTicks deve ser um inteiro não negativo.');
+    }
+    if (!['ongoing', 'victory', 'defeat'].includes(state.population.outcome)) {
+      issues.push('population.outcome inválido.');
+    }
+    if (state.population.outcome === 'defeat' && state.population.survivors !== 0) {
+      issues.push('Derrota exige zero sobreviventes.');
+    }
+    if (
+      state.population.outcome === 'victory' &&
+      (state.population.stableTicks < 900 || state.population.survivors < 6)
+    ) {
+      issues.push('Vitória exige 900 ticks estáveis e ao menos 6 sobreviventes.');
+    }
+  }
 
   const resources: Record<string, unknown> = state.resources;
   for (const id of RESOURCE_IDS) {
