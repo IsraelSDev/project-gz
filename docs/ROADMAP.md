@@ -320,22 +320,18 @@ Implementação e validação automatizada do ciclo concluídas. O critério de 
 
 ## Fase 10 — Política, personagens e corte
 
-Somente iniciar depois de o protótipo econômico ser estável.
+**Status: concluída e validada.** O elenco inicial, cargos exclusivos, relações básicas, interface e migrações de save estão implementados. Testes determinísticos, typecheck, lint e build passaram.
 
-### Etapas futuras
+### Entrega
 
-1.  Entidades de personagens e traços.
-2.  Competências, lealdade e ambição.
-3.  Cargos administrativos e conselhos.
-4.  Satisfação popular, legitimidade e autoridade.
-5.  Formas de governo e leis.
-6.  Corte real, orçamento e prestígio.
-7.  Relações, consortes, herdeiros e sucessão.
-8.  Intrigas, conspirações e veneração do governante.
+- Quatro personagens importantes ligados à população agregada de oito habitantes, sem criar uma entidade por habitante.
+- Competências, traços, estágio de vida e estado de disponibilidade validados no domínio.
+- Um líder e cargos de ciência, engenharia e produção com elegibilidade e exclusividade.
+- Relações explícitas em escala de -5 a 5, persistidas no estado.
+- Painel de elenco, detalhes e nomeação/remoção integrado à HUD; seleção de personagens separada das estruturas.
+- Save schema 3/content 0.6.0 com migrações v1→v2→v3, preservando o progresso anterior.
 
-Cada etapa deve ser projetada, testada e integrada separadamente. Não
-implementar toda a corte em um único prompt.
-
+A corte avançada, formas de governo, leis, legitimidade, dinastias, sucessão e intrigas continuam fora do escopo desta fase.
 ## Fase 11 — Expansão de conteúdo
 
 Possíveis sistemas, em ordem a definir após testes: - Tecnologia e

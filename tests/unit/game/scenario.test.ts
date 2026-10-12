@@ -62,7 +62,7 @@ describe('estado inicial do jogo', () => {
   const state = createInitialGameState(scenario);
 
   it('tem a estrutura mínima', () => {
-    expect(state.schemaVersion).toBe(2);
+    expect(state.schemaVersion).toBe(3);
     expect(state.population.survivors).toBe(8);
     expect(state.contentVersion).toBe(scenario.contentVersion);
     expect(state.tick).toBe(0);

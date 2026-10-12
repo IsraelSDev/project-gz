@@ -2,9 +2,10 @@ import type { BuildingDefinitionId } from '@/game/content/buildings';
 import type { EventId } from '@/game/content/events';
 import type { ResourceId } from '@/game/content/resources';
 import type { GridPosition, Rotation } from '@/shared/grid/types';
+import type { Character, CharacterRelationship, Government } from '@/game/content/characters';
 
-/** Versão do formato do estado. Incrementar ao alterar o formato (migrações: Fase 8). */
-export const GAME_STATE_SCHEMA_VERSION = 2;
+/** Versão do formato do estado. Migrações encadeadas são definidas em `application/saveMigrations.ts`. */
+export const GAME_STATE_SCHEMA_VERSION = 3;
 
 export interface PopulationState {
   readonly survivors: number;
@@ -55,4 +56,8 @@ export interface GameState {
   /** Estados de eventos do conteúdo (Fase 7), fora de qualquer componente visual. */
   readonly events: readonly GameEventState[];
   readonly population: PopulationState;
+  /** Elenco de personagens politicamente relevantes; população comum permanece agregada. */
+  readonly characters: readonly Character[];
+  readonly government: Government;
+  readonly relationships: readonly CharacterRelationship[];
 }

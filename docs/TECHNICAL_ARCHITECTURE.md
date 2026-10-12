@@ -1278,3 +1278,13 @@ comando ela é `INVALID_COMMAND`.
 Ordem do tick: incrementar tick, aplicar comandos pendentes, rodar produção e consumo dos edifícios, cobrar necessidades da população e avaliar eventos. Necessidades parciais consomem o estoque disponível; a falta de qualquer recurso conta como um tick de escassez, sem dívida. Cada 60 ticks seguidos em escassez remove 1 sobrevivente; abastecimento completo reinicia o contador. A vitória exige 900 ticks consecutivos abastecidos e alojados e pelo menos 6 sobreviventes; a derrota ocorre com zero sobreviventes. O controlador pausa em qualquer resultado.
 
 A capacidade habitacional deriva da soma de `housingCapacity` nas definições de edifícios presentes e não se duplica no save. O HUD mostra população, capacidade, estoques, necessidades do próximo tick, alertas, progresso e resultado.
+
+## 23. Personagens e cargos (Fase 10)
+
+`GameState` usa schema 3 e conteúdo 0.6.0. `characters` guarda apenas indivíduos importantes; `population.survivors` continua sendo o total de habitantes. O elenco inicial contém quatro personagens entre oito habitantes. IDs, nomes, espécie, estágio de vida, competências (0–5), traços e disponibilidade pertencem ao domínio; avatares CSS da HUD são provisórios e não são estado.
+
+`government` guarda um líder e ocupantes opcionais dos cargos de ciência, engenharia e produção. Nomeações são comandos do domínio: exigem pessoa viva, disponível, competência mínima 2 e nenhum outro cargo ocupado. Remoção deixa qualquer cargo vago, inclusive a liderança.
+
+`relationships` contém pares de personagens existentes com afinidade, confiança e rivalidade inteiras de -5 a 5. Os valores não alteram outros sistemas nesta fase. Quando uma baixa populacional afeta alguém do elenco, a pessoa com menor soma de competências (empate por ID) é marcada como falecida e seus cargos ficam vagos; assim o número de personagens vivos nunca excede a população agregada.
+
+A migração de save encadeia v1/0.4.0 → v2/0.5.0 → v3/0.6.0. Saves v2 preservam todos os campos existentes e recebem o elenco e governo iniciais. A carga valida campos, IDs únicos, elegibilidade, ocupação exclusiva e relações antes de substituir o estado ativo. A versão do envelope continua 1; saves inválidos não substituem a partida.

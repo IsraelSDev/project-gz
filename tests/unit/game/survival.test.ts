@@ -135,8 +135,11 @@ describe('sobrevivência agregada', () => {
       formatVersion: number;
       state: Record<string, unknown>;
     };
-    const legacyState = { ...current.state };
+    const legacyState: Record<string, unknown> = { ...current.state };
     delete legacyState.population;
+    delete legacyState.characters;
+    delete legacyState.government;
+    delete legacyState.relationships;
     const legacy = JSON.stringify({
       ...current,
       state: { ...legacyState, schemaVersion: 1, contentVersion: '0.4.0' },
@@ -145,14 +148,17 @@ describe('sobrevivência agregada', () => {
     expect(decoded.ok).toBe(true);
     if (!decoded.ok) return;
     expect(decoded.value).toMatchObject({
-      schemaVersion: 2,
-      contentVersion: '0.5.0',
+      schemaVersion: 3,
+      contentVersion: '0.6.0',
       tick: progressed.tick,
       resources: progressed.resources,
       buildings: progressed.buildings,
       events: progressed.events,
       population: { survivors: 8, shortageTicks: 0, stableTicks: 0, outcome: 'ongoing' },
+      characters: expect.any(Array),
+      government: { leaderId: 'colonist-aru' },
     });
+    expect(decoded.value.characters).toHaveLength(4);
 
     let stored = legacy;
     const provider: SaveProvider = {
@@ -165,5 +171,37 @@ describe('sobrevivência agregada', () => {
     expect((await loadGame(controller, provider)).ok).toBe(true);
     expect(controller.getSnapshot().resources).toEqual(progressed.resources);
     expect(controller.getSnapshot().tick).toBe(progressed.tick);
+  });
+
+  it('migra save v2 da Fase 9 preservando a população e acrescentando elenco uma única vez', () => {
+    const current = JSON.parse(encodeGameSave(initial())) as { state: Record<string, unknown> };
+    const progressedPopulation = {
+      survivors: 7,
+      shortageTicks: 4,
+      stableTicks: 12,
+      outcome: 'ongoing',
+    };
+    const legacyState: Record<string, unknown> = {
+      ...current.state,
+      schemaVersion: 2,
+      contentVersion: '0.5.0',
+      tick: 45,
+      population: progressedPopulation,
+    };
+    delete legacyState.characters;
+    delete legacyState.government;
+    delete legacyState.relationships;
+    const migrated = decodeGameSave(
+      JSON.stringify({ format: 'alien-civilization-save', formatVersion: 1, state: legacyState }),
+    );
+    expect(migrated.ok).toBe(true);
+    if (!migrated.ok) return;
+    expect(migrated.value.schemaVersion).toBe(3);
+    expect(migrated.value.characters).toHaveLength(4);
+    expect(migrated.value).toMatchObject({ tick: 45, population: progressedPopulation });
+    expect(decodeGameSave(encodeGameSave(migrated.value))).toMatchObject({
+      ok: true,
+      value: { characters: migrated.value.characters },
+    });
   });
 });

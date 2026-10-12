@@ -2,9 +2,14 @@ import { isBuildingDefinitionId } from '@/game/content/buildings';
 import { EVENT_DEFINITIONS, isEventId } from '@/game/content/events';
 import { RESOURCE_IDS } from '@/game/content/resources';
 import { isRotation } from '@/shared/grid/gridMath';
+import type { CharacterSkill } from '@/game/content/characters';
 import { GAME_STATE_SCHEMA_VERSION, type GameEventState, type GameState } from './GameState';
 
 const isWholeNumber = (value: unknown): value is number => Number.isSafeInteger(value);
+const hasExactKeys = (value: object, expected: readonly string[]): boolean => {
+  const keys = Object.keys(value);
+  return keys.length === expected.length && expected.every((key) => Object.hasOwn(value, key));
+};
 
 /**
  * Valida as invariantes do estado e devolve a lista de problemas (vazia quando é válido), para
@@ -15,6 +20,7 @@ const isWholeNumber = (value: unknown): value is number => Number.isSafeInteger(
  */
 export function validateGameState(state: GameState): readonly string[] {
   const issues: string[] = [];
+  const characters = Array.isArray(state.characters) ? state.characters : [];
 
   if (state.schemaVersion !== GAME_STATE_SCHEMA_VERSION) {
     issues.push(`schemaVersion deve ser ${GAME_STATE_SCHEMA_VERSION}.`);
@@ -55,6 +61,155 @@ export function validateGameState(state: GameState): readonly string[] {
       (state.population.stableTicks < 900 || state.population.survivors < 6)
     ) {
       issues.push('Vitória exige 900 ticks estáveis e ao menos 6 sobreviventes.');
+    }
+  }
+
+  if (!Array.isArray(state.characters)) {
+    issues.push('characters deve ser uma lista.');
+  } else {
+    const characterIds = new Set<string>();
+    for (const character of state.characters as GameState['characters']) {
+      if (!character || typeof character !== 'object') {
+        issues.push('Todo personagem precisa ser um objeto válido.');
+        continue;
+      }
+      const id = character.characterId;
+      if (
+        !hasExactKeys(character, [
+          'characterId',
+          'name',
+          'species',
+          'lifeStage',
+          'skills',
+          'traits',
+          'alive',
+          'available',
+        ])
+      ) {
+        issues.push(`Personagem "${String(id)}" tem campos desconhecidos ou ausentes.`);
+      }
+      if (typeof id !== 'string' || id.trim() === '')
+        issues.push('Personagem precisa de characterId.');
+      else if (characterIds.has(id)) issues.push(`characterId duplicado: "${id}".`);
+      else characterIds.add(id);
+      if (typeof character.name !== 'string' || character.name.trim() === '')
+        issues.push(`Personagem "${String(id)}" precisa de nome.`);
+      if (typeof character.species !== 'string' || character.species.trim() === '')
+        issues.push(`Personagem "${String(id)}" precisa de espécie.`);
+      if (!['young', 'adult', 'elder'].includes(character.lifeStage))
+        issues.push(`Personagem "${String(id)}" tem estágio de vida inválido.`);
+      if (typeof character.alive !== 'boolean' || typeof character.available !== 'boolean')
+        issues.push(`Personagem "${String(id)}" tem estado inválido.`);
+      if (!character.alive && character.available)
+        issues.push(`Personagem morto "${String(id)}" não pode estar disponível.`);
+      for (const skill of ['leadership', 'science', 'engineering', 'production'] as const) {
+        const value = character.skills?.[skill];
+        if (!isWholeNumber(value) || value < 0 || value > 5)
+          issues.push(`Personagem "${String(id)}": competência ${skill} deve estar entre 0 e 5.`);
+      }
+      if (
+        !character.skills ||
+        !hasExactKeys(character.skills, ['leadership', 'science', 'engineering', 'production'])
+      )
+        issues.push(`Personagem "${String(id)}" tem estrutura de competências inválida.`);
+      if (
+        !Array.isArray(character.traits) ||
+        character.traits.length === 0 ||
+        character.traits.some(
+          (trait) => !['calm', 'curious', 'bold', 'patient', 'kind'].includes(trait),
+        )
+      ) {
+        issues.push(`Personagem "${String(id)}" tem traços inválidos.`);
+      } else if (new Set(character.traits).size !== character.traits.length) {
+        issues.push(`Personagem "${String(id)}" tem traços duplicados.`);
+      }
+    }
+    const livingImportantCount = (state.characters as readonly unknown[]).filter(
+      (character) =>
+        typeof character === 'object' &&
+        character !== null &&
+        (character as { readonly alive?: unknown }).alive === true,
+    ).length;
+    if (state.population && livingImportantCount > state.population.survivors) {
+      issues.push('Personagens importantes vivos não podem exceder a população agregada.');
+    }
+  }
+
+  if (!state.government || typeof state.government !== 'object' || !state.government.offices) {
+    issues.push('government e offices devem existir.');
+  } else {
+    if (
+      !hasExactKeys(state.government, ['leaderId', 'offices']) ||
+      !hasExactKeys(state.government.offices, ['science', 'engineering', 'production'])
+    )
+      issues.push('government tem estrutura inválida.');
+    const officeIds = ['science', 'engineering', 'production'] as const;
+    const assigned = [
+      state.government.leaderId,
+      ...officeIds.map((office) => state.government.offices[office]),
+    ].filter((id): id is string => id !== null);
+    if (new Set(assigned).size !== assigned.length)
+      issues.push('Um personagem não pode ocupar mais de um cargo simultaneamente.');
+    const roles: readonly (readonly [string, string | null])[] = [
+      ['leader', state.government.leaderId],
+      ...officeIds.map((office) => [office, state.government.offices[office]] as const),
+    ];
+    for (const [office, id] of roles) {
+      if (id === null) continue;
+      const character = characters.find(
+        (candidate) =>
+          typeof candidate === 'object' && candidate !== null && candidate.characterId === id,
+      );
+      if (!character || !character.alive || !character.available)
+        issues.push(`Cargo governamental ${office} aponta para personagem indisponível.`);
+      else {
+        const skill: CharacterSkill =
+          office === 'leader' ? 'leadership' : (office as CharacterSkill);
+        if (character.skills[skill] < 2)
+          issues.push(`Cargo governamental ${office} exige competência mínima 2.`);
+      }
+    }
+    if (
+      Object.keys(state.government.offices).some(
+        (key) => !officeIds.includes(key as (typeof officeIds)[number]),
+      )
+    )
+      issues.push('government tem cargo desconhecido.');
+  }
+
+  if (!Array.isArray(state.relationships)) {
+    issues.push('relationships deve ser uma lista.');
+  } else {
+    const seen = new Set<string>();
+    for (const relation of state.relationships) {
+      if (
+        !relation ||
+        !characters.some(
+          (character) =>
+            typeof character === 'object' &&
+            character !== null &&
+            character.characterId === relation.fromId,
+        ) ||
+        !characters.some(
+          (character) =>
+            typeof character === 'object' &&
+            character !== null &&
+            character.characterId === relation.toId,
+        ) ||
+        relation.fromId === relation.toId
+      ) {
+        issues.push('Relação precisa apontar para dois personagens distintos existentes.');
+        continue;
+      }
+      if (!hasExactKeys(relation, ['fromId', 'toId', 'affinity', 'trust', 'rivalry']))
+        issues.push('Relação tem campos desconhecidos ou ausentes.');
+      const key = [relation.fromId, relation.toId].sort().join('|');
+      if (seen.has(key)) issues.push(`Relação duplicada: ${key}.`);
+      seen.add(key);
+      for (const value of [relation.affinity, relation.trust, relation.rivalry]) {
+        if (!isWholeNumber(value) || value < -5 || value > 5)
+          issues.push('Afinidade, confiança e rivalidade devem ser inteiros entre -5 e 5.');
+      }
     }
   }
 
