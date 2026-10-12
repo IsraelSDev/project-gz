@@ -5,12 +5,6 @@ import {
 } from '@/game/domain/construction/placeBuildingCommand';
 import { freezeDeep } from '@/game/domain/state/freezeDeep';
 import type { GameState } from '@/game/domain/state/GameState';
-import {
-  handleResolveEvent,
-  RESOLVE_EVENT,
-  type ResolveEventCommand,
-  type ResolveEventError,
-} from '@/game/domain/events/resolveEventCommand';
 import { validateGameState } from '@/game/domain/state/validateGameState';
 import { err, ok, type Result } from '@/shared/result/result';
 
@@ -21,7 +15,7 @@ import { err, ok, type Result } from '@/shared/result/result';
  * que é estado de sessão da interface.
  *
  * Cada comando é um objeto `{ type, ...dados }` com um tratador registrado em `COMMAND_HANDLERS`.
- * `PlaceBuilding` (Fase 6) e `ResolveEvent` (Fase 7) usam o mesmo fluxo validado.
+ * Existe `PlaceBuilding` (Fase 6); `ResolveEvent` entra na Fase 7.
  */
 
 export interface SimulationCommand {
@@ -40,7 +34,7 @@ export interface SimulationCommand {
  *    interface explicar o motivo (fora da área, sobreposição, recursos insuficientes).
  */
 export type CommandErrorCode =
-  'INVALID_COMMAND' | 'COMMAND_REJECTED' | 'INVALID_STATE' | PlacementErrorCode | ResolveEventError;
+  'INVALID_COMMAND' | 'COMMAND_REJECTED' | 'INVALID_STATE' | PlacementErrorCode;
 
 /** Resultado de aplicar um comando: o NOVO estado (o de entrada nunca é alterado) ou um erro. */
 export type CommandResult = Result<GameState, CommandErrorCode>;
@@ -53,10 +47,9 @@ export type CommandHandler = (state: GameState, command: SimulationCommand) => C
 
 export type CommandHandlers = Readonly<Record<string, CommandHandler>>;
 
-/** Tratadores dos comandos de simulação implementados. */
+/** Tratadores dos comandos existentes. */
 export const COMMAND_HANDLERS: CommandHandlers = {
   [PLACE_BUILDING]: handlePlaceBuilding,
-  [RESOLVE_EVENT]: (state, command) => handleResolveEvent(state, command as ResolveEventCommand),
 };
 
 /**

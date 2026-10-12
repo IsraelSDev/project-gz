@@ -8,7 +8,6 @@ import { useClock } from '../hooks/useClock';
 import { ResourceBar } from '../hud/ResourceBar';
 import { TimeControls } from '../hud/TimeControls';
 import { BuildingDetailsPanel } from './BuildingDetailsPanel';
-import { EventPanel } from './EventPanel';
 import './hud.css';
 
 export interface GameHUDProps {
@@ -52,7 +51,6 @@ export function GameHUD({
           onDismissed={onPanelDismissed}
         />
       </div>
-      <EventPanel controller={controller} />
       <p className="hud__hint">
         {placing
           ? 'Arrastar: girar · W A S D: mover · Roda do mouse: zoom · Clique: fixar a posição · R: girar a prévia · Enter: confirmar · Esc: cancelar'

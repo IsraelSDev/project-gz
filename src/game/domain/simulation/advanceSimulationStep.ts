@@ -1,5 +1,4 @@
 import { advanceEconomy } from '@/game/domain/economy/advanceEconomy';
-import { advanceEvents } from '@/game/domain/events/advanceEvents';
 import { freezeDeep } from '@/game/domain/state/freezeDeep';
 import type { GameState } from '@/game/domain/state/GameState';
 
@@ -39,7 +38,5 @@ export function advanceSimulationStep(
   const commanded = applyCommands(ticked);
 
   const resources = advanceEconomy(commanded.resources, commanded.buildings);
-  const economicState =
-    resources === commanded.resources ? commanded : freezeDeep({ ...commanded, resources });
-  return advanceEvents(economicState);
+  return resources === commanded.resources ? commanded : freezeDeep({ ...commanded, resources });
 }

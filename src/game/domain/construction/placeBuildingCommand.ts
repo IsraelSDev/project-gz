@@ -117,7 +117,7 @@ export function createPlaceBuildingHandler(
     const next: GameState = {
       ...state,
       resources: payCost(state.resources, definition.cost),
-      buildings: [building],
+      buildings: [...state.buildings, building],
       nextEntityId: state.nextEntityId + 1,
     };
     return ok(next);

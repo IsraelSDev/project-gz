@@ -221,6 +221,8 @@ da população (Fase 9) e os materiais entram com a construção (Fase 6).
 
 ## Fase 6 — Construção funcional
 
+**Status:** concluída e validada. Os testes automatizados, typecheck, lint, formatação e build passaram; pendências de verificação em mouse, toque e WebGL real permanecem registradas em P-14, P-23 e P-24. A Fase 7 aguarda aprovação explícita.
+
 ### Tarefas
 
 -   Definir dados estáticos de edifícios e escolher a validação do
@@ -243,11 +245,9 @@ da população (Fase 9) e os materiais entram com a construção (Fase 6).
 
 ## Fase 7 — Primeiro evento narrativo
 
-**Status:** evento inicial implementado; `typecheck` passou. A validação por testes e a revisão visual ainda estão pendentes.
-
 ### Tarefas
 
--   ~~Resolver P-07 (PRNG) e P-10 (idioma e textos) antes de começar~~ (resolvidas em D-59 e D-60).
+-   Resolver P-07 (PRNG) e P-10 (idioma e textos) antes de começar.
 -   Criar um evento com contexto e duas ou três escolhas.
 -   Definir pré-condições e efeitos estruturados (conjunto fechado de
     tipos de efeito).

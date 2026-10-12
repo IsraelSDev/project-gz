@@ -1248,11 +1248,3 @@ comando ela é `INVALID_COMMAND`.
 -   Posicionar exige ponteiro; sem alternativa por teclado (P-16). Em telas
     de toque não há "passar o ponteiro": o primeiro toque fixa a posição e
     "Confirmar construção" conclui (verificar em um aparelho real, P-23).
-
-## 22. Primeiro evento narrativo (Fase 7)
-
-- `GameState.rng` guarda o estado não zero de 32 bits do xorshift32. O cenário inicia com uma constante fixa; apenas efeitos aleatórios de eventos avançam o PRNG. O estado completo preserva os resultados reproduzíveis.
-- Definições localizadas em pt-BR vivem em `game/content/events.ts`. O evento `sealed-survival-pod` é acionado no tick 60, depois da economia, e oferece efeitos fechados: alteração fixa ou aleatória de um estoque de recurso.
-- `events` mantém registros pendentes e resolvidos. Só há um evento pendente; o histórico é limitado a 100 entradas. A escolha e o tick da resolução são gravados no próprio estado.
-- `ResolveEvent` é um comando de simulação. O domínio verifica evento, escolha, limites dos estoques e estado do PRNG; pausado aplica imediatamente, em andamento enfileira e revalida no próximo passo, conforme §7.2.
-- A interface lê o evento pendente do snapshot, apresenta escolhas sem lógica de domínio e anuncia recusas. `schemaVersion` permanece 1 porque não há saves anteriores à Fase 8; a validação de dados carregados será implementada junto do salvamento.

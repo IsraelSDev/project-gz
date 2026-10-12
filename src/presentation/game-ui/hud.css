@@ -50,71 +50,6 @@
   text-align: center;
 }
 
-.event-panel {
-  pointer-events: auto;
-  grid-column: 1;
-  grid-row: 2;
-  align-self: center;
-  justify-self: center;
-  width: min(100%, 30rem);
-  max-height: 100%;
-}
-
-.event-panel__title {
-  margin: 0 0 0.5rem;
-  font-size: 1.25rem;
-}
-
-.event-panel__description {
-  margin: 0 0 0.875rem;
-  color: var(--hud-text-muted);
-  line-height: 1.5;
-}
-
-.event-panel__choices {
-  display: grid;
-  gap: 0.5rem;
-}
-
-.event-choice {
-  display: grid;
-  gap: 0.2rem;
-  padding: 0.625rem 0.75rem;
-  border: 1px solid var(--hud-border);
-  border-radius: 0.375rem;
-  background: transparent;
-  color: var(--hud-text);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.event-choice:hover:not(:disabled) {
-  background: var(--hud-surface-hover);
-}
-
-.event-choice:disabled {
-  color: var(--hud-text-muted);
-  cursor: wait;
-}
-
-.event-choice__label {
-  color: var(--hud-accent);
-  font-weight: 700;
-}
-
-.event-choice__description,
-.event-panel__feedback {
-  margin: 0;
-  color: var(--hud-text-muted);
-  font-size: 0.8125rem;
-  line-height: 1.45;
-}
-
-.event-panel__feedback:not(:empty) {
-  margin-top: 0.625rem;
-}
-
 /* --- Barra superior ------------------------------------------------------------------------- */
 
 .hud-topbar {
@@ -568,21 +503,6 @@
     grid-column: 1;
     align-self: end;
     width: auto;
-  }
-
-  .event-panel {
-    position: absolute;
-    top: 4.5rem;
-    right: 0.75rem;
-    left: 0.75rem;
-    grid-column: 1;
-    grid-row: 2;
-    align-self: start;
-    justify-self: stretch;
-    width: auto;
-    max-height: min(45vh, 24rem);
-    overflow-y: auto;
-    z-index: 1;
   }
 
   .resource-bar {

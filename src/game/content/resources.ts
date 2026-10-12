@@ -12,7 +12,7 @@ export type ResourceId = (typeof RESOURCE_IDS)[number];
 
 export interface ResourceDefinition {
   readonly id: ResourceId;
-  /** Nome exibido ao jogador no idioma principal pt-BR (D-59). */
+  /** Nome exibido ao jogador (idioma e estratégia de textos: pendência P-10). */
   readonly name: string;
 }
 
