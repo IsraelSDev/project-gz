@@ -15,6 +15,7 @@ import { SavePanel } from './SavePanel';
 import { PopulationPanel } from './PopulationPanel';
 import { TutorialPanel } from './TutorialPanel';
 import { CharacterGovernmentPanel } from './CharacterGovernmentPanel';
+import { ResearchExplorationPanel } from './ResearchExplorationPanel';
 import './hud.css';
 
 export interface GameHUDProps {
@@ -59,6 +60,7 @@ export function GameHUD({
       <div className="hud__side">
         <PopulationPanel controller={controller} />
         <CharacterGovernmentPanel controller={controller} />
+        <ResearchExplorationPanel controller={controller} />
         <TutorialPanel />
         <SavePanel
           controller={controller}

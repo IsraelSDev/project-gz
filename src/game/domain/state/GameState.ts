@@ -5,7 +5,7 @@ import type { GridPosition, Rotation } from '@/shared/grid/types';
 import type { Character, CharacterRelationship, Government } from '@/game/content/characters';
 
 /** Versão do formato do estado. Migrações encadeadas são definidas em `application/saveMigrations.ts`. */
-export const GAME_STATE_SCHEMA_VERSION = 3;
+export const GAME_STATE_SCHEMA_VERSION = 4;
 
 export interface PopulationState {
   readonly survivors: number;
@@ -37,6 +37,16 @@ export interface GameEventState {
   readonly resolvedAtTick?: number;
 }
 
+export interface ResearchState {
+  readonly unlockedTechnologyIds: readonly string[];
+  readonly activeTechnologyId: string | null;
+  readonly progress: number;
+}
+
+export interface ExplorationState {
+  readonly discoveredPointIds: readonly string[];
+}
+
 /**
  * Estado somente leitura da partida (docs/TECHNICAL_ARCHITECTURE.md §5.1). Seleção da interface, modo de
  * construção e estado do relógio NÃO fazem parte deste estado (§5.2 e §5.3).
@@ -60,4 +70,6 @@ export interface GameState {
   readonly characters: readonly Character[];
   readonly government: Government;
   readonly relationships: readonly CharacterRelationship[];
+  readonly research: ResearchState;
+  readonly exploration: ExplorationState;
 }

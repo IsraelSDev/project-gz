@@ -14,7 +14,7 @@ describe('selectBuildCatalog', () => {
     const catalog = selectBuildCatalog(state().resources);
 
     expect(catalog.map((entry) => entry.definitionId)).toEqual(Object.keys(BUILDING_DEFINITIONS));
-    expect(catalog).toHaveLength(5);
+    expect(catalog).toHaveLength(8);
   });
 
   it('traz nome, categoria, footprint e custo da definição (nada é inventado na interface)', () => {
@@ -23,7 +23,7 @@ describe('selectBuildCatalog', () => {
 
     expect(solar).toMatchObject({
       name: BUILDING_DEFINITIONS['solar-array'].name,
-      category: 'infrastructure',
+      category: 'energy',
       footprint: BUILDING_DEFINITIONS['solar-array'].footprint,
     });
     expect(solar?.cost).toEqual([

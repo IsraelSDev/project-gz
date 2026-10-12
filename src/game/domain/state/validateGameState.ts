@@ -3,6 +3,8 @@ import { EVENT_DEFINITIONS, isEventId } from '@/game/content/events';
 import { RESOURCE_IDS } from '@/game/content/resources';
 import { isRotation } from '@/shared/grid/gridMath';
 import type { CharacterSkill } from '@/game/content/characters';
+import { isTechnologyId, TECHNOLOGY_DEFINITIONS } from '@/game/content/technologies';
+import { POINTS_OF_INTEREST } from '@/game/content/pointsOfInterest';
 import { GAME_STATE_SCHEMA_VERSION, type GameEventState, type GameState } from './GameState';
 
 const isWholeNumber = (value: unknown): value is number => Number.isSafeInteger(value);
@@ -27,6 +29,52 @@ export function validateGameState(state: GameState): readonly string[] {
   }
   if (typeof state.contentVersion !== 'string' || state.contentVersion.trim() === '') {
     issues.push('contentVersion não pode ser vazio.');
+  }
+  if (
+    !state.research ||
+    !Array.isArray(state.research.unlockedTechnologyIds) ||
+    !Array.isArray(state.exploration?.discoveredPointIds)
+  ) {
+    issues.push('research e exploration devem existir com listas válidas.');
+  } else {
+    if (
+      !hasExactKeys(state.research, ['unlockedTechnologyIds', 'activeTechnologyId', 'progress']) ||
+      !hasExactKeys(state.exploration, ['discoveredPointIds'])
+    ) {
+      issues.push('research ou exploration têm campos desconhecidos ou ausentes.');
+    }
+    const unlocked = state.research.unlockedTechnologyIds;
+    if (new Set(unlocked).size !== unlocked.length || unlocked.some((id) => !isTechnologyId(id)))
+      issues.push('Tecnologias desbloqueadas inválidas ou duplicadas.');
+    if (
+      state.research.activeTechnologyId !== null &&
+      (!isTechnologyId(state.research.activeTechnologyId) ||
+        unlocked.includes(state.research.activeTechnologyId))
+    )
+      issues.push('Pesquisa ativa inválida.');
+    if (
+      isTechnologyId(state.research.activeTechnologyId) &&
+      !TECHNOLOGY_DEFINITIONS[state.research.activeTechnologyId]!.prerequisites.every((id) =>
+        unlocked.includes(id),
+      )
+    ) {
+      issues.push('Pré-requisitos da pesquisa ativa não foram concluídos.');
+    }
+    if (
+      !isWholeNumber(state.research.progress) ||
+      state.research.progress < 0 ||
+      (state.research.activeTechnologyId === null && state.research.progress !== 0) ||
+      (state.research.activeTechnologyId !== null &&
+        state.research.progress >=
+          (TECHNOLOGY_DEFINITIONS[state.research.activeTechnologyId]?.researchPoints ?? 0))
+    )
+      issues.push('Progresso de pesquisa inválido.');
+    const points = state.exploration.discoveredPointIds;
+    if (
+      new Set(points).size !== points.length ||
+      points.some((id) => !Object.hasOwn(POINTS_OF_INTEREST, id))
+    )
+      issues.push('Descobertas de exploração inválidas ou duplicadas.');
   }
   if (!isWholeNumber(state.tick) || state.tick < 0) {
     issues.push('tick deve ser um inteiro não negativo.');

@@ -125,12 +125,19 @@ describe('PlaceBuilding: desconto dos recursos', () => {
   it.each(Object.values(BUILDING_DEFINITIONS))(
     'desconta exatamente o custo de $name e só ele',
     (definition) => {
-      const state = withResources(initial(), {
-        food: 500,
-        water: 500,
-        materials: 500,
-        energy: 500,
-      });
+      const state = {
+        ...withResources(initial(), {
+          food: 500,
+          water: 500,
+          materials: 500,
+          energy: 500,
+        }),
+        research: {
+          unlockedTechnologyIds: ['protein-cultures', 'thermal-engineering'],
+          activeTechnologyId: null,
+          progress: 0,
+        },
+      };
 
       const result = place(state, definition.id, FREE_B);
 

@@ -3,6 +3,7 @@ import { advanceEvents } from '@/game/domain/events/advanceEvents';
 import { freezeDeep } from '@/game/domain/state/freezeDeep';
 import type { GameState } from '@/game/domain/state/GameState';
 import { advancePopulation } from '@/game/domain/population/advancePopulation';
+import { advanceResearch } from '@/game/domain/research/researchCommands';
 
 /** Fase do passo em que os comandos de simulação pendentes são aplicados (item 2 da ordem). */
 export type CommandPhase = (state: GameState) => GameState;
@@ -42,5 +43,5 @@ export function advanceSimulationStep(
   const resources = advanceEconomy(commanded.resources, commanded.buildings);
   const economical =
     resources === commanded.resources ? commanded : freezeDeep({ ...commanded, resources });
-  return advanceEvents(advancePopulation(economical));
+  return advanceEvents(advancePopulation(advanceResearch(economical)));
 }

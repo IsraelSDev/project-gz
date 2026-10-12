@@ -11,6 +11,8 @@ import {
   PLACE_BUILDING,
 } from '@/game/domain/construction/placeBuildingCommand';
 import { freezeDeep } from '@/game/domain/state/freezeDeep';
+import { handleStartResearch, START_RESEARCH } from '@/game/domain/research/researchCommands';
+import { handleExplorePoint, EXPLORE_POINT } from '@/game/domain/exploration/exploreCommand';
 import type { GameState } from '@/game/domain/state/GameState';
 import { validateGameState } from '@/game/domain/state/validateGameState';
 import { err, ok, type Result } from '@/shared/result/result';
@@ -65,6 +67,8 @@ export const COMMAND_HANDLERS: CommandHandlers = {
   [RESOLVE_EVENT]: handleResolveEvent,
   [APPOINT_CHARACTER]: handleAppointCharacter,
   [REMOVE_CHARACTER_FROM_OFFICE]: handleRemoveCharacterFromOffice,
+  [START_RESEARCH]: handleStartResearch,
+  [EXPLORE_POINT]: handleExplorePoint,
 };
 
 /**

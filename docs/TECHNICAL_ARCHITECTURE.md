@@ -1288,3 +1288,9 @@ A capacidade habitacional deriva da soma de `housingCapacity` nas definições d
 `relationships` contém pares de personagens existentes com afinidade, confiança e rivalidade inteiras de -5 a 5. Os valores não alteram outros sistemas nesta fase. Quando uma baixa populacional afeta alguém do elenco, a pessoa com menor soma de competências (empate por ID) é marcada como falecida e seus cargos ficam vagos; assim o número de personagens vivos nunca excede a população agregada.
 
 A migração de save encadeia v1/0.4.0 → v2/0.5.0 → v3/0.6.0. Saves v2 preservam todos os campos existentes e recebem o elenco e governo iniciais. A carga valida campos, IDs únicos, elegibilidade, ocupação exclusiva e relações antes de substituir o estado ativo. A versão do envelope continua 1; saves inválidos não substituem a partida.
+
+## 24. Pesquisa e explora??o (Fase 11)
+
+O schema 4/content 0.7.0 persiste research (tecnologias conclu?das, projeto ativo e progresso) e exploration (IDs de pontos descobertos). O cat?logo de tecnologias e POIs usa IDs est?veis. StartResearch verifica pr?-requisitos, laborat?rio, cientista e recursos, cobrando o custo ao iniciar; a simula??o avan?a pesquisa deterministicamente ap?s economia. A compet?ncia de ci?ncia do ocupante do cargo define pontos por tick.
+
+ExplorePoint valida disponibilidade, requisitos e custo, e aplica recompensa e descoberta atomicamente; repetir uma descoberta ? recusado. As Ru?nas de Eco acionam evento no motor existente. Edif?cios com requisito tecnol?gico s?o recusados no comando e desabilitados no cat?logo at? o desbloqueio. Saves schema 3 migram para schema 4 sem alterar tick, estoques, personagens ou eventos resolvidos; eventos novos da Fase 11 come?am dispon?veis. O envelope de save continua na vers?o 1.

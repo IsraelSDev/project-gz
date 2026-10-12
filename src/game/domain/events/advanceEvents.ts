@@ -8,7 +8,11 @@ export function advanceEvents(state: GameState): GameState {
   const events = state.events.map((event): GameEventState => {
     if (event.status !== 'available') return event;
     const definition = EVENT_DEFINITIONS[event.eventId as EventId];
-    if (state.tick < definition.trigger.minTick) return event;
+    const triggered =
+      definition.trigger.kind === 'tick'
+        ? state.tick >= definition.trigger.minTick
+        : state.exploration.discoveredPointIds.includes(definition.trigger.pointId);
+    if (!triggered) return event;
     changed = true;
     return { ...event, status: 'active' };
   });

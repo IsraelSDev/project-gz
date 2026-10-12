@@ -260,6 +260,8 @@ governante.
 -   Exploração de locais, recursos e ruínas.
 -   Descobertas que podem gerar dilemas ou riscos.
 
+**Implementa??o da Fase 11:** Culturas Proteicas desbloqueia o Cultivador de Prote?nas; Engenharia T?rmica exige essa tecnologia e desbloqueia o Gerador Geot?rmico. Para pesquisar, a col?nia precisa de um Laborat?rio de Campo e de um cientista no cargo de ci?ncia. A compet?ncia cient?fica acelera o progresso. Nascente Cristalina e Ru?nas de Eco s?o pontos de interesse com custo de energia e recompensas; a descoberta das ru?nas ativa um evento com escolhas de recupera??o. N?o h? recupera??o da nave nem explora??o procedural nesta entrega.
+
 ### 8.8 Diplomacia e militar
 
 Planejados para etapas posteriores: - Contatos com outras comunidades e

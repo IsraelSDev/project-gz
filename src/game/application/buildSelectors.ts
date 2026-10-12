@@ -65,12 +65,18 @@ export interface BuildCatalogEntry {
   readonly cost: readonly CostLine[];
   /** `true` quando os recursos atuais cobrem o custo inteiro. */
   readonly affordable: boolean;
+  readonly unlocked: boolean;
 }
 
 /** Edifícios que o jogador pode construir, na ordem do conteúdo, com o custo e a disponibilidade. */
-export function selectBuildCatalog(resources: ResourceStock): readonly BuildCatalogEntry[] {
+export function selectBuildCatalog(
+  resources: ResourceStock,
+  unlockedTechnologyIds: readonly string[] = [],
+): readonly BuildCatalogEntry[] {
   return Object.values(BUILDING_DEFINITIONS).map((definition) => {
     const cost = costLines(resources, definition.cost);
+    const requiredTechnologyId =
+      'requiredTechnologyId' in definition ? definition.requiredTechnologyId : undefined;
     return {
       definitionId: definition.id,
       name: definition.name,
@@ -78,6 +84,7 @@ export function selectBuildCatalog(resources: ResourceStock): readonly BuildCata
       footprint: definition.footprint,
       cost,
       affordable: cost.every((line) => line.missing === 0),
+      unlocked: !requiredTechnologyId || unlockedTechnologyIds.includes(requiredTechnologyId),
     };
   });
 }
@@ -92,7 +99,7 @@ export interface PlacementInput {
 export type PlacementStatus =
   | { readonly kind: 'no-position' }
   | { readonly kind: 'valid' }
-  | { readonly kind: 'invalid'; readonly error: PlacementErrorCode };
+  | { readonly kind: 'invalid'; readonly error: PlacementErrorCode | 'TECHNOLOGY_LOCKED' };
 
 /** Pedido de construção já resolvido (célula apontada convertida em `position`). */
 export interface ResolvedPlacement {
@@ -121,7 +128,7 @@ export interface PlacementPreview {
  * edifício está em posicionamento.
  */
 export function selectPlacementPreview(
-  state: Pick<GameState, 'buildings' | 'resources'>,
+  state: Pick<GameState, 'buildings' | 'resources'> & Partial<Pick<GameState, 'research'>>,
   input: PlacementInput,
 ): PlacementPreview | null {
   if (input.definitionId === null) {
@@ -139,6 +146,12 @@ export function selectPlacementPreview(
 
   if (input.cell === null) {
     return { ...base, request: null, status: { kind: 'no-position' } };
+  }
+  if (
+    definition.requiredTechnologyId &&
+    !state.research?.unlockedTechnologyIds.includes(definition.requiredTechnologyId)
+  ) {
+    return { ...base, request: null, status: { kind: 'invalid', error: 'TECHNOLOGY_LOCKED' } };
   }
   const request: ResolvedPlacement = {
     definitionId: input.definitionId,

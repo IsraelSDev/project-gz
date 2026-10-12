@@ -56,6 +56,7 @@ function CatalogItem({
         className="build-item"
         aria-pressed={selected}
         data-affordable={entry.affordable}
+        disabled={!entry.unlocked}
         onClick={onChoose}
       >
         <span className="build-item__name">{entry.name}</span>
@@ -68,6 +69,7 @@ function CatalogItem({
         {!entry.affordable && (
           <span className="build-item__warning">Recursos insuficientes agora</span>
         )}
+        {!entry.unlocked && <span className="build-item__warning">Requer tecnologia</span>}
       </button>
     </li>
   );
@@ -82,7 +84,9 @@ function placementStatusText(status: PlacementPreview['status']): string {
     case 'valid':
       return 'Posição válida.';
     case 'invalid':
-      return describeError(status.error);
+      return status.error === 'TECHNOLOGY_LOCKED'
+        ? 'Pesquise a tecnologia necessária primeiro.'
+        : describeError(status.error);
   }
 }
 
@@ -148,12 +152,16 @@ function BuildBody({ controller, build, actions, id }: BuildPanelProps & { reado
   // Só as fatias de que precisa: o estoque (custos e disponibilidade) e as construções (colisão).
   const resources = useGameSelector(controller, (snapshot) => snapshot.resources);
   const buildings = useGameSelector(controller, (snapshot) => snapshot.buildings);
+  const research = useGameSelector(controller, (snapshot) => snapshot.research);
   const state = useBuild(build);
 
-  const catalog = useMemo(() => selectBuildCatalog(resources), [resources]);
+  const catalog = useMemo(
+    () => selectBuildCatalog(resources, research.unlockedTechnologyIds),
+    [resources, research],
+  );
   const preview = useMemo(
-    () => selectPlacementPreview({ resources, buildings }, state),
-    [resources, buildings, state],
+    () => selectPlacementPreview({ resources, buildings, research }, state),
+    [resources, buildings, research, state],
   );
 
   // Esc e R funcionam também com o foco nos botões do painel (no canvas, quem trata é o GameCanvas).

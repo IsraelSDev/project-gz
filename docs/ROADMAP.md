@@ -332,13 +332,11 @@ Implementação e validação automatizada do ciclo concluídas. O critério de 
 - Save schema 3/content 0.6.0 com migrações v1→v2→v3, preservando o progresso anterior.
 
 A corte avançada, formas de governo, leis, legitimidade, dinastias, sucessão e intrigas continuam fora do escopo desta fase.
-## Fase 11 — Expansão de conteúdo
+## Fase 11 ? Expans?o de conte?do
 
-Possíveis sistemas, em ordem a definir após testes: - Tecnologia e
-recuperação da nave. - Exploração territorial. - Saúde e doenças. -
-Cultura e religião. - Comércio e cadeias produtivas. - Diplomacia e
-facções. - Segurança, forças militares e guerras. - Sociedades
-alienígenas. - Progressão de cidade para reino e império.
+**Status: conclu?da.** O cat?logo passou a oito edif?cios em sete categorias, incluindo laborat?rio, cultivador proteico e gerador geot?rmico, usando os quatro recursos existentes. Culturas Proteicas e Engenharia T?rmica t?m custos, pr?-requisito expl?cito e desbloqueiam edif?cios. Pesquisa exige laborat?rio e cientista no cargo de ci?ncia; sua compet?ncia define a velocidade. Nascente Cristalina e Ru?nas de Eco t?m custos e recompensas, e as ru?nas ativam um evento no motor existente. Saves schema 3/content 0.6.0 migram para schema 4/content 0.7.0 com pesquisa, explora??o e descobertas persistidas.
+
+Recupera??o da nave, sa?de, cultura, com?rcio, diplomacia, fac??es, guerra e progress?o de reinos e imp?rios continuam fora desta fase.
 
 ## Fase 12 — Polimento e preparação para distribuição
 

@@ -9,6 +9,11 @@ import { useSelection } from '../hooks/useSelection';
 const CATEGORY_LABELS: Readonly<Record<BuildingDefinition['category'], string>> = {
   shelter: 'Abrigo',
   infrastructure: 'Infraestrutura',
+  food: 'Alimento',
+  water: 'Água',
+  energy: 'Energia',
+  industry: 'Indústria',
+  research: 'Pesquisa',
 };
 
 export interface BuildingDetailsPanelProps {

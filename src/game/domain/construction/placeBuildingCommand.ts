@@ -101,6 +101,13 @@ export function createPlaceBuildingHandler(
     if (!request || !definition) {
       return err('INVALID_COMMAND');
     }
+    const requiredTechnologyId = (definition as { requiredTechnologyId?: string })
+      .requiredTechnologyId;
+    if (
+      requiredTechnologyId &&
+      !state.research.unlockedTechnologyIds.includes(requiredTechnologyId)
+    )
+      return err('COMMAND_REJECTED');
     const checked = evaluatePlacement(state, request, terrain, definitions);
     if (!checked.ok) {
       return err(checked.error);

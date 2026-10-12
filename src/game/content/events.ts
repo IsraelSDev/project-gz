@@ -7,7 +7,7 @@ export const EVENT_DEFINITIONS = {
     title: 'Um sinal entre os destroços',
     description:
       'Um pulso repetido emerge do transmissor da nave. A equipe acredita que uma resposta curta pode localizar a origem do sinal.',
-    trigger: { minTick: 60 },
+    trigger: { kind: 'tick', minTick: 60 },
     options: [
       {
         id: 'answer-signal',
@@ -27,6 +27,31 @@ export const EVENT_DEFINITIONS = {
       },
     ],
   },
+  'ruins-cache': {
+    id: 'ruins-cache',
+    title: 'Um arquivo sob as ruínas',
+    description:
+      'A expedição encontrou um compartimento que ainda contém dados e peças recuperáveis.',
+    trigger: { kind: 'point-discovered', pointId: 'echo-ruins' } as EventDefinition['trigger'],
+    options: [
+      {
+        id: 'decode-cache',
+        label: 'Decodificar o arquivo',
+        description: 'Gasta 3 de energia e recupera 12 de materiais.',
+        cost: { energy: 3 },
+        effects: { materials: 12 },
+        consequence: 'O arquivo revela técnicas de fabricação: +12 materiais, −3 energia.',
+      },
+      {
+        id: 'salvage-cache',
+        label: 'Recuperar as peças',
+        description: 'Gasta 2 de energia e recupera 8 de água.',
+        cost: { energy: 2 },
+        effects: { water: 8 },
+        consequence: 'Peças intactas incluem recipientes de água: +8 água, −2 energia.',
+      },
+    ],
+  },
 } as const satisfies Readonly<Record<string, EventDefinition>>;
 
 export interface EventOption {
@@ -42,7 +67,9 @@ export interface EventDefinition {
   readonly id: string;
   readonly title: string;
   readonly description: string;
-  readonly trigger: { readonly minTick: number };
+  readonly trigger:
+    | { readonly kind: 'tick'; readonly minTick: number }
+    | { readonly kind: 'point-discovered'; readonly pointId: string };
   readonly options: readonly EventOption[];
 }
 
