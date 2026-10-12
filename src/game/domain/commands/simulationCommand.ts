@@ -1,4 +1,5 @@
 import type { PlacementErrorCode } from '@/game/domain/construction/placement';
+import { handleResolveEvent, RESOLVE_EVENT } from '@/game/domain/events/resolveEventCommand';
 import {
   handlePlaceBuilding,
   PLACE_BUILDING,
@@ -34,7 +35,12 @@ export interface SimulationCommand {
  *    interface explicar o motivo (fora da área, sobreposição, recursos insuficientes).
  */
 export type CommandErrorCode =
-  'INVALID_COMMAND' | 'COMMAND_REJECTED' | 'INVALID_STATE' | PlacementErrorCode;
+  | 'INVALID_COMMAND'
+  | 'COMMAND_REJECTED'
+  | 'INVALID_STATE'
+  | 'EVENT_NOT_ACTIVE'
+  | 'INSUFFICIENT_RESOURCES'
+  | PlacementErrorCode;
 
 /** Resultado de aplicar um comando: o NOVO estado (o de entrada nunca é alterado) ou um erro. */
 export type CommandResult = Result<GameState, CommandErrorCode>;
@@ -50,6 +56,7 @@ export type CommandHandlers = Readonly<Record<string, CommandHandler>>;
 /** Tratadores dos comandos existentes. */
 export const COMMAND_HANDLERS: CommandHandlers = {
   [PLACE_BUILDING]: handlePlaceBuilding,
+  [RESOLVE_EVENT]: handleResolveEvent,
 };
 
 /**

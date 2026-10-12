@@ -153,7 +153,15 @@ describe('GameController: estado inicial e tick', () => {
 
     expect(json).not.toMatch(/paused|speed|selected/i);
     expect(Object.keys(controller.getSnapshot()).sort()).toEqual(
-      ['buildings', 'contentVersion', 'nextEntityId', 'resources', 'schemaVersion', 'tick'].sort(),
+      [
+        'buildings',
+        'contentVersion',
+        'events',
+        'nextEntityId',
+        'resources',
+        'schemaVersion',
+        'tick',
+      ].sort(),
     );
   });
 });

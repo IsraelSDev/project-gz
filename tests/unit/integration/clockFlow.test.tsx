@@ -142,6 +142,33 @@ describe('relógio de ponta a ponta (App + tempo falso + NullEngine)', () => {
     expect(tick()).toBe('5');
   });
 
+  it('Espaço pausa e retoma mantendo a velocidade selecionada', () => {
+    render(<App />);
+    const speedButton = button('4×');
+    const pressSpace = (repeat = false) =>
+      fireEvent.keyDown(speedButton, { key: ' ', code: 'Space', repeat });
+
+    fireEvent.click(speedButton);
+    pressSpace();
+    expect(statusText()).toBe('Em andamento');
+    expect(button('4×').getAttribute('aria-pressed')).toBe('true');
+    pass(1_000);
+    expect(tick()).toBe('4');
+
+    pressSpace(true);
+    expect(statusText()).toBe('Em andamento');
+    pressSpace();
+    expect(statusText()).toBe('Pausado');
+    pass(2_000);
+    expect(tick()).toBe('4');
+
+    pressSpace();
+    expect(statusText()).toBe('Em andamento');
+    expect(button('4×').getAttribute('aria-pressed')).toBe('true');
+    pass(1_000);
+    expect(tick()).toBe('8');
+  });
+
   it('o resultado não depende do FPS: muitos quadros curtos ou poucos longos dão o mesmo tick', () => {
     const { unmount } = render(<App />);
     fireEvent.click(button('Retomar'));

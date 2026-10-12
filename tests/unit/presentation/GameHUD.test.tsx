@@ -2,6 +2,7 @@
 import { act, cleanup, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createGameController } from '@/game/application/GameController';
+import type { SaveProvider } from '@/game/application/ports/SaveProvider';
 import { INITIAL_SCENARIO } from '@/game/content/scenario';
 import { createInitialGameState } from '@/game/domain/state/createInitialGameState';
 import { createBuildActions } from '@/presentation/build/buildActions';
@@ -12,7 +13,12 @@ import { createSelectionStore } from '@/session/selectionStore';
 afterEach(cleanup);
 
 const setup = () => {
-  const controller = createGameController(createInitialGameState(INITIAL_SCENARIO));
+  const initialState = createInitialGameState(INITIAL_SCENARIO);
+  const controller = createGameController(initialState);
+  const saveProvider: SaveProvider = {
+    read: async () => null,
+    write: async () => undefined,
+  };
   const selection = createSelectionStore();
   const build = createBuildStore();
   const buildActions = createBuildActions(controller, build);
@@ -22,6 +28,9 @@ const setup = () => {
       selection={selection}
       build={build}
       buildActions={buildActions}
+      saveProvider={saveProvider}
+      initialState={initialState}
+      onStateReplaced={() => undefined}
     />,
   );
   return { controller, selection, build };
@@ -45,18 +54,27 @@ describe('GameHUD', () => {
 
     const levels = screen.getAllByRole('heading').map((heading) => heading.tagName);
 
-    expect(levels).toEqual(['H1', 'H2', 'H3']);
+    expect(levels).toEqual(['H1', 'H2', 'H2', 'H3']);
   });
 
   it('só oferece controles que funcionam: o de limpar a seleção aparece apenas com uma seleção', () => {
     const { selection } = setup();
     const names = () => screen.getAllByRole('button').map((button) => button.textContent?.trim());
     // Controles de tempo e o botão "Construir" (o catálogo só aparece com o painel aberto).
-    expect(names()).toEqual(['Retomar', '1×', '2×', '4×', '+Construir']);
+    expect(names()).toEqual([
+      'Retomar',
+      '1×',
+      '2×',
+      '4×',
+      'Salvar',
+      'Carregar',
+      'Nova partida',
+      '+Construir',
+    ]);
 
     act(() => selection.select('building-habitat-01'));
 
     expect(screen.getByRole('button', { name: 'Limpar seleção' })).toBeTruthy();
-    expect(screen.getAllByRole('button')).toHaveLength(6);
+    expect(screen.getAllByRole('button')).toHaveLength(9);
   });
 });

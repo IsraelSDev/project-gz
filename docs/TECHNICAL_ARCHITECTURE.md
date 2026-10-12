@@ -213,7 +213,7 @@ interface GameState {
   buildings: BuildingInstance[];
   // Adicionados quando o sistema que os usa for implementado:
   nextEntityId: number;      // Fase 6, feito: §21.3 (IDs por contador)
-  rng: RngState;             // Fase 7 (estado do PRNG, não só a seed)
+  rng: RngState;             // quando um sistema precisar de aleatoriedade (P-07)
   population: PopulationState; // Fase 9 (via migração de esquema)
   events: GameEventState[];  // Fase 7
 }
@@ -290,9 +290,9 @@ a aba fica oculta.
 -   Mesmo estado + mesmos comandos ⇒ mesmo resultado.
 -   Proibido no domínio: `Math.random`, `Date.now`, `performance.now`
     (regras de ESLint, seção 3.6).
--   Aleatoriedade somente via PRNG do domínio, cujo **estado completo**
-    (`rng`) é parte do `GameState` e do salvamento [Fase 7; algoritmo:
-    pendência P-07].
+-   Se um sistema precisar de aleatoriedade, usar PRNG do domínio com estado
+    completo (`rng`) no `GameState` e no salvamento; algoritmo em P-07. A Fase 7
+    não usa aleatoriedade e não adiciona esse campo.
 -   IDs por contador (`nextEntityId`) [Fase 6, feito: §21.3].
 -   O relógio e o tempo real ficam fora do domínio: o domínio recebe
     "execute um passo".
@@ -429,18 +429,24 @@ A porta `SaveProvider` fica em `game/application/ports/` e é
 `localStorage` e o backend possa mudar (por exemplo, IndexedDB ou arquivo
 no desktop) sem alterar o contrato.
 
-Implementação inicial (`platform/storage/`): - Salvamento local no
-navegador, com tratamento de erro e versão do esquema.
+Implementação inicial (`platform/storage/`): um slot manual no
+`localStorage`, isolado por `BrowserSaveProvider`. A porta permite trocar o
+adaptador sem alterar aplicação/domínio; erros de leitura e escrita são
+devolvidos como falhas da operação.
 
-Regras: - `schemaVersion` e `contentVersion` no salvamento. - Migrações
-**em cadeia** (v1→v2→…), cada uma testada. A população (Fase 9) é a
-primeira migração real. - Todo dado carregado é **não confiável**:
-validar formato, tipos e **chaves contra o conteúdo** (rejeitar, por
-exemplo, `__proto__`), com tratamento de versões incompatíveis. - O
-estado ativo só é substituído depois de o dado carregado ser validado;
-falha não corrompe a partida em curso. - Partida carregada começa
-pausada. - Limitar o tamanho de registros que crescem (como o log de
-eventos). - Slots, autosave e exportação em arquivo: pendência P-06.
+Regras: envelope com versão do formato, `schemaVersion` e
+`contentVersion`. Todo dado carregado é **não confiável**: validar formato,
+tipos, chaves e consistência contra o conteúdo (rejeitar, por exemplo,
+`__proto__`), com tratamento de versões incompatíveis. O estado ativo só é
+substituído depois de o dado carregado ser validado; falha não corrompe a
+partida em curso. Partida carregada começa pausada. Limitar o tamanho de
+registros que crescem (como o log de eventos). Slots múltiplos, autosave e
+exportação em arquivo continuam na pendência P-06.
+
+O primeiro formato é v1 e ainda não precisa de migração: não há saves
+anteriores em produção. Mudanças futuras do esquema devem adicionar
+migrações testadas em cadeia; a população da Fase 9 será a primeira
+mudança de esquema planejada.
 
 Possíveis implementações futuras: - Arquivo local no desktop. -
 Sincronização em nuvem. - Backend para contas e partidas online.
@@ -1248,3 +1254,14 @@ comando ela é `INVALID_COMMAND`.
 -   Posicionar exige ponteiro; sem alternativa por teclado (P-16). Em telas
     de toque não há "passar o ponteiro": o primeiro toque fixa a posição e
     "Confirmar construção" conclui (verificar em um aparelho real, P-23).
+
+## 22. Eventos narrativos [Fase 7]
+
+- Definições imutáveis e textos ficam em `game/content/events.ts`; o `GameState` guarda somente `eventId`, status e os dados necessários da resolução. Eventos não armazenam referências visuais.
+- `advanceEvents` é chamado por `advanceSimulationStep` depois da economia. O passo incrementa o tick, aplica comandos, calcula a economia e só então avalia gatilhos; pausado, não há passo e nenhum gatilho avança.
+- Cada definição tem identificador estável e pré-condição determinística. A transição `available → active` ocorre uma vez, portanto uma condição persistente não dispara o mesmo evento repetidamente. Eventos ativos permanecem aguardando a escolha; resolvidos não voltam a disparar.
+- `ResolveEvent` é comando de simulação: com a partida pausada aplica imediatamente sem avançar tempo; em andamento enfileira e revalida no tick. A validação confirma que o evento está ativo, que a opção existe e que há recursos; custo e efeitos são aplicados atomicamente, nunca gerando estoque negativo. A resolução grava opção e tick, impedindo duplicidade.
+- A aplicação fornece à apresentação seletores com conteúdo, opções e disponibilidade econômica. O painel não importa definições nem aplica efeitos; apenas envia decisões e mostra o resultado.
+- O evento inicial, `wreck-signal`, torna-se ativo no tick 60. Responder custa 4 de energia e concede 8 materiais; desmontar custa 2 materiais e concede 6 energia.
+- Não há sorteio nesta fase, então não há PRNG nem campo `rng` no estado (P-07 adiada até surgir necessidade real). Textos do protótipo ficam em pt-BR, sem i18n (D-60).
+- Testes em `events.test.ts` cobrem gatilho, tick mínimo, repetição, pausa, efeitos, recusa inválida/sem recursos, resolução única e determinismo. `EventPanel.test.tsx` cobre apresentação, affordability, envio e resultado.

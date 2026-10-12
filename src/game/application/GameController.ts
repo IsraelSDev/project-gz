@@ -7,6 +7,7 @@ import {
 import { advanceSimulationStep } from '@/game/domain/simulation/advanceSimulationStep';
 import type { GameState } from '@/game/domain/state/GameState';
 import { validateGameState } from '@/game/domain/state/validateGameState';
+import { freezeDeep } from '@/game/domain/state/freezeDeep';
 import { err, ok, type Result } from '@/shared/result/result';
 import { createListenerSet } from '@/shared/store/listenerSet';
 import { createSimulationClock, type SimulationClock } from './time/SimulationClock';
@@ -64,6 +65,8 @@ export interface GameController extends GameStateReader {
    * em andamento entra na fila e é aplicado no início do próximo passo (e revalidado ali).
    */
   submitCommand(command: SimulationCommand): Result<CommandOutcome, CommandErrorCode>;
+  /** Substitui atomicamente o estado validado e reinicia o relógio pausado em 1x. */
+  replaceState(state: GameState): Result<void, 'INVALID_STATE'>;
   /** Últimos comandos aplicados ou recusados, do mais antigo ao mais novo (para testes e depuração). */
   getCommandLog(): readonly CommandLogEntry[];
   /**
@@ -194,6 +197,17 @@ export function createGameController(
       }
       pending.push(command);
       return ok('queued');
+    },
+
+    replaceState: (nextState) => {
+      if (validateGameState(nextState).length > 0) {
+        return err('INVALID_STATE');
+      }
+      pending = [];
+      clock.reset();
+      log.length = 0;
+      publish(freezeDeep(nextState));
+      return ok(undefined);
     },
 
     getCommandLog: () => [...log],

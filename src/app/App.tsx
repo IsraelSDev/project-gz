@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { createGameController } from '@/game/application/GameController';
+import { createBrowserSaveProvider } from '@/platform/storage/browserSaveProvider';
 import { startClockDriver } from '@/game/application/time/startClockDriver';
 import { INITIAL_SCENARIO } from '@/game/content/scenario';
 import { PLACE_BUILDING } from '@/game/domain/construction/placeBuildingCommand';
@@ -11,6 +12,7 @@ import { createBrowserTimeEnvironment } from '@/platform/time/browserTimeEnviron
 import { createBuildStore } from '@/session/buildStore';
 import { createSelectionStore } from '@/session/selectionStore';
 import { GameCanvas } from './GameCanvas';
+import { handleSpacePauseShortcut } from './spacePauseShortcut';
 import { toWorldSnapshot } from './worldSnapshot';
 
 /**
@@ -19,19 +21,25 @@ import { toWorldSnapshot } from './worldSnapshot';
  * Nada aqui guarda cópia do estado.
  */
 export function App() {
-  // Usa-se useMemo (e não useState) para o controlador porque o React Refresh o recalcula quando o
-  // conteúdo do cenário é editado em desenvolvimento, e a cena acompanha a mudança sem recarregar a
-  // página. A partida nasce pausada.
-  const controller = useMemo(
-    () => createGameController(createInitialGameState(INITIAL_SCENARIO)),
-    [],
-  );
+  const initialState = useMemo(() => createInitialGameState(INITIAL_SCENARIO), []);
+  // O controlador e a cena são preservados quando o estado é restaurado.
+  const controller = useMemo(() => createGameController(initialState), [initialState]);
+  const saveProvider = useMemo(() => createBrowserSaveProvider(), []);
   // A seleção é estado de sessão: vive enquanto a página vive e não faz parte do GameState.
   const [selection] = useState(createSelectionStore);
   // O modo de construção (qual edifício, rotação, posição da prévia) também é estado de sessão.
   const [build] = useState(createBuildStore);
   const buildActions = useMemo(() => createBuildActions(controller, build), [controller, build]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const resetSession = () => {
+    selection.clear();
+    build.cancel();
+    canvasRef.current?.focus({ preventScroll: true });
+  };
+
+  const handleKeyDownCapture = (event: KeyboardEvent<HTMLDivElement>) => {
+    handleSpacePauseShortcut(event, controller.clock);
+  };
 
   // O tempo real move o relógio por um loop próprio, separado do render loop do Babylon.js. O
   // efeito inicia UM driver e o para na limpeza (StrictMode: iniciar → parar → iniciar).
@@ -60,7 +68,7 @@ export function App() {
   const returnFocusToGame = () => canvasRef.current?.focus({ preventScroll: true });
 
   return (
-    <div className="app">
+    <div className="app" onKeyDownCapture={handleKeyDownCapture}>
       <main className="game-stage">
         <GameCanvas
           snapshot={worldSnapshot}
@@ -76,6 +84,9 @@ export function App() {
         selection={selection}
         build={build}
         buildActions={buildActions}
+        saveProvider={saveProvider}
+        initialState={initialState}
+        onStateReplaced={resetSession}
         onPanelDismissed={returnFocusToGame}
       />
     </div>

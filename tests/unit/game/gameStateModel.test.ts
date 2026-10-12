@@ -19,7 +19,15 @@ describe('modelo de estado da partida', () => {
 
   it('tem exatamente os campos persistentes previstos (sem paused, speed nem seleção)', () => {
     expect(Object.keys(initial()).sort()).toEqual(
-      ['buildings', 'contentVersion', 'nextEntityId', 'resources', 'schemaVersion', 'tick'].sort(),
+      [
+        'buildings',
+        'contentVersion',
+        'events',
+        'nextEntityId',
+        'resources',
+        'schemaVersion',
+        'tick',
+      ].sort(),
     );
   });
 

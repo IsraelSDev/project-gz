@@ -1,4 +1,5 @@
 import type { BuildingDefinitionId } from '@/game/content/buildings';
+import type { EventId } from '@/game/content/events';
 import type { ResourceId } from '@/game/content/resources';
 import type { GridPosition, Rotation } from '@/shared/grid/types';
 
@@ -15,6 +16,16 @@ export interface BuildingInstance {
 }
 
 export type ResourceStock = Readonly<Record<ResourceId, number>>;
+
+export type GameEventStatus = 'available' | 'active' | 'resolved' | 'closed';
+
+/** Estado serializável do evento; conteúdo narrativo fica separado em `game/content/events.ts`. */
+export interface GameEventState {
+  readonly eventId: EventId;
+  readonly status: GameEventStatus;
+  readonly chosenOptionId?: string;
+  readonly resolvedAtTick?: number;
+}
 
 /**
  * Estado somente leitura da partida (docs/TECHNICAL_ARCHITECTURE.md §5.1). Campos como `rng`,
@@ -33,4 +44,6 @@ export interface GameState {
    * fixos e não usam o contador.
    */
   readonly nextEntityId: number;
+  /** Estados de eventos do conteúdo (Fase 7), fora de qualquer componente visual. */
+  readonly events: readonly GameEventState[];
 }

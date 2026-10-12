@@ -1,4 +1,5 @@
 import { BUILDING_DEFINITIONS } from '@/game/content/buildings';
+import { EVENT_DEFINITIONS, type EventId } from '@/game/content/events';
 import { RESOURCE_IDS, type ResourceId } from '@/game/content/resources';
 import type { ScenarioDefinition } from '@/game/content/scenario';
 import { validateBuildingContent } from '@/game/domain/construction/validateBuildingContent';
@@ -48,6 +49,10 @@ export function createInitialGameState(scenario: ScenarioDefinition): GameState 
     resources: copyResources(scenario),
     buildings,
     nextEntityId: 1,
+    events: Object.keys(EVENT_DEFINITIONS).map((eventId) => ({
+      eventId: eventId as EventId,
+      status: 'available' as const,
+    })),
   });
 
   const stateIssues = validateGameState(state);

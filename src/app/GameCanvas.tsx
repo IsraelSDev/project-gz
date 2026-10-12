@@ -6,7 +6,7 @@ import {
   type KeyboardEvent,
   type RefObject,
 } from 'react';
-import type { GameStateReader } from '@/game/application/GameController';
+import type { GameController, GameStateReader } from '@/game/application/GameController';
 import { selectPlacementPreview } from '@/game/application/buildSelectors';
 import type { BuildActions } from '@/presentation/build/buildActions';
 import { usePlacementActive } from '@/presentation/hooks/useBuild';
@@ -30,7 +30,9 @@ const STATUS_MESSAGES: Record<Exclude<RendererStatus, 'running'>, string> = {
 export interface GameCanvasProps {
   readonly snapshot: WorldSnapshot;
   /** Fonte do estado (somente leitura): a validade da prévia depende de edifícios e recursos. */
-  readonly controller: GameStateReader;
+  readonly controller: GameStateReader & {
+    readonly clock: Pick<GameController['clock'], 'getSnapshot' | 'pause' | 'resume'>;
+  };
   /** Seleção da interface: o clique na cena escreve nela e o marcador 3D a acompanha. */
   readonly selection: SelectionStore;
   /** Modo de construção: o ponteiro informa células a ele e a prévia 3D o acompanha. */
@@ -185,8 +187,8 @@ export function GameCanvas({
         tabIndex={0}
         aria-label={
           placing
-            ? 'Cena 3D do acampamento em modo de construção. Clique no terreno para fixar a posição, R gira a prévia, Enter confirma e Esc cancela.'
-            : 'Cena 3D do acampamento. Clique em uma construção para ver seus detalhes.'
+            ? 'Cena 3D do acampamento em modo de construção. Espaço pausa ou retoma o jogo, clique no terreno fixa a posição, R gira a prévia, Enter confirma e Esc cancela.'
+            : 'Cena 3D do acampamento. Espaço pausa ou retoma o jogo. Clique em uma construção para ver seus detalhes.'
         }
         onKeyDown={handleKeyDown}
       />

@@ -34,6 +34,43 @@
   gap: 0.75rem;
 }
 
+.save-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin-top: 0.5rem;
+}
+
+.save-panel__actions button {
+  padding: 0.375rem 0.5rem;
+  border: 1px solid var(--hud-border);
+  border-radius: 0.375rem;
+  background: transparent;
+  color: var(--hud-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.save-panel__actions button:hover:not(:disabled) {
+  background: var(--hud-surface-hover);
+}
+
+.save-panel__actions button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.save-panel__feedback {
+  margin: 0.5rem 0 0;
+  color: var(--hud-valid);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.save-panel__feedback[data-error='true'] {
+  color: var(--hud-warning);
+}
+
 .hud__hint {
   grid-column: 1 / -1;
   grid-row: 3;
@@ -483,6 +520,70 @@
 
 .build-panel__feedback[data-kind='rejected'] {
   color: var(--hud-invalid);
+}
+
+/* --- Eventos narrativos --------------------------------------------------------------------- */
+
+.event-panel__title {
+  margin: 0 0 0.375rem;
+  color: var(--hud-accent);
+  font-size: 1rem;
+}
+
+.event-panel__description,
+.event-panel__result,
+.event-panel__feedback {
+  margin: 0;
+  color: var(--hud-text-muted);
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.event-panel__options {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.event-option {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid var(--hud-border);
+  border-radius: 0.375rem;
+  background: transparent;
+  color: var(--hud-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.event-option:hover:not(:disabled) {
+  background: var(--hud-surface-hover);
+}
+
+.event-option:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.event-option__label {
+  font-weight: 700;
+}
+
+.event-option__description {
+  color: var(--hud-text-muted);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.event-panel__result {
+  margin-top: 0.625rem;
+  color: var(--hud-valid);
+}
+
+.event-panel__feedback {
+  color: var(--hud-warning);
 }
 
 /* --- Foco de teclado visível ---------------------------------------------------------------- */

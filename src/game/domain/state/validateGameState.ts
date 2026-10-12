@@ -1,7 +1,8 @@
 import { isBuildingDefinitionId } from '@/game/content/buildings';
+import { EVENT_DEFINITIONS, isEventId } from '@/game/content/events';
 import { RESOURCE_IDS } from '@/game/content/resources';
 import { isRotation } from '@/shared/grid/gridMath';
-import { GAME_STATE_SCHEMA_VERSION, type GameState } from './GameState';
+import { GAME_STATE_SCHEMA_VERSION, type GameEventState, type GameState } from './GameState';
 
 const isWholeNumber = (value: unknown): value is number => Number.isSafeInteger(value);
 
@@ -45,6 +46,40 @@ export function validateGameState(state: GameState): readonly string[] {
     issues.push('buildings deve ser uma lista.');
     return issues;
   }
+
+  if (!Array.isArray(state.events)) {
+    issues.push('events deve ser uma lista.');
+    return issues;
+  }
+  const seenEventIds = new Set<string>();
+  for (const event of state.events as readonly GameEventState[]) {
+    if (!event || typeof event !== 'object' || !isEventId(event.eventId)) {
+      issues.push('Todo evento precisa de um eventId conhecido.');
+      continue;
+    }
+    if (seenEventIds.has(event.eventId)) {
+      issues.push(`Estado duplicado para o evento "${event.eventId}".`);
+    }
+    seenEventIds.add(event.eventId);
+    if (!['available', 'active', 'resolved', 'closed'].includes(event.status)) {
+      issues.push(`Evento "${event.eventId}": estado inválido.`);
+    }
+    if (event.status === 'resolved') {
+      const optionExists = EVENT_DEFINITIONS[event.eventId].options.some(
+        (option) => option.id === event.chosenOptionId,
+      );
+      if (
+        !optionExists ||
+        !isWholeNumber(event.resolvedAtTick) ||
+        event.resolvedAtTick > state.tick
+      ) {
+        issues.push(`Evento "${event.eventId}": resolução inválida.`);
+      }
+    } else if (event.chosenOptionId !== undefined || event.resolvedAtTick !== undefined) {
+      issues.push(`Evento "${event.eventId}": dados de resolução sem estado resolvido.`);
+    }
+  }
+
   const seenIds = new Set<string>();
   for (const building of state.buildings) {
     const id: unknown = building.instanceId;

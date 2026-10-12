@@ -415,6 +415,7 @@ describe('BuildPanel: mensagens e acessibilidade', () => {
     expect(Object.keys(ERROR_MESSAGES).sort()).toEqual(
       [
         'COMMAND_REJECTED',
+        'EVENT_NOT_ACTIVE',
         'INSUFFICIENT_RESOURCES',
         'INVALID_COMMAND',
         'INVALID_STATE',

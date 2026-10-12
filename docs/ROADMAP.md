@@ -221,7 +221,7 @@ da população (Fase 9) e os materiais entram com a construção (Fase 6).
 
 ## Fase 6 — Construção funcional
 
-**Status:** concluída e validada. Os testes automatizados, typecheck, lint, formatação e build passaram; pendências de verificação em mouse, toque e WebGL real permanecem registradas em P-14, P-23 e P-24. A Fase 7 aguarda aprovação explícita.
+**Status:** concluída e validada antes da Fase 7. Os testes automatizados, typecheck, lint, formatação e build passaram; pendências de verificação em mouse, toque e WebGL real permanecem registradas em P-14, P-23 e P-24.
 
 ### Tarefas
 
@@ -245,37 +245,45 @@ da população (Fase 9) e os materiais entram com a construção (Fase 6).
 
 ## Fase 7 — Primeiro evento narrativo
 
+**Status:** concluída e validada. O evento de sinal da nave ativa no tick 60; as duas decisões alteram recursos por comando validado. Testes do domínio, interface e regressão completa passaram.
+
 ### Tarefas
 
--   Resolver P-07 (PRNG) e P-10 (idioma e textos) antes de começar.
--   Criar um evento com contexto e duas ou três escolhas.
--   Definir pré-condições e efeitos estruturados (conjunto fechado de
-    tipos de efeito).
--   Aplicar os efeitos ao estado do jogo por comandos validados.
--   Se houver aleatoriedade, usar o PRNG do domínio, com estado dentro
-    do `GameState`.
--   Registrar a resolução para depuração (com limite de tamanho).
--   Exibir feedback visual.
+-   Feito: P-10 resolvida para esta etapa; textos originais em pt-BR, sem introduzir i18n.
+-   Feito: evento determinístico de sinal próximo aos destroços, disponível a partir do tick 60 e ativado uma única vez.
+-   Feito: duas escolhas com custos e efeitos explícitos sobre energia e materiais, aplicadas por `ResolveEvent`.
+-   Feito: resolução registrada no estado com opção escolhida e tick; o log de comandos existente permanece limitado.
+-   Feito: HUD apresenta escolhas, disponibilidade de recursos, resultado e feedback de comandos recusados.
+-   P-07 permanece adiada: esta etapa não usa aleatoriedade, então não precisa de PRNG nem de campo `rng` no estado.
 
 ### Critérios de aceite
 
 -   As escolhas produzem consequências reproduzíveis.
 -   O evento não altera o estado por caminhos ocultos.
 -   O sistema de eventos pode ser testado sem a interface.
+-   A pausa impede ticks e gatilhos; decisões pausadas são aplicadas imediatamente, sem avançar o relógio.
+-   Decisões inválidas ou repetidas não alteram os recursos.
 
 ## Fase 8 — Salvamento e restauração
 
+**Status:** concluída e validada. D-61 registra a escolha do slot manual
+local. Migrações em cadeia serão adicionadas quando houver a primeira
+mudança de esquema; a população da Fase 9 é a prevista.
+
 ### Tarefas
 
--   Resolver P-06 (slots, autosave, arquivo).
+-   Definir o escopo da P-06 para a fase (D-61).
 -   Definir a porta `SaveProvider` **assíncrona** em
     `game/application/ports/`.
 -   Implementar salvamento local em `platform/storage/`.
 -   Versionar o esquema de dados e o conteúdo.
--   Criar a estrutura de migrações em cadeia.
+-   Preparar envelope versionado; adicionar migrações quando existir uma
+    versão anterior publicada.
 -   Validar dados carregados, inclusive chaves contra o conteúdo.
 -   Tratar falhas e versões incompatíveis sem corromper o estado ativo.
 -   Criar testes de serialização e restauração.
+-   Adicionar controles de salvar, carregar e iniciar nova partida; limpar
+    seleção e prévia ao substituir o estado.
 
 ### Critérios de aceite
 
