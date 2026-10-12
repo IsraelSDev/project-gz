@@ -65,4 +65,6 @@ export const PALETTE = {
     ember: '#ff8a3d',
     green: '#7dff9a',
   },
+  /** Marcador de seleção: claro e saturado para se destacar do terreno dourado e do musgo. */
+  selection: '#8ff6ff',
 } as const;

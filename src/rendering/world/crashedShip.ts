@@ -128,9 +128,11 @@ export function createCrashedShip(
   tilt.position.y = 1.9;
   tilt.rotation.z = 0.12;
   tilt.rotation.x = -0.06;
+  // O casco é "pickable" de propósito: sem metadados de entidade o clique nele resolve para "nada
+  // selecionado", mas ele passa a ocultar o que está atrás. Se não fosse, clicar na nave (visto de
+  // um ângulo em que ela fica na frente de uma construção) selecionaria a construção por engano.
   for (const part of [hull, canopy, embers]) {
     part.parent = tilt;
-    part.isPickable = false;
   }
 
   // Terra revolvida no nariz e marca de queimado sob a nave (não inclinadas).
