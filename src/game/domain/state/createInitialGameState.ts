@@ -1,22 +1,14 @@
 import { RESOURCE_IDS, type ResourceId } from '@/game/content/resources';
 import type { ScenarioDefinition } from '@/game/content/scenario';
+import { freezeDeep } from './freezeDeep';
 import {
   GAME_STATE_SCHEMA_VERSION,
   type BuildingInstance,
   type GameState,
   type ResourceStock,
 } from './GameState';
+import { validateGameState } from './validateGameState';
 import { validateScenario } from './validateScenario';
-
-function freezeDeep<T>(value: T): T {
-  if (typeof value === 'object' && value !== null && !Object.isFrozen(value)) {
-    Object.freeze(value);
-    for (const child of Object.values(value)) {
-      freezeDeep(child);
-    }
-  }
-  return value;
-}
 
 function copyResources(scenario: ScenarioDefinition): ResourceStock {
   const entries = RESOURCE_IDS.map((id): [ResourceId, number] => [
@@ -27,8 +19,8 @@ function copyResources(scenario: ScenarioDefinition): ResourceStock {
 }
 
 /**
- * Cria o estado inicial (somente leitura) a partir do cenário. Lança um erro se o cenário for
- * inválido: isso é um erro de conteúdo, não uma falha esperada de gameplay.
+ * Cria o estado inicial (somente leitura) a partir do cenário. Lança um erro se o cenário ou o
+ * estado resultante forem inválidos: isso é um erro de conteúdo, não uma falha esperada de gameplay.
  */
 export function createInitialGameState(scenario: ScenarioDefinition): GameState {
   const issues = validateScenario(scenario);
@@ -43,11 +35,17 @@ export function createInitialGameState(scenario: ScenarioDefinition): GameState 
     rotation: building.rotation,
   }));
 
-  return freezeDeep({
+  const state = freezeDeep<GameState>({
     schemaVersion: GAME_STATE_SCHEMA_VERSION,
     contentVersion: scenario.contentVersion,
     tick: 0,
     resources: copyResources(scenario),
     buildings,
   });
+
+  const stateIssues = validateGameState(state);
+  if (stateIssues.length > 0) {
+    throw new Error(`Estado inicial inválido:\n- ${stateIssues.join('\n- ')}`);
+  }
+  return state;
 }

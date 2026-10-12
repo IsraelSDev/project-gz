@@ -1,15 +1,15 @@
-import type { GameController } from '@/game/application/GameController';
+import type { GameStateReader } from '@/game/application/GameController';
 import type { GameState } from '@/game/domain/state/GameState';
 import { createListenerSet } from '@/shared/store/listenerSet';
 
 /*
- * Apoio dos testes de componentes. O `GameController` real é estático nesta fase (sem comandos),
- * então este dublê deixa um teste publicar um novo estado e provar que a interface lê o snapshot,
- * em vez de guardar cópias. Só para testes: nada disto existe na aplicação.
+ * Apoio dos testes de componentes. Este dublê de LEITURA do estado deixa um teste publicar um novo
+ * estado arbitrário (por exemplo, sem uma construção) e provar que a interface lê o snapshot, em
+ * vez de guardar cópias. Só para testes: nada disto existe na aplicação.
  */
 
-export interface FakeController extends GameController {
-  /** Publica um novo snapshot e notifica os assinantes, como o controlador da Fase 4 fará. */
+export interface FakeController extends GameStateReader {
+  /** Publica um novo snapshot e notifica os assinantes, como o controlador real faz a cada passo. */
   setState(next: GameState): void;
 }
 

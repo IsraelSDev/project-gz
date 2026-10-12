@@ -6,9 +6,13 @@ import type { WorldSnapshot } from '@/rendering/world/WorldSnapshot';
 
 /**
  * Monta o contrato de renderização a partir do estado da partida e do cenário. É a ÚNICA ponte
- * entre o domínio e a renderização: os edifícios da cena vêm das instâncias do estado.
+ * entre o domínio e a renderização: os edifícios da cena vêm das instâncias do estado. Só precisa
+ * de `buildings`: assim a cena não é refeita quando só o `tick` ou os recursos mudam.
  */
-export function toWorldSnapshot(state: GameState, scenario: ScenarioDefinition): WorldSnapshot {
+export function toWorldSnapshot(
+  state: Pick<GameState, 'buildings'>,
+  scenario: ScenarioDefinition,
+): WorldSnapshot {
   return {
     terrain: {
       sizeCells: scenario.terrain.sizeCells,

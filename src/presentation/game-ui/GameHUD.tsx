@@ -1,6 +1,8 @@
 import type { GameController } from '@/game/application/GameController';
 import type { SelectionStore } from '@/session/selectionStore';
+import { useClock } from '../hooks/useClock';
 import { ResourceBar } from '../hud/ResourceBar';
+import { TimeControls } from '../hud/TimeControls';
 import { BuildingDetailsPanel } from './BuildingDetailsPanel';
 import './hud.css';
 
@@ -17,10 +19,14 @@ export interface GameHUDProps {
  * cliques, arrastos e a roda do mouse ao canvas (câmera e seleção).
  */
 export function GameHUD({ controller, selection, onPanelDismissed }: GameHUDProps) {
+  const { paused } = useClock(controller.clock);
+
   return (
     <div className="hud">
-      <header className="hud__top hud-topbar">
+      {/* `data-paused` deixa evidente, pela cor da barra, que a simulação não está avançando. */}
+      <header className="hud__top hud-topbar" data-paused={paused}>
         <h1 className="hud-title">Civilização Alienígena</h1>
+        <TimeControls controller={controller} />
         <ResourceBar controller={controller} />
       </header>
       <div className="hud__side">

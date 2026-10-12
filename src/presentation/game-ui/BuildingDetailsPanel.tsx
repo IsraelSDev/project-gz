@@ -1,9 +1,9 @@
 import { useEffect, useId, useMemo } from 'react';
-import type { GameController } from '@/game/application/GameController';
+import type { GameStateReader } from '@/game/application/GameController';
 import { selectBuildingDetails, type BuildingDetails } from '@/game/application/selectors';
 import type { BuildingDefinition } from '@/game/content/buildings';
 import type { SelectionStore } from '@/session/selectionStore';
-import { useGameSnapshot } from '../hooks/useGameSnapshot';
+import { useGameSelector } from '../hooks/useGameSelector';
 import { useSelection } from '../hooks/useSelection';
 
 const CATEGORY_LABELS: Readonly<Record<BuildingDefinition['category'], string>> = {
@@ -13,7 +13,7 @@ const CATEGORY_LABELS: Readonly<Record<BuildingDefinition['category'], string>> 
 
 export interface BuildingDetailsPanelProps {
   /** Fonte de verdade da partida (somente leitura). */
-  readonly controller: GameController;
+  readonly controller: GameStateReader;
   /** Seleção atual da interface (estado de sessão, fora do `GameState`). */
   readonly selection: SelectionStore;
   /** Chamado depois que o jogador fecha o painel pelo botão (para devolver o foco ao jogo). */
@@ -65,12 +65,14 @@ export function BuildingDetailsPanel({
   onDismissed,
 }: BuildingDetailsPanelProps) {
   const titleId = useId();
-  const snapshot = useGameSnapshot(controller);
+  // Só a fatia `buildings`: ela mantém a referência a cada tick, então o painel não re-renderiza
+  // enquanto as construções não mudam.
+  const buildings = useGameSelector(controller, (snapshot) => snapshot.buildings);
   const { selectedEntityId } = useSelection(selection);
 
   const details = useMemo(
-    () => (selectedEntityId === null ? null : selectBuildingDetails(snapshot, selectedEntityId)),
-    [snapshot, selectedEntityId],
+    () => (selectedEntityId === null ? null : selectBuildingDetails(buildings, selectedEntityId)),
+    [buildings, selectedEntityId],
   );
   const isStale = selectedEntityId !== null && details === null;
 

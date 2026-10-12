@@ -90,6 +90,32 @@ const BROWSER_GLOBALS = [
 const NON_DETERMINISTIC_MESSAGE =
   'Fonte de não determinismo proibida no domínio (TECHNICAL_ARCHITECTURE.md §6.3).';
 
+// Tempo real, aleatoriedade e agendamento: nada disso pode alterar o resultado do domínio. `globalThis`
+// entra porque seria um atalho para as proibições (`globalThis.Date.now()`, `globalThis.crypto`).
+const DOMAIN_FORBIDDEN_GLOBALS = [
+  'performance',
+  'crypto',
+  'setTimeout',
+  'setInterval',
+  'setImmediate',
+  'queueMicrotask',
+  'globalThis',
+].map((name) => ({ name, message: NON_DETERMINISTIC_MESSAGE }));
+
+// A camada de aplicação também não lê o tempo real nem agenda nada por conta própria: o tempo entra
+// pela porta `TimeEnvironment` (D-42), implementada em `platform/time/`. Assim o relógio e o driver
+// são testáveis sem DOM, com tempo injetado.
+const APPLICATION_TIME_MESSAGE =
+  'A camada de aplicação não lê o tempo real nem sorteia: use a porta TimeEnvironment (D-42).';
+const APPLICATION_FORBIDDEN_GLOBALS = [
+  'performance',
+  'crypto',
+  'setTimeout',
+  'setInterval',
+  'setImmediate',
+  'globalThis',
+].map((name) => ({ name, message: APPLICATION_TIME_MESSAGE }));
+
 export default defineConfig([
   globalIgnores(['dist', 'coverage', 'node_modules', 'docs']),
 
@@ -181,11 +207,7 @@ export default defineConfig([
   {
     files: ['src/game/domain/**/*.{ts,tsx}'],
     rules: {
-      'no-restricted-globals': [
-        'error',
-        ...BROWSER_GLOBALS,
-        { name: 'performance', message: NON_DETERMINISTIC_MESSAGE },
-      ],
+      'no-restricted-globals': ['error', ...BROWSER_GLOBALS, ...DOMAIN_FORBIDDEN_GLOBALS],
       'no-restricted-properties': [
         'error',
         { object: 'Math', property: 'random', message: NON_DETERMINISTIC_MESSAGE },
@@ -198,6 +220,31 @@ export default defineConfig([
           selector: "NewExpression[callee.name='Date'][arguments.length=0]",
           message: NON_DETERMINISTIC_MESSAGE,
         },
+        {
+          // `Date()` sem `new` devolve o instante atual como texto.
+          selector: "CallExpression[callee.name='Date']",
+          message: NON_DETERMINISTIC_MESSAGE,
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/game/application/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-globals': ['error', ...BROWSER_GLOBALS, ...APPLICATION_FORBIDDEN_GLOBALS],
+      'no-restricted-properties': [
+        'error',
+        { object: 'Math', property: 'random', message: APPLICATION_TIME_MESSAGE },
+        { object: 'Date', property: 'now', message: APPLICATION_TIME_MESSAGE },
+        { object: 'performance', property: 'now', message: APPLICATION_TIME_MESSAGE },
+      ],
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "NewExpression[callee.name='Date'][arguments.length=0]",
+          message: APPLICATION_TIME_MESSAGE,
+        },
+        { selector: "CallExpression[callee.name='Date']", message: APPLICATION_TIME_MESSAGE },
       ],
     },
   },

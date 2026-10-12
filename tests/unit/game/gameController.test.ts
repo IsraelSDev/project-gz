@@ -89,7 +89,7 @@ describe('seletores de recursos', () => {
   const state = createInitialGameState(INITIAL_SCENARIO);
 
   it('listam os recursos do estado, com nome do conteúdo e quantidade do estado', () => {
-    const entries = selectResourceEntries(state);
+    const entries = selectResourceEntries(state.resources);
 
     expect(entries.map((entry) => entry.id)).toEqual([...RESOURCE_IDS]);
     for (const entry of entries) {
@@ -101,7 +101,7 @@ describe('seletores de recursos', () => {
   it('refletem uma mudança de valor no estado (nada é fixo no seletor)', () => {
     const changed: GameState = { ...state, resources: { ...state.resources, water: 1234 } };
 
-    const water = selectResourceEntries(changed).find((entry) => entry.id === 'water');
+    const water = selectResourceEntries(changed.resources).find((entry) => entry.id === 'water');
 
     expect(water?.amount).toBe(1234);
   });
@@ -112,7 +112,7 @@ describe('seletores de recursos', () => {
     );
     const partial = { ...state, resources: withoutEnergy } as unknown as GameState;
 
-    const entries = selectResourceEntries(partial);
+    const entries = selectResourceEntries(partial.resources);
 
     expect(entries.map((entry) => entry.id)).toEqual(['food', 'water', 'materials']);
   });
@@ -123,7 +123,7 @@ describe('seletores de recursos', () => {
       resources: { ...state.resources, food: Number.NaN, water: Number.POSITIVE_INFINITY },
     };
 
-    const entries = selectResourceEntries(invalid);
+    const entries = selectResourceEntries(invalid.resources);
 
     expect(entries.find((entry) => entry.id === 'food')?.amount).toBeNull();
     expect(entries.find((entry) => entry.id === 'water')?.amount).toBeNull();
@@ -137,7 +137,7 @@ describe('seletor de detalhes da construção', () => {
   const state = createInitialGameState(INITIAL_SCENARIO);
 
   it('combina a instância do estado com a definição do conteúdo', () => {
-    const details = selectBuildingDetails(state, 'building-habitat-01');
+    const details = selectBuildingDetails(state.buildings, 'building-habitat-01');
     const definition = getBuildingDefinition('habitat-module');
 
     expect(details).toEqual({
@@ -153,15 +153,15 @@ describe('seletor de detalhes da construção', () => {
 
   it('informa a área ocupada já considerando a rotação', () => {
     // A matriz solar é 3x2 e está girada em 90°: ocupa 2 células em x e 3 em y.
-    const details = selectBuildingDetails(state, 'building-solar-01');
+    const details = selectBuildingDetails(state.buildings, 'building-solar-01');
 
     expect(details?.rotation).toBe(90);
     expect(details?.occupied).toEqual({ width: 2, depth: 3 });
   });
 
   it('devolve null para um identificador que não existe no estado', () => {
-    expect(selectBuildingDetails(state, 'nao-existe')).toBeNull();
-    expect(selectBuildingDetails(state, '')).toBeNull();
-    expect(selectBuildingDetails(state, 'BUILDING-HABITAT-01')).toBeNull();
+    expect(selectBuildingDetails(state.buildings, 'nao-existe')).toBeNull();
+    expect(selectBuildingDetails(state.buildings, '')).toBeNull();
+    expect(selectBuildingDetails(state.buildings, 'BUILDING-HABITAT-01')).toBeNull();
   });
 });
