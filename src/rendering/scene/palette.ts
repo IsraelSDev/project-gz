@@ -59,6 +59,19 @@ export const PALETTE = {
     cell: '#1c3466',
     cellLine: '#4666a8',
   },
+  /** Estufa hidropônica: estrutura clara, vidro azul-esverdeado e terra escura. */
+  farm: {
+    frame: '#d6dce4',
+    glass: '#6fcfb8',
+    glassDark: '#3f9d8d',
+    soil: '#5b4636',
+  },
+  /** Reciclador de materiais: corpo arroxeado, tremonha e chaminé. */
+  recycler: {
+    body: '#7e6a8f',
+    bodyDark: '#4e4152',
+    hopper: '#e8793b',
+  },
   glow: {
     warm: '#ffd48a',
     cyan: '#7be6f2',
@@ -67,4 +80,9 @@ export const PALETTE = {
   },
   /** Marcador de seleção: claro e saturado para se destacar do terreno dourado e do musgo. */
   selection: '#8ff6ff',
+  /** Prévia de construção: verde para posição válida, vermelho para inválida (o "X" reforça o inválido). */
+  placement: {
+    valid: '#5df2a3',
+    invalid: '#ff5c6c',
+  },
 } as const;

@@ -17,9 +17,9 @@ export interface BuildingInstance {
 export type ResourceStock = Readonly<Record<ResourceId, number>>;
 
 /**
- * Estado mínimo e somente leitura da Fase 2 (docs/TECHNICAL_ARCHITECTURE.md §5.1). Campos como
- * `nextEntityId`, `rng`, `population` e `events` entram quando o sistema que os usa existir.
- * Seleção da interface e estado do relógio NÃO fazem parte deste estado (§5.2 e §5.3).
+ * Estado somente leitura da partida (docs/TECHNICAL_ARCHITECTURE.md §5.1). Campos como `rng`,
+ * `population` e `events` entram quando o sistema que os usa existir. Seleção da interface, modo de
+ * construção e estado do relógio NÃO fazem parte deste estado (§5.2 e §5.3).
  */
 export interface GameState {
   readonly schemaVersion: number;
@@ -27,4 +27,10 @@ export interface GameState {
   readonly tick: number;
   readonly resources: ResourceStock;
   readonly buildings: readonly BuildingInstance[];
+  /**
+   * Contador de identificadores (Fase 6): o PRÓXIMO número a usar ao criar uma entidade. Inteiro
+   * seguro maior ou igual a 1, só cresce. Os edifícios iniciais do cenário têm identificadores
+   * fixos e não usam o contador.
+   */
+  readonly nextEntityId: number;
 }

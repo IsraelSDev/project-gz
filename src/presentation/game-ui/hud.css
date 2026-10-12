@@ -30,6 +30,8 @@
   max-height: 100%;
   min-height: 0;
   display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
 .hud__hint {
@@ -99,6 +101,106 @@
 .resource__amount {
   font-size: 1rem;
   font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+/* Simulação pausada: a barra inteira ganha a cor de aviso, além do texto "Pausado". */
+.hud-topbar[data-paused='true'] {
+  border-color: var(--hud-warning);
+}
+
+/* --- Controles de tempo --------------------------------------------------------------------- */
+
+.time-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem 0.875rem;
+}
+
+.time-controls > p {
+  margin: 0;
+}
+
+.time-controls__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.625rem;
+  border: 1px solid var(--hud-border);
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.time-controls__status[data-state='paused'] {
+  border-color: var(--hud-warning);
+  background: rgba(255, 212, 138, 0.14);
+  color: var(--hud-warning);
+}
+
+.time-controls__tick {
+  color: var(--hud-text-muted);
+  font-size: 0.8125rem;
+}
+
+.time-controls__tick-value {
+  color: var(--hud-text);
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.time-controls__toggle,
+.time-controls__speed {
+  font: inherit;
+  cursor: pointer;
+}
+
+.time-controls__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.75rem;
+  border: 1px solid var(--hud-accent);
+  border-radius: 0.375rem;
+  background: transparent;
+  color: var(--hud-accent);
+  font-weight: 600;
+}
+
+.time-controls__toggle:hover {
+  background: var(--hud-surface-hover);
+}
+
+.time-controls__speeds {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid var(--hud-border);
+  border-radius: 0.375rem;
+}
+
+.time-controls__speed {
+  min-width: 2.375rem;
+  padding: 0.3rem 0.5rem;
+  border: 0;
+  background: transparent;
+  color: var(--hud-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.time-controls__speed + .time-controls__speed {
+  border-left: 1px solid var(--hud-border);
+}
+
+.time-controls__speed:hover {
+  background: var(--hud-surface-hover);
+}
+
+/* A velocidade ativa não depende só da cor: tem preenchimento, negrito e aria-pressed. */
+.time-controls__speed[aria-pressed='true'] {
+  background: var(--hud-accent);
+  color: var(--hud-on-accent);
   font-weight: 700;
 }
 
@@ -209,6 +311,178 @@
     0.75rem ui-monospace,
     monospace;
   overflow-wrap: anywhere;
+}
+
+/* --- Construção ------------------------------------------------------------------------------ */
+
+.build-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  min-height: 0;
+}
+
+.build-panel__toggle {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.875rem;
+  border: 1px solid var(--hud-accent);
+  border-radius: 0.375rem;
+  background: var(--hud-surface);
+  box-shadow: var(--hud-shadow);
+  color: var(--hud-accent);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.build-panel__toggle:hover {
+  background: var(--hud-surface-hover);
+}
+
+.build-panel__toggle[aria-expanded='true'] {
+  background: var(--hud-accent);
+  color: var(--hud-on-accent);
+}
+
+.build-panel__body {
+  display: grid;
+  gap: 0.75rem;
+  min-height: 0;
+}
+
+.build-panel__title {
+  margin: 0;
+}
+
+.build-catalog,
+.build-cost {
+  display: grid;
+  gap: 0.375rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.build-item {
+  display: grid;
+  gap: 0.125rem;
+  width: 100%;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid var(--hud-border);
+  border-radius: 0.375rem;
+  background: transparent;
+  color: var(--hud-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.build-item:hover {
+  background: var(--hud-surface-hover);
+}
+
+/* O edifício escolhido não depende só da cor: tem borda grossa, preenchimento e aria-pressed. */
+.build-item[aria-pressed='true'] {
+  border: 2px solid var(--hud-accent);
+  padding: calc(0.5rem - 1px) calc(0.625rem - 1px);
+  background: var(--hud-surface-hover);
+}
+
+.build-item__name {
+  font-weight: 700;
+}
+
+.build-item__size,
+.build-item__cost {
+  color: var(--hud-text-muted);
+  font-size: 0.8125rem;
+}
+
+.build-item__warning,
+.build-cost__missing {
+  color: var(--hud-warning);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.build-placement {
+  display: grid;
+  gap: 0.5rem;
+  padding-top: 0.625rem;
+  border-top: 1px solid var(--hud-border);
+}
+
+.build-placement__size {
+  margin: 0;
+  color: var(--hud-text-muted);
+  font-size: 0.8125rem;
+}
+
+/* Válido e inválido se distinguem pelo símbolo (✔/✖) e pelo texto, além da cor. */
+.build-placement__status {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  margin: 0;
+  font-weight: 600;
+}
+
+.build-placement__status[data-state='valid'] {
+  color: var(--hud-valid);
+}
+
+.build-placement__status[data-state='invalid'] {
+  color: var(--hud-invalid);
+}
+
+.build-placement__mark {
+  flex: none;
+}
+
+.build-placement__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.build-button {
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--hud-border);
+  border-radius: 0.375rem;
+  background: transparent;
+  color: var(--hud-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.build-button:hover:not(:disabled) {
+  background: var(--hud-surface-hover);
+}
+
+.build-button--primary {
+  border-color: var(--hud-accent);
+  color: var(--hud-accent);
+  font-weight: 700;
+}
+
+.build-button:disabled {
+  border-style: dashed;
+  color: var(--hud-text-muted);
+  cursor: not-allowed;
+}
+
+.build-panel__feedback {
+  min-height: 1.25em;
+  margin: 0;
+  font-weight: 600;
+}
+
+.build-panel__feedback[data-kind='rejected'] {
+  color: var(--hud-invalid);
 }
 
 /* --- Foco de teclado visível ---------------------------------------------------------------- */

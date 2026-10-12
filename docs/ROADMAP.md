@@ -81,9 +81,8 @@ escondidas.
 
 ## Fase 2 — Primeira cena 3D
 
-**Status:** concluída e verificada; aguardando aprovação para iniciar a
-Fase 3. Detalhes em `TECHNICAL_ARCHITECTURE.md` §17 e em `DECISIONS.md`
-(D-24 a D-33). **Pendências que não bloqueiam a fase:** medir o FPS em
+**Status:** concluída e verificada. Detalhes em
+`TECHNICAL_ARCHITECTURE.md` §17 e em `DECISIONS.md` (D-24 a D-34). **Pendências que não bloqueiam a fase:** medir o FPS em
 hardware real (P-02) e confirmar o pan com o botão direito do mouse em
 um mouse real (P-14).
 
@@ -122,6 +121,12 @@ um mouse real (P-14).
 
 ## Fase 3 — Seleção e interface
 
+**Status:** concluída e verificada (relatório da fase). Detalhes em
+`TECHNICAL_ARCHITECTURE.md` §18 e em `DECISIONS.md` (D-35 a D-40).
+**Pendências que não bloqueiam a fase:** acessibilidade do mundo 3D
+(P-16), medição real de FPS (P-02) e pan com o botão direito em um mouse
+real (P-14).
+
 ### Tarefas
 
 -   Introduzir React Testing Library e jsdom para testes de componentes.
@@ -148,6 +153,14 @@ um mouse real (P-14).
 -   A interface permanece utilizável em diferentes tamanhos de janela.
 
 ## Fase 4 — Estado do jogo e relógio
+
+**Status:** concluída, validada e aprovada. Detalhes em
+`TECHNICAL_ARCHITECTURE.md` §19 e em `DECISIONS.md`
+(D-41 a D-46; P-04 resolvida). **Pendências que não bloqueiam a fase:**
+verificação com uma aba realmente em segundo plano (P-18) e feedback dos
+comandos recusados na aplicação (P-17). Nenhum comando de simulação
+concreto existe ainda (Fases 6 e 7): só a infraestrutura, testada com
+comandos de teste.
 
 ### Tarefas
 
@@ -179,6 +192,14 @@ um mouse real (P-14).
     comandos.
 
 ## Fase 5 — Economia mínima
+
+**Status:** concluída e validada; aguardando aprovação para iniciar a
+Fase 6. Detalhes em `TECHNICAL_ARCHITECTURE.md` §20 e em `DECISIONS.md`
+(D-47 a D-52; P-19 a P-21 novas). **Pendências que não bloqueiam a fase:**
+a verificação com uma aba realmente em segundo plano (P-18, herdada da
+Fase 4) e o balanceamento dos números provisórios (P-21). Alimentos e
+materiais ainda não têm produtor nem consumidor: o consumo de alimentos é
+da população (Fase 9) e os materiais entram com a construção (Fase 6).
 
 ### Tarefas
 

@@ -3,6 +3,7 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 import { StrictMode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createGameController } from '@/game/application/GameController';
+import { getBuildingDefinition } from '@/game/content/buildings';
 import { INITIAL_SCENARIO } from '@/game/content/scenario';
 import { createInitialGameState } from '@/game/domain/state/createInitialGameState';
 import type { GameState } from '@/game/domain/state/GameState';
@@ -251,7 +252,14 @@ describe('BuildingDetailsPanel', () => {
         'Construção selecionada',
       );
       const terms = [...container.querySelectorAll('dl dt')].map((term) => term.textContent);
-      expect(terms).toEqual(['Posição no grid', 'Área ocupada', 'Rotação', 'Identificador']);
+      expect(terms).toEqual([
+        'Posição no grid',
+        'Área ocupada',
+        'Rotação',
+        'Produção por tick',
+        'Consumo por tick',
+        'Identificador',
+      ]);
       expect(container.querySelectorAll('dl dd')).toHaveLength(terms.length);
     });
 
@@ -323,5 +331,44 @@ describe('BuildingDetailsPanel', () => {
       expect(consoleError).not.toHaveBeenCalled();
       consoleError.mockRestore();
     });
+  });
+});
+
+describe('BuildingDetailsPanel: produção e consumo (Fase 5)', () => {
+  const select = (instanceId: string) => {
+    const selection = createSelectionStore();
+    render(
+      <BuildingDetailsPanel
+        controller={createGameController(initialState())}
+        selection={selection}
+      />,
+    );
+    act(() => selection.select(instanceId));
+  };
+
+  it('mostra o que a definição do edifício produz e consome por tick', () => {
+    select('building-extractor-01');
+    const definition = getBuildingDefinition('water-extractor');
+
+    expect(factOf('Produção por tick')).toBe(`Água ${definition.production.water}`);
+    expect(factOf('Consumo por tick')).toBe(`Energia ${definition.consumption.energy}`);
+  });
+
+  it('diz "Nenhum" quando o edifício não produz ou não consome', () => {
+    select('building-solar-01');
+
+    expect(factOf('Produção por tick')).toBe(
+      `Energia ${getBuildingDefinition('solar-array').production.energy}`,
+    );
+    expect(factOf('Consumo por tick')).toBe('Nenhum');
+  });
+
+  it('o edifício sem produção mostra só o consumo', () => {
+    select('building-habitat-01');
+
+    expect(factOf('Produção por tick')).toBe('Nenhum');
+    expect(factOf('Consumo por tick')).toBe(
+      `Energia ${getBuildingDefinition('habitat-module').consumption.energy}`,
+    );
   });
 });

@@ -67,7 +67,7 @@ describe('seleção de ponta a ponta (App + NullEngine, eventos sintéticos)', (
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Civilização Alienígena');
     expect(resourceTexts()).toEqual(['Alimentos300', 'Água300', 'Materiais150', 'Energia100']);
     expect(within(panel()).getByText(/Selecione uma construção/)).toBeTruthy();
-    expect(screen.queryAllByRole('button')).toHaveLength(0);
+    expect(screen.queryByRole('button', { name: 'Limpar seleção' })).toBeNull();
     expect(document.activeElement).toBe(document.querySelector('canvas'));
     expect(getLiveRendererCount()).toBe(1);
   });

@@ -173,6 +173,13 @@ estarão presentes no MVP.
     uma área construível plana e limitada. O relevo do terreno é, no
     início, apenas visual. Detalhes em `TECHNICAL_ARCHITECTURE.md` §9.
 
+    **Regras do MVP (Fase 6):** o jogador escolhe um edifício no catálogo, vê
+    uma prévia no terreno (válida ou inválida, com o motivo), gira em passos de
+    90° e confirma ou cancela. Construir custa recursos, que só são descontados
+    quando a construção é válida e confirmada; não se constrói fora da área,
+    sobre outro edifício nem sobre a nave. A construção é instantânea (sem
+    tempo de obra). Detalhes em `TECHNICAL_ARCHITECTURE.md` §21.
+
 ### 8.2 População e personagens
 
 Cada personagem importante poderá ter: - Identificador único, nome e
@@ -197,6 +204,13 @@ recursos só são introduzidos junto dos sistemas que os usam.
 Toda produção deve definir insumos, mão de obra, tempo e resultado.
 Consumo e produção são calculados pela simulação, não por texto gerado
 por IA.
+
+**Regras do MVP (Fase 5):** cada edifício declara o que produz e o que
+consome por tick (1 tick = 1 s de tempo de jogo) e só opera se o estoque
+cobre todo o seu consumo; sem estoque suficiente ele fica parado, sem
+produzir nem consumir. Os estoques são inteiros e nunca ficam negativos.
+A mão de obra só existe com a população (Fase 9). Detalhes em
+`TECHNICAL_ARCHITECTURE.md` §20 e em `DECISIONS.md` (D-47 a D-52).
 
 ### 8.4 Necessidades e satisfação
 

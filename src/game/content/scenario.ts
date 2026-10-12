@@ -33,14 +33,18 @@ export interface ScenarioDefinition {
     readonly size: GridSize;
     readonly rotation: Rotation;
   };
-  /** Valores provisórios; a escala e as regras econômicas são definidas na Fase 5. */
+  /**
+   * Estoques iniciais, em inteiros na unidade exibida (D-47). Valores provisórios, sem balanceamento
+   * final (P-21). As taxas de produção e consumo ficam nas definições dos edifícios.
+   */
   readonly initialResources: Readonly<Record<ResourceId, number>>;
   readonly initialBuildings: readonly InitialBuildingPlacement[];
 }
 
 export const INITIAL_SCENARIO = {
   id: 'crash-site',
-  contentVersion: '0.2.0',
+  // 0.3.0: produção e consumo dos edifícios (Fase 5). 0.4.0: custos e duas estruturas produtivas (Fase 6).
+  contentVersion: '0.4.0',
   terrain: {
     sizeCells: { width: 40, depth: 40 },
     buildableArea: { x: 12, y: 12, width: 16, depth: 16 },

@@ -21,6 +21,8 @@
   },
   "dependencies": {
     "@babylonjs/core": "^9.30.0",
+    "@caveman-ai/middleware": "^1.0.1",
+    "@caveman-ai/sdk": "^1.2.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },
