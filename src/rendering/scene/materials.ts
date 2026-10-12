@@ -17,6 +17,8 @@ export interface SceneMaterials {
   readonly glowCyan: StandardMaterial;
   readonly glowEmber: StandardMaterial;
   readonly glowGreen: StandardMaterial;
+  /** Marcador de seleção das construções: emissivo, sem iluminação e sem neblina. */
+  readonly selection: StandardMaterial;
 }
 
 function matte(scene: Scene, name: string, hex: string): StandardMaterial {
@@ -65,5 +67,6 @@ export function createMaterials(scene: Scene): SceneMaterials {
     glowCyan: glow(scene, 'glow-cyan', PALETTE.glow.cyan),
     glowEmber: glow(scene, 'glow-ember', PALETTE.glow.ember),
     glowGreen: glow(scene, 'glow-green', PALETTE.glow.green),
+    selection: glow(scene, 'selection', PALETTE.selection, false),
   };
 }

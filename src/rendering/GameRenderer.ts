@@ -2,6 +2,7 @@ import type { AbstractEngine } from '@babylonjs/core/Engines/abstractEngine';
 import { Engine } from '@babylonjs/core/Engines/engine';
 import { createBuildingLayer } from './buildings/BuildingLayer';
 import { createCameraRig } from './camera/cameraRig';
+import { createBuildingPicking } from './interaction/BuildingPicking';
 import { createSceneContext } from './scene/createSceneContext';
 import { CELL_SIZE, gridRectCenterToWorld } from './world/gridToWorld';
 import { createHeightField, type HeightField } from './world/heightField';
@@ -20,15 +21,37 @@ export interface FrameStats {
   readonly frameTimeMs: number;
 }
 
+/**
+ * Limite padrão de quadros por segundo. Sem ele o `requestAnimationFrame` roda na taxa do monitor
+ * (120, 144 ou 165 Hz) e gasta GPU e bateria à toa: a cena não tem animação que peça mais que isso
+ * e a simulação nem depende dos quadros (Arquitetura §6.1).
+ */
+export const DEFAULT_MAX_FPS = 60;
+
 export interface GameRendererOptions {
   /** Cria a engine; por padrão usa WebGL. Testes headless injetam um `NullEngine`. */
   readonly createEngine?: (canvas: HTMLCanvasElement) => AbstractEngine;
+  /**
+   * Limite de quadros por segundo (padrão: `DEFAULT_MAX_FPS`). `null` remove o limite, útil para
+   * medir a folga de desempenho (P-02), já que com o limite o FPS medido nunca passa dele.
+   */
+  readonly maxFps?: number | null;
   readonly onStatusChange?: (status: RendererStatus) => void;
+  /**
+   * Chamado a cada clique na cena com o `instanceId` da construção atingida, ou `null` se o clique
+   * não atingiu uma construção. Registrado uma vez na criação; sem ele não há seleção por clique.
+   */
+  readonly onPick?: (entityId: string | null) => void;
 }
 
 export interface GameRenderer {
   /** Sincroniza a cena com o snapshot. Pode ser chamado várias vezes; não faz nada após o dispose. */
   sync(snapshot: WorldSnapshot): void;
+  /**
+   * Mostra o marcador de seleção na construção com este `instanceId` (ou em nenhuma, com `null`).
+   * Um identificador inexistente é aceito e simplesmente não marca nada. Não recria a cena.
+   */
+  setSelectedEntity(entityId: string | null): void;
   getFrameStats(): FrameStats;
   /** Libera tudo (render loop, observadores, meshes, materiais, cena e engine). Idempotente. */
   dispose(): void;
@@ -70,6 +93,12 @@ export function createGameRenderer(
     engine = (options.createEngine ?? createBrowserEngine)(canvas);
   } catch (error) {
     return reportFailure(error, options);
+  }
+  // O limitador da engine usa um acumulador de tempo: em um monitor de 120 Hz desenha um quadro sim,
+  // outro não, e em 144 Hz mantém a média em 60 (sem cair para ~48 como um "pular quadros" simples).
+  const maxFps = options.maxFps === undefined ? DEFAULT_MAX_FPS : options.maxFps;
+  if (maxFps !== null) {
+    engine.maxFPS = maxFps;
   }
   const cleanups: (() => void)[] = [];
   let disposed = false;
@@ -132,6 +161,11 @@ export function createGameRenderer(
 
   const renderer: GameRenderer = {
     sync,
+    setSelectedEntity: (entityId) => {
+      if (!disposed) {
+        buildingLayer?.setSelected(entityId);
+      }
+    },
     getFrameStats: () => ({ fps: engine.getFps(), frameTimeMs: engine.getDeltaTime() }),
     dispose,
   };
@@ -158,6 +192,10 @@ export function createGameRenderer(
     }
 
     const scene = sceneContext.scene;
+    if (options.onPick) {
+      const picking = createBuildingPicking(scene, options.onPick);
+      cleanups.push(() => picking.dispose());
+    }
     engine.runRenderLoop(() => scene.render());
   } catch (error) {
     dispose();

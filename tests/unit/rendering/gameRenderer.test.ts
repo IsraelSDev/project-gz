@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createInitialWorldSnapshot } from '@/app/worldSnapshot';
 import {
   createGameRenderer,
+  DEFAULT_MAX_FPS,
   getLiveRendererCount,
   type GameRenderer,
   type RendererStatus,
@@ -73,6 +74,35 @@ describe('GameRenderer (NullEngine)', () => {
     expect(engines).toHaveLength(1);
     expect(lastEngine().scenes).toHaveLength(1);
     expect(getLiveRendererCount()).toBe(1);
+  });
+
+  it('limita a engine a 60 quadros por segundo por padrão', () => {
+    mount();
+
+    expect(DEFAULT_MAX_FPS).toBe(60);
+    expect(lastEngine().maxFPS).toBe(60);
+  });
+
+  it('aceita outro limite de quadros e permite removê-lo (null) para medir desempenho', () => {
+    const mountWith = (maxFps: number | null) => {
+      const renderer = createGameRenderer(fakeCanvas, {
+        createEngine: () => {
+          const engine = new NullEngine();
+          engines.push(engine);
+          return engine;
+        },
+        maxFps,
+      });
+      if (renderer) {
+        created.push(renderer);
+      }
+    };
+
+    mountWith(30);
+    expect(lastEngine().maxFPS).toBe(30);
+
+    mountWith(null);
+    expect(lastEngine().maxFPS).toBeUndefined();
   });
 
   it('cria um objeto 3D por edifício, identificado pelo instanceId de domínio', () => {

@@ -1,10 +1,10 @@
-// Habilita scene.pick / createPickingRay (efeito colateral do módulo). A seleção em si é a Fase 3.
+// Habilita scene.pick / createPickingRay (efeito colateral do módulo), usado por BuildingPicking.
 import '@babylonjs/core/Culling/ray';
 import type { Node } from '@babylonjs/core/node';
 import type { TransformNode } from '@babylonjs/core/Meshes/transformNode';
 
 /*
- * Ligação entre objetos 3D e identificadores de domínio, preparada para a seleção da Fase 3.
+ * Ligação entre objetos 3D e identificadores de domínio, usada pela seleção (BuildingPicking).
  * O identificador de domínio (`instanceId`) é guardado em `metadata`; nomes de meshes NUNCA são
  * usados como identificadores.
  */
