@@ -37,12 +37,14 @@ describe('GameHUD', () => {
     expect(levels).toEqual(['H1', 'H2', 'H3']);
   });
 
-  it('só oferece controles que funcionam: o botão aparece apenas com uma seleção a limpar', () => {
+  it('só oferece controles que funcionam: o de limpar a seleção aparece apenas com uma seleção', () => {
     const { selection } = setup();
-    expect(screen.queryAllByRole('button')).toHaveLength(0);
+    const names = () => screen.getAllByRole('button').map((button) => button.textContent?.trim());
+    expect(names()).toEqual(['Retomar', '1×', '2×', '4×']);
 
     act(() => selection.select('building-habitat-01'));
 
-    expect(screen.getAllByRole('button')).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'Limpar seleção' })).toBeTruthy();
+    expect(screen.getAllByRole('button')).toHaveLength(5);
   });
 });

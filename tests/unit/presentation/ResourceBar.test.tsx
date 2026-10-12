@@ -81,10 +81,11 @@ describe('ResourceBar', () => {
     expect(shownResources()).toEqual(['Alimentos11', 'Água22', 'Materiais33', 'Energia44']);
   });
 
+  // Estes dois casos usam o dublê de leitura: o controlador real recusa um estado inicial inválido.
   it('exibe só os recursos que existem no estado, sem inventar os ausentes', () => {
     render(
       <ResourceBar
-        controller={createGameController(withResources({ food: 5, water: 6, materials: 7 }))}
+        controller={createFakeController(withResources({ food: 5, water: 6, materials: 7 }))}
       />,
     );
 
@@ -95,7 +96,7 @@ describe('ResourceBar', () => {
   it('mostra um valor inválido como indisponível, nunca como NaN ou Infinity', () => {
     render(
       <ResourceBar
-        controller={createGameController(
+        controller={createFakeController(
           withResources({
             food: Number.NaN,
             water: Number.POSITIVE_INFINITY,

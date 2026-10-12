@@ -119,8 +119,8 @@ estiver permitido é proibido.
 | --- | --- | --- |
 | `shared/` | nada do projeto | React, Babylon, DOM, qualquer outra camada |
 | `game/content/` | `shared` | React, Babylon, DOM, outras camadas de `game` |
-| `game/domain/` | `shared`, `game/content` | React, Babylon, DOM/navegador, `application`, `rendering`, `presentation`, `session`, `platform`, `app`; `Math.random`, `Date.now`, `performance.now` |
-| `game/application/` | `shared`, `game/domain`, `game/content` | React, Babylon, DOM/navegador, `rendering`, `presentation`, `session`, `platform`, `app` |
+| `game/domain/` | `shared`, `game/content` | React, Babylon, DOM/navegador, `application`, `rendering`, `presentation`, `session`, `platform`, `app`; `Math.random`, `Date.now`, `Date()`, `new Date()` sem argumento, `performance`, `crypto`, `setTimeout`/`setInterval`, `globalThis` |
+| `game/application/` | `shared`, `game/domain`, `game/content` | React, Babylon, DOM/navegador, `rendering`, `presentation`, `session`, `platform`, `app`; tempo real, timers e aleatoriedade (`Date.now`, `performance`, `setTimeout`, `Math.random`, `crypto`): o tempo entra pela porta `TimeEnvironment` (D-42) |
 | `session/` | `shared` | React, Babylon, `game/*` (exceto tipos), outras camadas |
 | `rendering/` | `@babylonjs/*`, `shared`, `session`; **somente tipos** (`import type`) de `game/domain` e `game/content` | React, `presentation`, `platform`, `app`, importações em tempo de execução de `game/*` |
 | `presentation/` | `react`, `shared`, `session`, `game/application`; somente tipos de `game/domain` e `game/content` | Babylon, `rendering`, `platform`, `app` |
@@ -139,18 +139,23 @@ que recebe o snapshot e um callback `onPick(entityId)`).
 
 ## 4. Estrutura de pastas
 
-Estrutura-alvo. **Criar pastas somente quando houver código nelas.** Na
-Fase 2 existem `app/`, `game/content/`, `game/domain/state/`, `rendering/`,
-`shared/grid/` e `main.tsx`; as demais ainda não têm código.
+Estrutura-alvo. **Criar pastas somente quando houver código nelas.** Até a
+Fase 4 existem `app/`, `game/application/` (com `ports/` e `time/`),
+`game/content/`, `game/domain/` (`state/`, `time/`, `simulation/`,
+`commands/`), `platform/time/`, `presentation/` (`hud/`, `game-ui/`,
+`hooks/`), `rendering/`, `session/`, `shared/` (`grid/`, `result/`,
+`store/`) e `main.tsx`; as demais ainda não têm código.
 
 ``` text
 src/
 ├── app/                      # raiz de composição (App.tsx, ligações entre camadas)
 ├── platform/
+│   ├── time/                 # BrowserTimeEnvironment (Fase 4)
 │   └── storage/              # BrowserSaveProvider (Fase 8)
 ├── presentation/             # React
-│   ├── hud/
-│   └── game-ui/
+│   ├── hud/                  # barra de recursos, controles de tempo (Fases 3 e 4)
+│   ├── game-ui/              # HUD e painel de detalhes (Fase 3)
+│   └── hooks/                # useGameSelector, useClock, useSelection
 ├── session/                  # estado de sessão da UI (seleção) — Fase 3
 ├── rendering/                # Babylon.js — Fase 2 (fora de game/)
 │   ├── scene/
@@ -161,12 +166,16 @@ src/
 │   └── interaction/
 ├── game/
 │   ├── application/
-│   │   ├── GameController.ts
-│   │   ├── ports/            # SaveProvider (interface) — Fase 8
+│   │   ├── GameController.ts # Fases 3 e 4
+│   │   ├── selectors.ts      # consultas sobre o snapshot (Fase 3)
+│   │   ├── time/             # SimulationClock, driver de tempo (Fase 4)
+│   │   ├── ports/            # TimeEnvironment (Fase 4); SaveProvider — Fase 8
 │   │   └── commands/
 │   ├── domain/
 │   │   ├── state/
-│   │   ├── time/
+│   │   ├── time/             # duração do tick (Fase 4)
+│   │   ├── simulation/       # passo de simulação (Fase 4)
+│   │   ├── commands/         # comandos de simulação (infraestrutura: Fase 4)
 │   │   ├── economy/
 │   │   ├── population/
 │   │   ├── construction/
@@ -174,6 +183,8 @@ src/
 │   └── content/
 ├── shared/
 │   ├── grid/                 # tipos e matemática do grid (Fase 2)
+│   ├── result/               # Result com código de erro (Fase 4)
+│   ├── store/                # conjunto de ouvintes de stores (Fase 3)
 │   └── validation/
 └── main.tsx
 
@@ -246,7 +257,7 @@ mantido em `src/session/` [Fase 3]:
 
 ## 6. Tempo e simulação
 
-### 6.1 Relógio e passo fixo [Fase 4]
+### 6.1 Relógio e passo fixo [Fase 4, feito: §19.2]
 
 O tempo da simulação não pode depender diretamente do FPS.
 
@@ -260,7 +271,7 @@ O tempo da simulação não pode depender diretamente do FPS.
 -   Cada passo executa sistemas em ordem documentada. Evitar efeitos
     colaterais ocultos entre módulos.
 
-### 6.2 Aba em segundo plano [Fase 4]
+### 6.2 Aba em segundo plano [Fase 4, feito: §19.4]
 
 Quando a aba fica oculta, o `requestAnimationFrame` é suspenso. Para
 evitar uma rajada de passos ao voltar: (a) limite máximo de passos de
@@ -301,7 +312,7 @@ apresentação.
 A ordem deve ser confirmada por testes e refinada conforme os sistemas
 forem adicionados.
 
-## 7. Comandos [Fase 4]
+## 7. Comandos [Fase 4, infraestrutura feita: §19.3]
 
 Há dois tipos de comando, com regras distintas.
 
@@ -417,7 +428,7 @@ Sincronização em nuvem. - Backend para contas e partidas online.
 
 Não implementar as opções futuras antes de existir requisito.
 
-## 11. Comunicação entre interface e jogo [Fase 3 e Fase 4]
+## 11. Comunicação entre interface e jogo [Fase 3 e Fase 4, feito: §18.2 e §19.5]
 
 **Fonte única de verdade:** o `GameController` (camada de aplicação)
 mantém o estado da partida e expõe `subscribe` e `getSnapshot`. Cada
@@ -442,6 +453,8 @@ atributos internos da simulação.
 
 ## 12. Performance 3D e ciclo de vida [Fase 2]
 
+-   O render loop é limitado a 60 quadros por segundo por padrão
+    (`engine.maxFPS`, D-40); a simulação não depende dos quadros.
 -   Criar e destruir recursos gráficos de forma explícita.
 -   `dispose` da engine e da cena **idempotente**; o StrictMode do React
     permanece ativo (ele executa efeitos duas vezes em desenvolvimento)
@@ -469,7 +482,7 @@ atributos internos da simulação.
 -   **Babylon headless:** `NullEngine` para criar e descartar engine e
     cena sem WebGL. Há um teste de fumaça já na Fase 1. O `NullEngine`
     não cobre renderização real.
--   **Componentes React:** React Testing Library com jsdom, introduzidos
+-   **Componentes React:** (feito na Fase 3, §18.4) React Testing Library com jsdom, introduzidos
     na Fase 3 junto do primeiro componente testável (não antes).
 -   **WebGL real:** verificação manual na Fase 2; teste E2E com
     Playwright é pendência P-03.
@@ -662,3 +675,223 @@ INITIAL_SCENARIO (content) ──createInitialGameState──▶ GameState (doma
 -   **Não coberto por testes automáticos:** WebGL real, `ResizeObserver`,
     controles de câmera por entrada real e aparência visual. São
     verificados manualmente no navegador (relatório da Fase 2).
+
+## 18. Notas de implementação da Fase 3
+
+Registro do que foi implementado (decisões em `DECISIONS.md`, D-35 a D-40).
+
+### 18.1 Seleção por picking
+
+-   `session/selectionStore.ts` guarda só o `instanceId` selecionado
+    (`SelectionState.selectedEntityId`), sem React nem Babylon.js. O
+    snapshot é congelado e só muda de referência quando a seleção muda;
+    `select`/`clear` não notificam quando nada muda.
+-   `rendering/interaction/BuildingPicking.ts`: um único observador em
+    `scene.onPointerObservable`. Um clique do botão principal (apertar e
+    soltar com no máximo 6 px de deslocamento) chama
+    `onPick(instanceId | null)`; arrastos (girar a câmera) e outros
+    botões são ignorados. `scene.pick` pega o primeiro objeto atingido e o
+    identificador vem de `resolveEntityId` (metadados tipados, nunca o
+    nome do mesh).
+-   O casco da nave é "pickable" de propósito: sem metadados ele resolve
+    para `null`, mas oculta o que está atrás (clicar na nave nunca
+    seleciona uma construção). O cenário (vegetação, rochas, grade) não é
+    "pickable": decoração não bloqueia o clique.
+-   `GameRenderer` recebe `onPick` nas opções (registrado uma vez) e expõe
+    `setSelectedEntity(id | null)`. O renderizador não conhece o store: o
+    `GameCanvas` (em `app/`) liga os dois sentidos. Mudar a seleção não
+    recria engine, cena nem edifícios e não re-renderiza o `GameCanvas`.
+-   Indicação visual (`SelectionHighlight.ts`): quatro cantoneiras no chão
+    ao redor do footprint, um mesh com material emissivo compartilhado
+    (`selection`), filho do nó do edifício (acompanha posição e rotação),
+    não "pickable", sem sombra. Não altera o material do edifício. A
+    forma, e não só a cor, marca a seleção.
+
+### 18.2 `GameController`, snapshots e seletores
+
+-   `GameSnapshot` é o próprio `GameState` (já congelado em profundidade):
+    não há segunda cópia. `GameStateReader` (`getSnapshot` + `subscribe`)
+    é o que a interface recebe para ler a partida.
+-   `selectors.ts` (camada de aplicação) traz as consultas sobre o estado:
+    `selectResourceEntries` (nome do conteúdo + quantidade; recurso
+    ausente não é inventado; valor não finito vira `null`) e
+    `selectBuildingDetails`. Ficam na aplicação porque `presentation/` só
+    pode importar **tipos** de `game/content`. Recebem só a fatia de que
+    precisam (`resources`, `buildings`).
+-   Hooks em `presentation/hooks/`: `useGameSelector` (lê uma fatia do
+    snapshot por `useSyncExternalStore`; o seletor deve devolver uma
+    referência já existente), `useSelection` e, na Fase 4, `useClock`.
+-   `shared/store/listenerSet.ts`: conjunto de ouvintes compartilhado
+    pelo store de seleção, pelo controlador e pelo relógio (cancelar é
+    idempotente; cancelar durante a notificação é seguro).
+
+### 18.3 HUD e acessibilidade mínima (P-12, parcial)
+
+-   HTML sobreposto ao canvas, em `presentation/`, sem biblioteca de UI. O
+    contêiner `.hud` não captura o ponteiro; só a barra superior e o
+    painel o capturam (câmera e seleção continuam recebendo o resto).
+-   Barra superior: título (`h1`), controles de tempo (Fase 4) e lista de
+    recursos (`ul` com nome acessível; ícones SVG provisórios e
+    decorativos, sempre com o nome ao lado). Painel: `aside` com `h2`, nome
+    da construção em `h3`, dados em `dl`, estado vazio contextual, anúncio
+    de mudança em `role="status"` e botão "Limpar seleção" com foco
+    visível.
+-   Foco previsível: fechar o painel pelo botão devolve o foco ao canvas
+    (`App`); `Esc` no canvas limpa a seleção. Uma seleção cujo
+    `instanceId` não existe (mais) no estado mostra o estado vazio e é
+    limpa por um efeito, sem laço (limpar é idempotente).
+-   O canvas **não** mostra anel de foco (ver a nota em `app.css`): ele é
+    focado por script e a cada clique, e o navegador o trataria como
+    `:focus-visible` mesmo para quem usa o mouse. O indicador de foco do
+    mundo 3D e a navegação por teclado nele ficam como pendência (P-12).
+
+### 18.4 Testes da Fase 3
+
+-   Store de seleção, `GameController`, seletores e conjunto de ouvintes
+    (Node, sem DOM).
+-   Picking e marcador com `NullEngine` e eventos de ponteiro
+    **sintéticos** (`tests/support/headlessRenderer.ts`): clique em cada
+    construção, terreno, céu, nave, nave na frente de uma construção,
+    arraste, botão direito, descarte do observador, marcador.
+-   Componentes com React Testing Library + jsdom (`jsdom@29`, que aceita
+    o mínimo do projeto, Node 22.13; ambiente por arquivo com
+    `// @vitest-environment jsdom`) e o fluxo completo com o `App`
+    (`selectionFlow.test.tsx`).
+-   **Não cobertos:** mouse e canvas reais, WebGL e a sensação do clique
+    (verificados à mão), o foco real do navegador.
+
+### 18.5 Limite de FPS
+
+`createGameRenderer` aplica `engine.maxFPS = 60` por padrão
+(`DEFAULT_MAX_FPS`; a opção `maxFps` muda o valor e `null` remove o
+limite). O limitador do Babylon.js usa um acumulador de tempo, então em um
+monitor de 120 Hz desenha um quadro sim, outro não, e em 144 Hz mantém a
+média em 60. O limite só reduz o trabalho da GPU: não conserta uma máquina
+que não alcança 60. Com ele, o indicador de FPS nunca passa de 60: para
+medir a **folga** (P-02) é preciso `maxFps: null`.
+
+## 19. Notas de implementação da Fase 4
+
+Registro do que foi implementado (decisões em `DECISIONS.md`, D-41 a D-46).
+
+### 19.1 Estado e validação
+
+-   O `GameState` mantém os cinco campos (`schemaVersion`,
+    `contentVersion`, `tick`, `resources`, `buildings`). `nextEntityId`
+    (Fase 6) e `rng` (Fase 7) **não** foram adicionados: nada os usa ainda.
+    `paused`, `speed` e a seleção não estão no estado.
+-   `validateGameState` é a única definição de estado válido (versão do
+    esquema, `tick` inteiro não negativo, recursos exatamente os do
+    conteúdo e inteiros não negativos, edifícios com `instanceId` único,
+    definição conhecida, rotação e posição válidas). O estado inicial e o
+    resultado de todo comando passam por ela. Regras de posição (área,
+    sobreposição) ficam com o cenário e com a construção (Fase 6).
+-   `advanceSimulationStep` é a função pura que executa um passo e o
+    **único** lugar que incrementa `tick`; `resources` e `buildings`
+    mantêm a referência (compartilhamento estrutural). `freezeDeep` foi
+    extraído para ser reutilizado.
+
+### 19.2 `SimulationClock` e o driver de tempo
+
+-   `SimulationClock` (`game/application/time/`) é lógica pura: guarda
+    `paused` e `speed` (`ClockSnapshot` imutável, com `subscribe`),
+    acumula tempo de **jogo** e chama `onStep` uma vez por passo. Um tick
+    = 1 segundo de tempo de jogo (`TICK_GAME_SECONDS`); a velocidade
+    (1x, 2x, 4x) multiplica o tempo real e não muda a duração do passo.
+    Nasce **pausado**. `advance(realDeltaMs)` devolve quantos passos
+    executou; pausado, devolve 0 e o tempo real não se acumula; um delta
+    negativo ou não finito lança `RangeError` (bug do chamador).
+-   Limite de recuperação (D-15): no máximo `DEFAULT_MAX_STEPS_PER_ADVANCE`
+    (10) passos por chamada; os passos além do limite são **descartados**
+    (mantém-se só a fração do passo atual). Um quadro lento a 4x (2 s) é
+    recuperado por inteiro; uma hora sem quadros vira, no máximo, 10 ticks.
+-   Comandos de **controle**: `pause()`, `resume()`, `setSpeed(n)` (devolve
+    `Result` com `INVALID_SPEED`). Atuam direto no relógio, com o jogo
+    pausado ou não, e não tocam o `GameState`. `reset()` volta ao estado
+    de partida nova ou carregada (pausado, 1x, sem atraso).
+-   `startClockDriver(clock, env)` mantém um **único** loop de quadros,
+    separado do render loop do Babylon.js: mede o tempo real entre
+    quadros (nunca negativo) e o entrega a `clock.advance`. Devolve a
+    função que o para (cancela o quadro e a assinatura de visibilidade).
+    Se um passo lança exceção, pausa o relógio, relança o erro (continua
+    visível) e mantém o loop vivo para a interface responder.
+-   A porta `TimeEnvironment` (`game/application/ports/`) isola o tempo real
+    e a visibilidade (`now`, `requestFrame`, `cancelFrame`, `isHidden`,
+    `onVisibilityChange`). `platform/time/browserTimeEnvironment.ts` a
+    implementa com `performance.now`, `requestAnimationFrame` e
+    `document.hidden`. O `App` inicia o driver em um efeito e o para na
+    limpeza (StrictMode: iniciar, parar, iniciar).
+
+### 19.3 Comandos de simulação
+
+-   Infraestrutura em `game/domain/commands/simulationCommand.ts`: um
+    comando é `{ type, ...dados }`; `COMMAND_HANDLERS` (vazio por ora)
+    mapeia o tipo ao tratador. `executeSimulationCommand(state, command)`
+    **valida e aplica numa única passada**, sem alterar o estado de
+    entrada, e devolve `Result<GameState, CommandErrorCode>`:
+    `INVALID_COMMAND` (tipo desconhecido ou malformado; chaves herdadas
+    como `__proto__` não casam), `COMMAND_REJECTED` (as regras recusam) e
+    `INVALID_STATE` (o resultado violaria `validateGameState`). Não há
+    nenhum comando concreto: `PlaceBuilding` (Fase 6) e `ResolveEvent`
+    (Fase 7) entram na tabela.
+-   `GameController.submitCommand(command)`:
+    -   é validado na hora (a mesma função), recusando cedo com o código;
+    -   com o jogo **pausado**, um comando válido é aplicado na hora, sem
+        avançar o tick (resultado `applied`);
+    -   **em andamento**, entra numa fila FIFO (resultado `queued`) e é
+        aplicado no início do próximo passo, depois do incremento do tick
+        (Arquitetura §6.5), **revalidado** contra o estado do momento (a
+        aplicação é a decisão definitiva; um recusado não altera nada);
+    -   ao **pausar** (por qualquer caminho), o que estava na fila é
+        aplicado na hora, em ordem, sem avançar o tick: com o jogo
+        pausado a fila nunca fica retida e a ordem de chegada é mantida.
+-   O passo publica **um** snapshot (tick e comandos juntos). O controlador
+    guarda um log limitado (100) com o tick de cada comando aplicado ou
+    recusado, para testes e depuração. Uma recusa na aplicação só aparece
+    no log: não há canal de feedback na interface ainda (Fase 6).
+
+### 19.4 Aba em segundo plano
+
+Com a página oculta o driver **pausa** o relógio e descarta o tempo
+oculto; ao voltar a partida continua **pausada** até o jogador retomar (o
+driver nunca retoma sozinho). Quadros entregues com a aba oculta não
+avançam nem acumulam, e o cronômetro é zerado a cada mudança de
+visibilidade, então não há rajada de ticks nem salto no tempo de jogo.
+Mesmo sem evento de visibilidade (navegador que só suspende o rAF), o
+primeiro quadro após a pausa é limitado pelo teto de passos.
+
+### 19.5 Interface
+
+-   `TimeControls` (barra superior): chip "Pausado"/"Em andamento", tick,
+    botão Pausar/Retomar e grupo de velocidades (`aria-pressed`). Lê o
+    relógio por `useClock` e o tick por `useGameSelector`: não guarda cópia
+    de `paused`, `speed` nem `tick`. Pausado, a barra ganha a cor de aviso.
+    Um `role="status"` anuncia as mudanças. Sem calendário.
+-   Como o snapshot muda a cada tick, a interface lê **fatias**:
+    `resources` e `buildings` mantêm a referência, então a barra de
+    recursos, o painel e o snapshot da cena (`toWorldSnapshot` só recebe
+    `buildings`) não são refeitos a cada passo. Isto é verificado por
+    teste (`renderIsolation`, `clockFlow`).
+
+### 19.6 Determinismo e ESLint
+
+O domínio proíbe, além do que já estava, `Date()` sem `new`, `crypto`,
+`setTimeout`/`setInterval`/`setImmediate`/`queueMicrotask` e `globalThis`.
+A camada de aplicação passa a proibir `Date.now`, `performance`,
+`Math.random`, `crypto` e timers: o tempo real só entra pela porta
+`TimeEnvironment`. As regras foram verificadas com violações temporárias.
+
+### 19.7 Testes da Fase 4
+
+-   Relógio, driver (com `tests/support/fakeTimeEnvironment.ts`, sem
+    esperas reais), estado e passo, comandos (com comandos **de teste** em
+    `tests/support/testCommands.ts`, que não são regras do jogo) e
+    controlador (fila, ordem, revalidação, pausa, determinismo e
+    independência do número de quadros), em Node.
+-   Componentes e o `App` completo com tempo falso e `NullEngine`: tick
+    na interface, pausar/retomar/velocidade sem recriar engine, cena nem
+    câmera, cena selecionável pausada e em andamento, aba oculta,
+    StrictMode e descarte.
+-   **Não cobertos:** `requestAnimationFrame` e visibilidade de um
+    navegador real em segundo plano, e o desempenho (verificados à mão ou
+    pendentes).

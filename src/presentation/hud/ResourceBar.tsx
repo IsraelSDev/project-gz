@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
-import type { GameController } from '@/game/application/GameController';
+import type { GameStateReader } from '@/game/application/GameController';
 import { selectResourceEntries } from '@/game/application/selectors';
-import { useGameSnapshot } from '../hooks/useGameSnapshot';
+import { useGameSelector } from '../hooks/useGameSelector';
 import { ResourceIcon } from './ResourceIcon';
 
 const amountFormat = new Intl.NumberFormat('pt-BR');
@@ -11,9 +11,11 @@ const amountFormat = new Intl.NumberFormat('pt-BR');
  * aqui, e só aparecem os recursos que existem no estado. Nesta fase os valores são os iniciais do
  * cenário (a economia é da Fase 5); nada é inventado para demonstrar movimento.
  */
-export function ResourceBar({ controller }: { readonly controller: GameController }) {
-  const snapshot = useGameSnapshot(controller);
-  const entries = useMemo(() => selectResourceEntries(snapshot), [snapshot]);
+export function ResourceBar({ controller }: { readonly controller: GameStateReader }) {
+  // Só a fatia `resources`: ela mantém a referência a cada tick, então a barra não re-renderiza
+  // enquanto os recursos não mudam.
+  const resources = useGameSelector(controller, (snapshot) => snapshot.resources);
+  const entries = useMemo(() => selectResourceEntries(resources), [resources]);
 
   return (
     <ul className="resource-bar" aria-label="Recursos da colônia">

@@ -16,6 +16,8 @@
   --hud-text-muted: #c4bde6;
   --hud-accent: #8ff6ff;
   --hud-focus: #ffd48a;
+  --hud-warning: #ffd48a;
+  --hud-on-accent: #14123a;
   --hud-radius: 0.625rem;
   --hud-shadow: 0 0.25rem 1rem rgba(8, 6, 28, 0.45);
 }
