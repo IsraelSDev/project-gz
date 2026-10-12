@@ -1,0 +1,68 @@
+/* Paleta provisória (original) do planeta: dourados e verdes-azulados sob um céu violeta ao entardecer. */
+export const PALETTE = {
+  sky: {
+    zenith: '#2a2868',
+    high: '#5b4a93',
+    horizon: '#f0b08a',
+  },
+  fog: '#d9a08c',
+  sun: '#ffe3bf',
+  skyFill: '#a9a6e6',
+  groundBounce: '#8a5f4a',
+  moonLarge: '#f3e2d2',
+  moonSmall: '#8fd6e6',
+  terrain: {
+    dust: '#cdb187',
+    sand: '#b58a5c',
+    moss: '#3f8076',
+    mossDark: '#2c5f5a',
+    rock: '#6b5568',
+    horizonGround: '#8b6c5a',
+  },
+  plant: {
+    stalk: '#3aa58f',
+    leaf: '#5fcfa3',
+    bulb: '#e0558f',
+    stem: '#c7b6d6',
+    cap: '#4cc3d4',
+    capSpot: '#d8f6ff',
+    crystal: '#8d6fe0',
+    crystalGlow: '#6fe0e6',
+  },
+  rock: {
+    base: '#6e5a6e',
+    light: '#8e7790',
+    dark: '#4e4152',
+  },
+  metal: {
+    hull: '#8f98a6',
+    hullLight: '#b9c1cc',
+    hullDark: '#4a505b',
+    burnt: '#2b2d34',
+    accent: '#e8793b',
+    steel: '#c7ced8',
+    pad: '#7b838f',
+  },
+  habitat: {
+    shell: '#dfe5ea',
+    ring: '#9aa6b5',
+    band: '#3d6fb0',
+    door: '#2b3a52',
+  },
+  extractor: {
+    tank: '#3aa6a0',
+    tankDark: '#2a7f7a',
+    pump: '#e0793a',
+  },
+  solar: {
+    frame: '#c9d0da',
+    cell: '#1c3466',
+    cellLine: '#4666a8',
+  },
+  glow: {
+    warm: '#ffd48a',
+    cyan: '#7be6f2',
+    ember: '#ff8a3d',
+    green: '#7dff9a',
+  },
+} as const;
