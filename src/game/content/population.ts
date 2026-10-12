@@ -4,8 +4,6 @@ export const POPULATION_RULES = {
   survivorsPerFoodUnit: 4,
   survivorsPerWaterUnit: 4,
   shortageTicksBeforeLoss: 60,
-  stableTicksForVictory: 900,
-  minimumSurvivorsForVictory: 6,
 } as const;
 
 export function calculateNeeds(survivors: number): {

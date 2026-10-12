@@ -176,6 +176,8 @@ describe('militar Fase 14', () => {
       },
     };
     delete schema5.military;
+    delete schema5.settlements;
+    delete schema5.territory;
     const decoded = decodeGameSave(
       JSON.stringify({
         format: 'alien-civilization-save',
@@ -185,7 +187,7 @@ describe('militar Fase 14', () => {
     );
     expect(decoded.ok).toBe(true);
     if (decoded.ok) {
-      expect(decoded.value.schemaVersion).toBe(6);
+      expect(decoded.value.schemaVersion).toBe(7);
       expect(decoded.value.diplomacy.civilizations.every((item) => item.warStatus === 'none')).toBe(
         true,
       );

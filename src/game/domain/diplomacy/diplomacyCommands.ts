@@ -17,7 +17,8 @@ export type DiplomaticActionId =
   | 'request-information'
   | 'offer-gift'
   | 'propose-non-aggression-pact'
-  | 'end-negotiation';
+  | 'end-negotiation'
+  | 'provoke';
 
 export interface DiplomaticActionCommand extends SimulationCommand {
   readonly type: typeof DIPLOMATIC_ACTION;
@@ -69,6 +70,7 @@ export const handleDiplomaticAction: CommandHandler = (state, command) => {
       'offer-gift',
       'propose-non-aggression-pact',
       'end-negotiation',
+      'provoke',
     ].includes(fields.action)
   ) {
     return err('INVALID_COMMAND');
@@ -88,6 +90,15 @@ export const handleDiplomaticAction: CommandHandler = (state, command) => {
   if (relation.contactStatus !== 'contacted') return err('DIPLOMACY_REQUIREMENT_NOT_MET');
 
   const civilization = INDEPENDENT_CIVILIZATIONS[civilizationId];
+  if (action === 'provoke') {
+    if (relation.warStatus === 'active' || relation.nonAggressionPact === 'active')
+      return err('DIPLOMACY_REQUIREMENT_NOT_MET');
+    if (relation.relationshipScore <= -100) return err('DIPLOMACY_ALREADY_COMPLETED');
+    const next = updateRelation(state, civilizationId, (current) =>
+      append(current, state.tick, 'provocation', -20),
+    );
+    return next ? ok(next) : err('INVALID_COMMAND');
+  }
   if (action === 'request-information') {
     if (relation.informationRequested) return err('DIPLOMACY_ALREADY_COMPLETED');
     const next = updateRelation(state, civilizationId, (current) =>

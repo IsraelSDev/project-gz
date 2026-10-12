@@ -22,6 +22,7 @@ const ACTION_LABELS: Readonly<Record<DiplomaticAction, string>> = {
   'pact-accepted': 'Pacto aceito',
   'pact-rejected': 'Pacto recusado',
   'pact-ended': 'Pacto encerrado',
+  provocation: 'Provocação diplomática',
   'war-declared': 'Guerra declarada',
   'war-ended': 'Paz estabelecida',
   'battle-resolved': 'Combate concluÃ­do',
@@ -159,6 +160,19 @@ export function DiplomacyPanel({ controller }: { readonly controller: GameContro
                       Encerrar o pacto
                     </button>
                   )}
+                  <button
+                    type="button"
+                    disabled={
+                      selectedRelation.nonAggressionPact === 'active' ||
+                      selectedRelation.warStatus === 'active' ||
+                      selectedRelation.relationshipScore <= -100
+                    }
+                    onClick={() => submit('provoke')}
+                  >
+                    {selectedRelation.relationshipScore <= -30
+                      ? 'Provocar novamente (−20 relação)'
+                      : 'Provocar civilização (−20 relação)'}
+                  </button>
                 </div>
               )}
               {selectedRelation.history.length > 0 && (

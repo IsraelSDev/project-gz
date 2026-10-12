@@ -8,6 +8,7 @@ import {
   GAME_STATE_SCHEMA_VERSION,
   type GameEventStatus,
   type GameState,
+  type SettlementState,
 } from '@/game/domain/state/GameState';
 import { freezeDeep } from '@/game/domain/state/freezeDeep';
 import { validateGameState } from '@/game/domain/state/validateGameState';
@@ -17,6 +18,7 @@ import {
   migrateV3ToV4,
   migrateV4ToV5,
   migrateV5ToV6,
+  migrateV6ToV7,
 } from './saveMigrations';
 import { err, ok, type Result } from '@/shared/result/result';
 
@@ -168,6 +170,36 @@ function copySaveState(value: unknown): Result<GameState, SaveError> {
       return err('CORRUPT_SAVE');
     return copySaveState(migrateV5ToV6(value as unknown as Parameters<typeof migrateV5ToV6>[0]));
   }
+  if (value.schemaVersion === 6) {
+    if (value.contentVersion !== '0.9.0') return err('INCOMPATIBLE_SAVE');
+    if (
+      !hasExactKeys(value, [
+        'schemaVersion',
+        'contentVersion',
+        'tick',
+        'resources',
+        'buildings',
+        'nextEntityId',
+        'events',
+        'population',
+        'characters',
+        'government',
+        'relationships',
+        'research',
+        'exploration',
+        'diplomacy',
+        'military',
+      ]) ||
+      !Array.isArray(value.events) ||
+      !value.events.every(isRecord) ||
+      !isRecord(value.military) ||
+      !hasExactKeys(value.military, ['nextUnitId', 'units', 'battle', 'history']) ||
+      !Array.isArray(value.military.units) ||
+      !Array.isArray(value.military.history)
+    )
+      return err('CORRUPT_SAVE');
+    return copySaveState(migrateV6ToV7(value as unknown as Parameters<typeof migrateV6ToV7>[0]));
+  }
   if (value.schemaVersion !== GAME_STATE_SCHEMA_VERSION) return err('INCOMPATIBLE_SAVE');
   if (typeof value.contentVersion !== 'string') return err('CORRUPT_SAVE');
   if (value.contentVersion !== INITIAL_SCENARIO.contentVersion) return err('INCOMPATIBLE_SAVE');
@@ -188,6 +220,8 @@ function copySaveState(value: unknown): Result<GameState, SaveError> {
       'exploration',
       'diplomacy',
       'military',
+      'settlements',
+      'territory',
     ]) ||
     !isRecord(value.resources) ||
     !hasExactKeys(value.resources, ['food', 'water', 'materials', 'energy']) ||
@@ -195,6 +229,7 @@ function copySaveState(value: unknown): Result<GameState, SaveError> {
     !Array.isArray(value.events) ||
     !isRecord(value.population) ||
     !hasExactKeys(value.population, ['survivors', 'shortageTicks', 'stableTicks', 'outcome']) ||
+    !['ongoing', 'victory', 'defeat'].includes(value.population.outcome as string) ||
     !Array.isArray(value.characters) ||
     !isRecord(value.government) ||
     !hasExactKeys(value.government, ['leaderId', 'offices']) ||
@@ -213,7 +248,12 @@ function copySaveState(value: unknown): Result<GameState, SaveError> {
     !isRecord(value.military) ||
     !hasExactKeys(value.military, ['nextUnitId', 'units', 'battle', 'history']) ||
     !Array.isArray(value.military.units) ||
-    !Array.isArray(value.military.history)
+    !Array.isArray(value.military.history) ||
+    !Array.isArray(value.settlements) ||
+    !isRecord(value.territory) ||
+    !hasExactKeys(value.territory, ['regions', 'nextSettlementId', 'history']) ||
+    !Array.isArray(value.territory.regions) ||
+    !Array.isArray(value.territory.history)
   ) {
     return err('CORRUPT_SAVE');
   }
@@ -233,6 +273,57 @@ function copySaveState(value: unknown): Result<GameState, SaveError> {
       definitionId: rawBuilding.definitionId as GameState['buildings'][number]['definitionId'],
       position: { x: rawBuilding.position.x as number, y: rawBuilding.position.y as number },
       rotation: rawBuilding.rotation as GameState['buildings'][number]['rotation'],
+    });
+  }
+
+  const settlements: SettlementState[] = [];
+  for (const rawCity of value.settlements as unknown[]) {
+    if (
+      !isRecord(rawCity) ||
+      !hasExactKeys(rawCity, [
+        'settlementId',
+        'regionId',
+        'name',
+        'resources',
+        'buildings',
+        'population',
+        'administratorId',
+        'nextBuildingId',
+      ]) ||
+      !isRecord(rawCity.resources) ||
+      !hasExactKeys(rawCity.resources, ['food', 'water', 'materials', 'energy']) ||
+      !Array.isArray(rawCity.buildings) ||
+      !isRecord(rawCity.population) ||
+      !hasExactKeys(rawCity.population, ['survivors', 'shortageTicks', 'stableTicks', 'outcome']) ||
+      !['ongoing', 'defeat'].includes(rawCity.population.outcome as string) ||
+      (rawCity.administratorId !== null && typeof rawCity.administratorId !== 'string')
+    )
+      return err('CORRUPT_SAVE');
+    const cityBuildings: GameState['buildings'][number][] = [];
+    for (const rawBuilding of rawCity.buildings) {
+      if (
+        !isRecord(rawBuilding) ||
+        !hasExactKeys(rawBuilding, ['instanceId', 'definitionId', 'position', 'rotation']) ||
+        !isRecord(rawBuilding.position) ||
+        !hasExactKeys(rawBuilding.position, ['x', 'y'])
+      )
+        return err('CORRUPT_SAVE');
+      cityBuildings.push({
+        instanceId: rawBuilding.instanceId as string,
+        definitionId: rawBuilding.definitionId as GameState['buildings'][number]['definitionId'],
+        position: { x: rawBuilding.position.x as number, y: rawBuilding.position.y as number },
+        rotation: rawBuilding.rotation as GameState['buildings'][number]['rotation'],
+      });
+    }
+    settlements.push({
+      settlementId: rawCity.settlementId as string,
+      regionId: rawCity.regionId as SettlementState['regionId'],
+      name: rawCity.name as string,
+      resources: rawCity.resources as unknown as SettlementState['resources'],
+      buildings: cityBuildings,
+      population: rawCity.population as unknown as SettlementState['population'],
+      administratorId: rawCity.administratorId as string | null,
+      nextBuildingId: rawCity.nextBuildingId as number,
     });
   }
 
@@ -285,7 +376,8 @@ function copySaveState(value: unknown): Result<GameState, SaveError> {
       survivors: value.population.survivors as number,
       shortageTicks: value.population.shortageTicks as number,
       stableTicks: value.population.stableTicks as number,
-      outcome: value.population.outcome as GameState['population']['outcome'],
+      // Saves antigos encerravam a campanha ao estabilizar a base; ao carregar, ela retoma.
+      outcome: value.population.outcome === 'defeat' ? 'defeat' : 'ongoing',
     },
     characters: value.characters as GameState['characters'],
     government: value.government as unknown as GameState['government'],
@@ -294,6 +386,8 @@ function copySaveState(value: unknown): Result<GameState, SaveError> {
     exploration: value.exploration as unknown as GameState['exploration'],
     diplomacy: value.diplomacy as unknown as GameState['diplomacy'],
     military: value.military as unknown as GameState['military'],
+    settlements,
+    territory: value.territory as unknown as GameState['territory'],
   });
   const stateIssues = validateGameState(state);
   if (stateIssues.length > 0) return err('CORRUPT_SAVE');

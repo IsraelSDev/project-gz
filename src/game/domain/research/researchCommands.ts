@@ -13,6 +13,15 @@ export const startResearchCommand = (technologyId: string): StartResearchCommand
   technologyId,
 });
 
+function hasFieldLaboratory(state: import('@/game/domain/state/GameState').GameState): boolean {
+  return (
+    state.buildings.some((building) => building.definitionId === 'field-laboratory') ||
+    state.settlements.some((city) =>
+      city.buildings.some((building) => building.definitionId === 'field-laboratory'),
+    )
+  );
+}
+
 export const handleStartResearch: CommandHandler = (state, command) => {
   const id = (command as { technologyId?: unknown }).technologyId;
   if (typeof id !== 'string' || !isTechnologyId(id)) return err('INVALID_COMMAND');
@@ -23,7 +32,7 @@ export const handleStartResearch: CommandHandler = (state, command) => {
     !tech.prerequisites.every((required) =>
       state.research.unlockedTechnologyIds.includes(required),
     ) ||
-    !state.buildings.some((building) => building.definitionId === 'field-laboratory')
+    !hasFieldLaboratory(state)
   )
     return err('COMMAND_REJECTED');
   const scientistId = state.government.offices.science;
@@ -44,12 +53,7 @@ export const handleStartResearch: CommandHandler = (state, command) => {
 
 export function advanceResearch(state: import('@/game/domain/state/GameState').GameState) {
   const id = state.research.activeTechnologyId;
-  if (
-    !id ||
-    !isTechnologyId(id) ||
-    !state.buildings.some((b) => b.definitionId === 'field-laboratory')
-  )
-    return state;
+  if (!id || !isTechnologyId(id) || !hasFieldLaboratory(state)) return state;
   const scientist = state.characters.find(
     (c) => c.characterId === state.government.offices.science && c.alive && c.available,
   );

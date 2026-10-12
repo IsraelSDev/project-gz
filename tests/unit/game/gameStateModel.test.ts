@@ -34,6 +34,8 @@ describe('modelo de estado da partida', () => {
         'research',
         'resources',
         'schemaVersion',
+        'settlements',
+        'territory',
         'tick',
       ].sort(),
     );

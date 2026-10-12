@@ -11,12 +11,7 @@ export function PopulationPanel({ controller }: { readonly controller: GameContr
   const foodLow = summary.food < summary.foodNeed;
   const waterLow = summary.water < summary.waterNeed;
   const crisis = crowded || foodLow || waterLow || summary.shortageTicks > 0;
-  const outcomeText =
-    summary.outcome === 'victory'
-      ? 'Acampamento estabilizado!'
-      : summary.outcome === 'defeat'
-        ? 'A colônia foi perdida.'
-        : undefined;
+  const outcomeText = summary.outcome === 'defeat' ? 'A colônia foi perdida.' : undefined;
 
   return (
     <section className="hud-panel population-panel" aria-label="Sobrevivência">
@@ -60,7 +55,7 @@ export function PopulationPanel({ controller }: { readonly controller: GameContr
         </p>
       ) : (
         <p className="population-panel__status">
-          Estabilidade: {summary.stableTicks}/{summary.stabilityGoal} ticks.
+          Sem crise: {summary.stableTicks} ticks consecutivos.
         </p>
       )}
     </section>

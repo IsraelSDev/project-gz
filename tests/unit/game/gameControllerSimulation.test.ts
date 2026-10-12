@@ -168,6 +168,8 @@ describe('GameController: estado inicial e tick', () => {
         'research',
         'resources',
         'schemaVersion',
+        'settlements',
+        'territory',
         'tick',
       ].sort(),
     );

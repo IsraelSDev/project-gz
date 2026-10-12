@@ -44,5 +44,13 @@ export const handleExplorePoint: CommandHandler = (state, command) => {
     diplomacy: civilization
       ? discoverIndependentCivilization(state.diplomacy, civilization.id, state.tick)
       : state.diplomacy,
+    territory: {
+      ...state.territory,
+      regions: state.territory.regions.map((region) =>
+        region.regionId === id && civilization
+          ? { ...region, owner: 'civilization' as const, civilizationId: civilization.id }
+          : region,
+      ),
+    },
   });
 };

@@ -164,7 +164,7 @@ export function createGameController(
   const runStep = (): void => {
     const next = advanceSimulationStep(state, applyPending);
     publish(next);
-    if (next.population.outcome !== 'ongoing') clock.pause();
+    if (next.population.outcome === 'defeat') clock.pause();
   };
 
   const clock = createSimulationClock({

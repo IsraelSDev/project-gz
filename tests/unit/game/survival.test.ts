@@ -78,7 +78,7 @@ describe('sobrevivência agregada', () => {
     expect(calculateHousingCapacity([])).toBe(0);
   });
 
-  it('mantém os eventos no mesmo estado e pausa ao concluir o objetivo de estabilidade', () => {
+  it('mantém a simulação em andamento após ultrapassar a antiga meta de estabilidade', () => {
     const ready: GameState = {
       ...initial(),
       population: { ...initial().population, stableTicks: 899 },
@@ -90,8 +90,32 @@ describe('sobrevivência agregada', () => {
       eventId: 'wreck-signal',
       status: 'available',
     });
-    expect(controller.getSnapshot().population.outcome).toBe('victory');
-    expect(controller.clock.getSnapshot().paused).toBe(true);
+    expect(controller.getSnapshot().population).toMatchObject({
+      outcome: 'ongoing',
+      stableTicks: 900,
+    });
+    expect(controller.clock.getSnapshot().paused).toBe(false);
+    controller.clock.advance(1_000);
+    expect(controller.getSnapshot().tick).toBe(2);
+    expect(controller.getSnapshot().population.stableTicks).toBe(901);
+    expect(controller.clock.getSnapshot().paused).toBe(false);
+  });
+
+  it('retoma saves antigos que foram encerrados pela estabilidade da base', () => {
+    const current = {
+      ...initial(),
+      population: { ...initial().population, stableTicks: 900 },
+    };
+    const oldSave = JSON.parse(encodeGameSave(current)) as {
+      state: { population: { outcome: string } };
+    };
+    oldSave.state.population.outcome = 'victory';
+
+    const decoded = decodeGameSave(JSON.stringify(oldSave));
+    expect(decoded).toMatchObject({
+      ok: true,
+      value: { population: { outcome: 'ongoing', stableTicks: 900 } },
+    });
   });
 
   it('ativa o evento narrativo no tick previsto sem aplicar seus efeitos duas vezes', () => {
@@ -144,6 +168,8 @@ describe('sobrevivência agregada', () => {
     delete legacyState.exploration;
     delete legacyState.diplomacy;
     delete legacyState.military;
+    delete legacyState.settlements;
+    delete legacyState.territory;
     legacyState.events = (legacyState.events as Array<{ eventId: string }>).filter(
       (event) => event.eventId === 'wreck-signal',
     );
@@ -155,8 +181,8 @@ describe('sobrevivência agregada', () => {
     expect(decoded.ok).toBe(true);
     if (!decoded.ok) return;
     expect(decoded.value).toMatchObject({
-      schemaVersion: 6,
-      contentVersion: '0.9.0',
+      schemaVersion: 7,
+      contentVersion: '0.10.0',
       tick: progressed.tick,
       resources: progressed.resources,
       buildings: progressed.buildings,
@@ -202,6 +228,8 @@ describe('sobrevivência agregada', () => {
     delete legacyState.exploration;
     delete legacyState.diplomacy;
     delete legacyState.military;
+    delete legacyState.settlements;
+    delete legacyState.territory;
     legacyState.events = (legacyState.events as Array<{ eventId: string }>).filter(
       (event) => event.eventId === 'wreck-signal',
     );
@@ -210,7 +238,7 @@ describe('sobrevivência agregada', () => {
     );
     expect(migrated.ok).toBe(true);
     if (!migrated.ok) return;
-    expect(migrated.value.schemaVersion).toBe(6);
+    expect(migrated.value.schemaVersion).toBe(7);
     expect(migrated.value.characters).toHaveLength(4);
     expect(migrated.value).toMatchObject({ tick: 45, population: progressedPopulation });
     expect(decodeGameSave(encodeGameSave(migrated.value))).toMatchObject({

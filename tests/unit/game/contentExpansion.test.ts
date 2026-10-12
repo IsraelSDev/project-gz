@@ -125,7 +125,7 @@ describe('expansão de conteúdo da Fase 11', () => {
 
   it('migra save v3 sem alterar progresso anterior e persiste as descobertas atuais', () => {
     const current = initial();
-    const old = {
+    const old: Record<string, unknown> = {
       ...current,
       schemaVersion: 3,
       contentVersion: '0.6.0',
@@ -137,6 +137,8 @@ describe('expansão de conteúdo da Fase 11', () => {
     };
     delete old.diplomacy;
     delete old.military;
+    delete old.settlements;
+    delete old.territory;
     const migrated = decodeGameSave(
       JSON.stringify({ format: 'alien-civilization-save', formatVersion: 1, state: old }),
     );

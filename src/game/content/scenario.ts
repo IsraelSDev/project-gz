@@ -43,8 +43,8 @@ export interface ScenarioDefinition {
 
 export const INITIAL_SCENARIO = {
   id: 'crash-site',
-  // 0.8.0: diplomacia e civilizações independentes da Fase 13.
-  contentVersion: '0.9.0',
+  // 0.10.0: território e assentamentos da Fase 15.
+  contentVersion: '0.10.0',
   terrain: {
     sizeCells: { width: 40, depth: 40 },
     buildableArea: { x: 12, y: 12, width: 16, depth: 16 },

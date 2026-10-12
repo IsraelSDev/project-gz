@@ -6,6 +6,10 @@ import { isRotation } from '@/shared/grid/gridMath';
 import type { CharacterSkill } from '@/game/content/characters';
 import { isTechnologyId, TECHNOLOGY_DEFINITIONS } from '@/game/content/technologies';
 import { POINTS_OF_INTEREST } from '@/game/content/pointsOfInterest';
+import { REGION_DEFINITIONS, REGION_IDS } from '@/game/content/regions';
+import { evaluatePlacementSpace } from '@/game/domain/construction/placement';
+import { getBuildingDefinition } from '@/game/content/buildings';
+import { POPULATION_RULES } from '@/game/content/population';
 import {
   INDEPENDENT_CIVILIZATIONS,
   civilizationForDiscoveryPoint,
@@ -180,6 +184,7 @@ export function validateGameState(state: GameState): readonly string[] {
             'pact-accepted',
             'pact-rejected',
             'pact-ended',
+            'provocation',
             'war-declared',
             'war-ended',
             'battle-resolved',
@@ -278,17 +283,11 @@ export function validateGameState(state: GameState): readonly string[] {
     if (!isWholeNumber(state.population.stableTicks) || state.population.stableTicks < 0) {
       issues.push('population.stableTicks deve ser um inteiro não negativo.');
     }
-    if (!['ongoing', 'victory', 'defeat'].includes(state.population.outcome)) {
+    if (!['ongoing', 'defeat'].includes(state.population.outcome)) {
       issues.push('population.outcome inválido.');
     }
     if (state.population.outcome === 'defeat' && state.population.survivors !== 0) {
       issues.push('Derrota exige zero sobreviventes.');
-    }
-    if (
-      state.population.outcome === 'victory' &&
-      (state.population.stableTicks < 900 || state.population.survivors < 6)
-    ) {
-      issues.push('Vitória exige 900 ticks estáveis e ao menos 6 sobreviventes.');
     }
   }
 
@@ -585,6 +584,235 @@ export function validateGameState(state: GameState): readonly string[] {
     if (!isWholeNumber(building.position.x) || !isWholeNumber(building.position.y)) {
       issues.push(`${label}: a posição deve usar células inteiras.`);
     }
+  }
+
+  if (
+    !Array.isArray(state.settlements) ||
+    !state.territory ||
+    !hasExactKeys(state.territory, ['regions', 'nextSettlementId', 'history']) ||
+    !Array.isArray(state.territory.regions) ||
+    !Array.isArray(state.territory.history) ||
+    state.territory.history.length > 100 ||
+    !isWholeNumber(state.territory.nextSettlementId) ||
+    state.territory.nextSettlementId < 1
+  ) {
+    issues.push('Território e assentamentos devem possuir estruturas válidas.');
+    return issues;
+  }
+
+  const regionById = new Map<string, (typeof state.territory.regions)[number]>();
+  for (const region of state.territory.regions) {
+    if (
+      !region ||
+      typeof region !== 'object' ||
+      !hasExactKeys(region, ['regionId', 'owner', 'civilizationId', 'settlementId']) ||
+      !Object.hasOwn(REGION_DEFINITIONS, region.regionId) ||
+      regionById.has(region.regionId)
+    ) {
+      issues.push('Região territorial desconhecida, duplicada ou inválida.');
+      continue;
+    }
+    regionById.set(region.regionId, region);
+    if (!['colony', 'civilization', null].includes(region.owner))
+      issues.push(`Controle territorial inválido em ${region.regionId}.`);
+    if (region.owner === 'civilization') {
+      const definition = REGION_DEFINITIONS[region.regionId as (typeof REGION_IDS)[number]];
+      if (
+        !isIndependentCivilizationId(region.civilizationId) ||
+        region.civilizationId !== definition.civilizationId ||
+        !definition.discoveryPointId ||
+        !state.exploration?.discoveredPointIds.includes(definition.discoveryPointId) ||
+        region.settlementId !== null
+      )
+        issues.push(`Propriedade civilizacional inválida em ${region.regionId}.`);
+    } else if (region.civilizationId !== null) {
+      issues.push(`Região ${region.regionId} tem civilização sem controle correspondente.`);
+    }
+    if (region.owner === null && region.settlementId !== null)
+      issues.push(`Região sem dono ${region.regionId} não pode ter assentamento.`);
+    if (region.owner === 'colony' && typeof region.settlementId !== 'string')
+      issues.push(`Região colonial ${region.regionId} precisa de um assentamento.`);
+    const discoveryPointId =
+      REGION_DEFINITIONS[region.regionId as (typeof REGION_IDS)[number]].discoveryPointId;
+    if (
+      region.owner === 'colony' &&
+      region.regionId !== 'crash-site' &&
+      (!discoveryPointId ||
+        !Array.isArray(state.exploration?.discoveredPointIds) ||
+        !state.exploration.discoveredPointIds.includes(discoveryPointId))
+    )
+      issues.push(`Região ${region.regionId} foi controlada antes de ser explorada.`);
+  }
+  if (
+    regionById.size !== REGION_IDS.length ||
+    REGION_IDS.some((regionId) => !regionById.has(regionId)) ||
+    regionById.get('crash-site')?.owner !== 'colony' ||
+    regionById.get('crash-site')?.settlementId !== 'settlement-capital'
+  )
+    issues.push('A capital deve controlar uma única região inicial.');
+
+  const settlementIds = new Set<string>();
+  const cityGovernors = new Set<string>();
+  let totalResidents = state.population.survivors;
+  const allBuildingIds = new Set<string>(seenIds);
+  for (const city of state.settlements) {
+    if (
+      !city ||
+      typeof city !== 'object' ||
+      !hasExactKeys(city, [
+        'settlementId',
+        'regionId',
+        'name',
+        'resources',
+        'buildings',
+        'population',
+        'administratorId',
+        'nextBuildingId',
+      ]) ||
+      typeof city.settlementId !== 'string' ||
+      !/^settlement-[1-9][0-9]*$/.test(city.settlementId) ||
+      settlementIds.has(city.settlementId) ||
+      !Object.hasOwn(REGION_DEFINITIONS, city.regionId) ||
+      typeof city.name !== 'string' ||
+      city.name.trim() === '' ||
+      !Array.isArray(city.buildings) ||
+      !city.resources ||
+      typeof city.resources !== 'object' ||
+      !city.population ||
+      typeof city.population !== 'object' ||
+      !isWholeNumber(city.nextBuildingId) ||
+      city.nextBuildingId < 1 ||
+      (city.administratorId !== null && typeof city.administratorId !== 'string')
+    ) {
+      issues.push('Dados de assentamento inválidos.');
+      continue;
+    }
+    settlementIds.add(city.settlementId);
+    totalResidents += isWholeNumber(city.population.survivors) ? city.population.survivors : 0;
+    const region = regionById.get(city.regionId);
+    if (region?.owner !== 'colony' || region.settlementId !== city.settlementId)
+      issues.push(`Controle exclusivo da região ${city.regionId} diverge do assentamento.`);
+    for (const resourceId of RESOURCE_IDS) {
+      if (!isWholeNumber(city.resources[resourceId]) || city.resources[resourceId] < 0)
+        issues.push(`Estoque inválido em ${city.name}: ${resourceId}.`);
+    }
+    if (
+      Object.keys(city.resources).some(
+        (resourceId) => !RESOURCE_IDS.includes(resourceId as (typeof RESOURCE_IDS)[number]),
+      )
+    )
+      issues.push(`Estoque de ${city.name} contém recurso desconhecido.`);
+    if (
+      !hasExactKeys(city.population, ['survivors', 'shortageTicks', 'stableTicks', 'outcome']) ||
+      !isWholeNumber(city.population.survivors) ||
+      city.population.survivors < 0 ||
+      !isWholeNumber(city.population.shortageTicks) ||
+      city.population.shortageTicks < 0 ||
+      city.population.shortageTicks >= POPULATION_RULES.shortageTicksBeforeLoss ||
+      !isWholeNumber(city.population.stableTicks) ||
+      city.population.stableTicks < 0 ||
+      !['ongoing', 'defeat'].includes(city.population.outcome) ||
+      (city.population.outcome === 'defeat' && city.population.survivors !== 0)
+    )
+      issues.push(`População inválida em ${city.name}.`);
+    const cityBuildings = city.buildings as GameState['buildings'];
+    const capacity = cityBuildings.reduce(
+      (sum, building) =>
+        sum +
+        (building && typeof building === 'object' && isBuildingDefinitionId(building.definitionId)
+          ? (getBuildingDefinition(building.definitionId).housingCapacity ?? 0)
+          : 0),
+      0,
+    );
+    if (isWholeNumber(city.population.survivors) && city.population.survivors > capacity)
+      issues.push(`População de ${city.name} excede a capacidade habitacional.`);
+    if (city.administratorId !== null) {
+      const person = characters.find((entry) => entry.characterId === city.administratorId);
+      if (
+        !person?.alive ||
+        !person.available ||
+        person.skills.leadership < 2 ||
+        cityGovernors.has(city.administratorId) ||
+        state.government.leaderId === city.administratorId ||
+        Object.values(state.government.offices).includes(city.administratorId)
+      )
+        issues.push(`Administrador inválido ou duplicado em ${city.name}.`);
+      cityGovernors.add(city.administratorId);
+    }
+    const cityBuildingIds = new Set<string>();
+    const cityTerrain = { buildableArea: { x: 0, y: 0, width: 16, depth: 16 }, obstacles: [] };
+    const placed: GameState['buildings'][number][] = [];
+    let highestCityBuilding = 0;
+    for (const building of cityBuildings) {
+      if (
+        !building ||
+        typeof building !== 'object' ||
+        !hasExactKeys(building, ['instanceId', 'definitionId', 'position', 'rotation']) ||
+        typeof building.instanceId !== 'string' ||
+        allBuildingIds.has(building.instanceId) ||
+        !isBuildingDefinitionId(building.definitionId) ||
+        !building.position ||
+        !isWholeNumber(building.position.x) ||
+        !isWholeNumber(building.position.y) ||
+        !isRotation(building.rotation)
+      ) {
+        issues.push(`Edifício inválido ou duplicado em ${city.name}.`);
+        continue;
+      }
+      allBuildingIds.add(building.instanceId);
+      cityBuildingIds.add(building.instanceId);
+      const match = /^settlement-[1-9][0-9]*-building-([1-9][0-9]*)$/.exec(building.instanceId);
+      if (!match || !building.instanceId.startsWith(`${city.settlementId}-building-`)) {
+        issues.push(`ID de edifício local inválido em ${city.name}.`);
+      } else highestCityBuilding = Math.max(highestCityBuilding, Number(match[1]));
+      const placedResult = evaluatePlacementSpace(placed, building, cityTerrain);
+      if (!placedResult.ok)
+        issues.push(`Edifícios de ${city.name} se sobrepõem ou excedem o terreno.`);
+      else placed.push(building);
+    }
+    if (city.nextBuildingId <= highestCityBuilding)
+      issues.push(`Contador de edifícios inválido em ${city.name}.`);
+  }
+  if (
+    state.territory.nextSettlementId <=
+    Math.max(0, ...[...settlementIds].map((id) => Number(id.slice(11))))
+  )
+    issues.push('nextSettlementId precisa apontar para um identificador livre.');
+  if (totalResidents > POPULATION_RULES.initialSurvivors)
+    issues.push('Transferências não podem duplicar a população total da colônia.');
+  for (const region of state.territory.regions) {
+    if (
+      region.owner === 'colony' &&
+      region.regionId !== 'crash-site' &&
+      !state.settlements.some((city) => city.settlementId === region.settlementId)
+    )
+      issues.push(`Região ${region.regionId} aponta para assentamento inexistente.`);
+  }
+  let previousTerritoryTick = -1;
+  for (const entry of state.territory.history) {
+    if (
+      !entry ||
+      typeof entry !== 'object' ||
+      !hasExactKeys(entry, ['tick', 'action', 'regionId', 'settlementId', 'amount', 'detail']) ||
+      !isWholeNumber(entry.tick) ||
+      entry.tick < previousTerritoryTick ||
+      entry.tick > state.tick ||
+      ![
+        'settlement-founded',
+        'administrator-appointed',
+        'resources-transferred',
+        'population-transferred',
+        'building-constructed',
+      ].includes(entry.action) ||
+      !Object.hasOwn(REGION_DEFINITIONS, entry.regionId) ||
+      typeof entry.settlementId !== 'string' ||
+      (entry.settlementId !== 'settlement-capital' && !settlementIds.has(entry.settlementId)) ||
+      !isWholeNumber(entry.amount) ||
+      entry.amount < 0 ||
+      typeof entry.detail !== 'string'
+    )
+      issues.push('Histórico territorial inválido.');
+    else previousTerritoryTick = entry.tick;
   }
 
   return issues;

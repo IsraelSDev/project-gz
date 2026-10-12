@@ -689,6 +689,70 @@
   cursor: not-allowed;
 }
 
+.empire-panel > h3,
+.empire-city-detail h3,
+.empire-city-detail h4 {
+  margin: 1rem 0 0.45rem;
+  color: var(--hud-accent, #8cf3ff);
+  font-size: 0.9rem;
+}
+
+.empire-region-list,
+.empire-city-list,
+.empire-build-list,
+.empire-resource-list {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.empire-region-list article,
+.empire-city-detail {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.65rem;
+  border: 1px solid rgb(141 202 227 / 28%);
+  border-radius: 0.5rem;
+  background: rgb(23 25 55 / 48%);
+}
+
+.empire-region-list small,
+.empire-city-detail small {
+  color: #c2c2df;
+  font-size: 0.75rem;
+}
+
+.empire-panel button,
+.empire-panel select,
+.empire-panel input {
+  min-height: 2rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid rgb(141 202 227 / 35%);
+  border-radius: 0.35rem;
+  background: rgb(54 48 83 / 92%);
+  color: #fff;
+  font: inherit;
+}
+
+.empire-panel button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.empire-panel label {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0.4rem 0;
+  font-size: 0.8rem;
+}
+
+.empire-city-list button[aria-pressed='true'] {
+  border-color: #8cf3ff;
+  background: rgb(75 141 169 / 40%);
+}
+
 .build-panel__feedback {
   min-height: 1.25em;
   margin: 0;

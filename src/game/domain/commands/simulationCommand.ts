@@ -21,6 +21,7 @@ import type { GameState } from '@/game/domain/state/GameState';
 import { validateGameState } from '@/game/domain/state/validateGameState';
 import { err, ok, type Result } from '@/shared/result/result';
 import { handleMilitaryAction, MILITARY_ACTION } from '@/game/domain/military/militaryCommands';
+import { handleTerritoryAction, TERRITORY_ACTION } from '@/game/domain/territory/territoryCommands';
 
 /*
  * Comandos de SIMULAÇÃO: os que alteram a partida (docs/TECHNICAL_ARCHITECTURE.md §7.2), como
@@ -78,6 +79,7 @@ export const COMMAND_HANDLERS: CommandHandlers = {
   [EXPLORE_POINT]: handleExplorePoint,
   [DIPLOMATIC_ACTION]: handleDiplomaticAction,
   [MILITARY_ACTION]: handleMilitaryAction,
+  [TERRITORY_ACTION]: handleTerritoryAction,
 };
 
 /**

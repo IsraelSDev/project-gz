@@ -14,7 +14,6 @@ export interface PopulationSummary {
   readonly shortageTicks: number;
   readonly stableTicks: number;
   readonly shortageLimit: number;
-  readonly stabilityGoal: number;
   readonly outcome: GameSnapshot['population']['outcome'];
 }
 
@@ -30,7 +29,6 @@ export function selectPopulationSummary(state: PopulationSelectorInput): Populat
     shortageTicks: state.population.shortageTicks,
     stableTicks: state.population.stableTicks,
     shortageLimit: POPULATION_RULES.shortageTicksBeforeLoss,
-    stabilityGoal: POPULATION_RULES.stableTicksForVictory,
     outcome: state.population.outcome,
   };
 }

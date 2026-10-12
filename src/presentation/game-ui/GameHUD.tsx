@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import type { GameController } from '@/game/application/GameController';
 import type { BuildStore } from '@/session/buildStore';
 import type { SelectionStore } from '@/session/selectionStore';
@@ -6,7 +6,7 @@ import type { SaveProvider } from '@/game/application/ports/SaveProvider';
 import type { GameState } from '@/game/domain/state/GameState';
 import type { BuildActions } from '../build/buildActions';
 import { BuildPanel } from '../build/BuildPanel';
-import { selectPopulationSummary } from '@/game/application/populationSelectors';
+import { totalSettlementHousingCapacity } from '@/game/application/settlementSelectors';
 import { usePlacementActive } from '../hooks/useBuild';
 import { useClock } from '../hooks/useClock';
 import { useSelection } from '../hooks/useSelection';
@@ -19,9 +19,16 @@ import { SavePanel } from './SavePanel';
 import { PopulationPanel } from './PopulationPanel';
 import { TutorialPanel } from './TutorialPanel';
 import { CharacterGovernmentPanel } from './CharacterGovernmentPanel';
-import { ResearchExplorationPanel } from './ResearchExplorationPanel';
 import { DiplomacyPanel } from './DiplomacyPanel';
 import { MilitaryPanel } from './MilitaryPanel';
+const EmpirePanel = lazy(() =>
+  import('./EmpirePanel').then((module) => ({ default: module.EmpirePanel })),
+);
+const ResearchExplorationPanel = lazy(() =>
+  import('./ResearchExplorationPanel').then((module) => ({
+    default: module.ResearchExplorationPanel,
+  })),
+);
 import './hud.css';
 
 export interface GameHUDProps {
@@ -44,6 +51,7 @@ type HUDSection =
   | 'research'
   | 'diplomacy'
   | 'military'
+  | 'empire'
   | 'events'
   | 'tutorial'
   | 'save'
@@ -60,20 +68,24 @@ const NAV_ITEMS: readonly {
   { id: 'research', label: 'Pesquisa e exploração', icon: '⌕' },
   { id: 'diplomacy', label: 'Diplomacia', icon: '◇' },
   { id: 'military', label: 'Exército e defesa', icon: '⚔' },
+  { id: 'empire', label: 'Território e cidades', icon: '⌖' },
   { id: 'events', label: 'Eventos', icon: '!' },
   { id: 'tutorial', label: 'Primeiros passos', icon: '?' },
   { id: 'save', label: 'Partida e salvamento', icon: '▣' },
 ];
 
 function PopulationIndicator({ controller }: { readonly controller: GameController }) {
-  const population = useGameSelector(controller, (snapshot) => snapshot.population);
-  const buildings = useGameSelector(controller, (snapshot) => snapshot.buildings);
-  const resources = useGameSelector(controller, (snapshot) => snapshot.resources);
-  const summary = selectPopulationSummary({ population, buildings, resources });
+  const totalResidents = useGameSelector(
+    controller,
+    (snapshot) =>
+      snapshot.population.survivors +
+      snapshot.settlements.reduce((sum, city) => sum + city.population.survivors, 0),
+  );
+  const totalCapacity = useGameSelector(controller, totalSettlementHousingCapacity);
 
   return (
     <p className="hud-population" aria-label="População e capacidade">
-      <span aria-hidden="true">☻</span> {summary.survivors}/{summary.capacity}
+      <span aria-hidden="true">☻</span> {totalResidents}/{totalCapacity}
     </p>
   );
 }
@@ -183,13 +195,24 @@ export function GameHUD({
             <CharacterGovernmentPanel controller={controller} />
           </div>
           <div hidden={!sectionVisible('research')}>
-            <ResearchExplorationPanel controller={controller} />
+            {sectionVisible('research') && (
+              <Suspense fallback={<p role="status">Carregando pesquisa e exploração…</p>}>
+                <ResearchExplorationPanel controller={controller} />
+              </Suspense>
+            )}
           </div>
           <div hidden={!sectionVisible('diplomacy')}>
             <DiplomacyPanel controller={controller} />
           </div>
           <div hidden={!sectionVisible('military')}>
             <MilitaryPanel controller={controller} />
+          </div>
+          <div hidden={!sectionVisible('empire')}>
+            {sectionVisible('empire') && (
+              <Suspense fallback={<p role="status">Carregando território…</p>}>
+                <EmpirePanel controller={controller} />
+              </Suspense>
+            )}
           </div>
           <div hidden={!sectionVisible('events')}>
             <EventPanel controller={controller} showEmptyState />

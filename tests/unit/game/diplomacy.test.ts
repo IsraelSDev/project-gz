@@ -6,6 +6,7 @@ import { decodeGameSave, encodeGameSave } from '@/game/application/saveGame';
 import { explorePointCommand } from '@/game/domain/exploration/exploreCommand';
 import { resolveEventCommand } from '@/game/domain/events/resolveEventCommand';
 import { diplomaticActionCommand } from '@/game/domain/diplomacy/diplomacyCommands';
+import { militaryActionCommand } from '@/game/domain/military/militaryCommands';
 import { advanceEvents } from '@/game/domain/events/advanceEvents';
 import { executeSimulationCommand } from '@/game/domain/commands/simulationCommand';
 import { createInitialGameState } from '@/game/domain/state/createInitialGameState';
@@ -200,6 +201,46 @@ describe('diplomacia da Fase 13', () => {
     ).toMatchObject({ ok: false, error: 'DIPLOMACY_ALREADY_COMPLETED' });
   });
 
+  it('permite provocar uma sociedade até a hostilidade e então declarar guerra', () => {
+    const explored = run(initial(), explorePointCommand('crystal-spring'));
+    if (!explored.ok) throw new Error('A exploração inicial deveria funcionar.');
+    const contacted = run(
+      explored.value,
+      diplomaticActionCommand('selari-commons', 'establish-contact'),
+    );
+    if (!contacted.ok) throw new Error('O contato deveria funcionar.');
+    const firstProvocation = run(
+      contacted.value,
+      diplomaticActionCommand('selari-commons', 'provoke'),
+    );
+    expect(firstProvocation.ok).toBe(true);
+    if (!firstProvocation.ok) return;
+    expect(firstProvocation.value.diplomacy.civilizations[0]?.relationshipScore).toBe(-10);
+    const secondProvocation = run(
+      firstProvocation.value,
+      diplomaticActionCommand('selari-commons', 'provoke'),
+    );
+    expect(secondProvocation.ok).toBe(true);
+    if (!secondProvocation.ok) return;
+    expect(secondProvocation.value.diplomacy.civilizations[0]).toMatchObject({
+      relationshipScore: -30,
+      history: expect.arrayContaining([
+        expect.objectContaining({ action: 'provocation', relationshipChange: -20 }),
+      ]),
+    });
+    const war = run(
+      secondProvocation.value,
+      militaryActionCommand('declare-war', { civilizationId: 'selari-commons' }),
+    );
+    expect(war.ok).toBe(true);
+    if (!war.ok) return;
+    expect(war.value.diplomacy.civilizations[0]).toMatchObject({
+      warStatus: 'active',
+      relationshipScore: -35,
+    });
+    expect(validateGameState(war.value)).toEqual([]);
+  });
+
   it('migra save schema 4 preservando progresso e descobertas exploradas', () => {
     const state = initial();
     const v4 = {
@@ -216,14 +257,16 @@ describe('diplomacia da Fase 13', () => {
     const legacy = { ...v4 } as Record<string, unknown>;
     delete legacy.diplomacy;
     delete legacy.military;
+    delete legacy.settlements;
+    delete legacy.territory;
     const decoded = decodeGameSave(
       JSON.stringify({ format: 'alien-civilization-save', formatVersion: 1, state: legacy }),
     );
     expect(decoded.ok).toBe(true);
     if (!decoded.ok) return;
     expect(decoded.value).toMatchObject({
-      schemaVersion: 6,
-      contentVersion: '0.9.0',
+      schemaVersion: 7,
+      contentVersion: '0.10.0',
       tick: state.tick,
     });
     expect(
