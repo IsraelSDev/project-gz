@@ -14,6 +14,7 @@ const CATEGORY_LABELS: Readonly<Record<BuildingDefinition['category'], string>> 
   energy: 'Energia',
   industry: 'Indústria',
   research: 'Pesquisa',
+  military: 'Militar',
 };
 
 export interface BuildingDetailsPanelProps {

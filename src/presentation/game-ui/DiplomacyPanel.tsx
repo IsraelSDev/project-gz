@@ -22,6 +22,9 @@ const ACTION_LABELS: Readonly<Record<DiplomaticAction, string>> = {
   'pact-accepted': 'Pacto aceito',
   'pact-rejected': 'Pacto recusado',
   'pact-ended': 'Pacto encerrado',
+  'war-declared': 'Guerra declarada',
+  'war-ended': 'Paz estabelecida',
+  'battle-resolved': 'Combate concluÃ­do',
 };
 
 export function DiplomacyPanel({ controller }: { readonly controller: GameController }) {

@@ -25,6 +25,7 @@ export type LegacyGameStateV1 = Omit<
   | 'research'
   | 'exploration'
   | 'diplomacy'
+  | 'military'
 > & {
   readonly schemaVersion: 1;
   readonly contentVersion: '0.4.0';
@@ -40,6 +41,7 @@ export type LegacyGameStateV2 = Omit<
   | 'research'
   | 'exploration'
   | 'diplomacy'
+  | 'military'
 > & {
   readonly schemaVersion: 2;
   readonly contentVersion: '0.5.0';
@@ -47,7 +49,7 @@ export type LegacyGameStateV2 = Omit<
 
 export type LegacyGameStateV3 = Omit<
   GameState,
-  'schemaVersion' | 'contentVersion' | 'research' | 'exploration' | 'diplomacy'
+  'schemaVersion' | 'contentVersion' | 'research' | 'exploration' | 'diplomacy' | 'military'
 > & {
   readonly schemaVersion: 3;
   readonly contentVersion: '0.6.0';
@@ -55,10 +57,15 @@ export type LegacyGameStateV3 = Omit<
 
 export type LegacyGameStateV4 = Omit<
   GameState,
-  'schemaVersion' | 'contentVersion' | 'diplomacy'
+  'schemaVersion' | 'contentVersion' | 'diplomacy' | 'military'
 > & {
   readonly schemaVersion: 4;
   readonly contentVersion: '0.7.0';
+};
+
+export type LegacyGameStateV5 = Omit<GameState, 'schemaVersion' | 'contentVersion' | 'military'> & {
+  readonly schemaVersion: 5;
+  readonly contentVersion: '0.8.0';
 };
 
 /** Migração pura: não altera o objeto v1 nem reaplica o tick já persistido. */
@@ -109,7 +116,7 @@ export function migrateV3ToV4(state: LegacyGameStateV3): LegacyGameStateV4 {
 }
 
 /** Fase 13: preserva explorações anteriores e as projeta como descobertas diplomáticas. */
-export function migrateV4ToV5(state: LegacyGameStateV4): GameState {
+export function migrateV4ToV5(state: LegacyGameStateV4): LegacyGameStateV5 {
   let diplomacy = createInitialDiplomacy();
   for (const pointId of state.exploration.discoveredPointIds) {
     const civilization = civilizationForDiscoveryPoint(pointId);
@@ -129,8 +136,34 @@ export function migrateV4ToV5(state: LegacyGameStateV4): GameState {
   return {
     ...state,
     schemaVersion: 5,
-    contentVersion: INITIAL_SCENARIO.contentVersion,
+    contentVersion: '0.8.0',
     events,
     diplomacy,
+  };
+}
+
+/** Fase 14: adiciona um estado militar vazio, sem alterar recursos ou progresso do save. */
+export function migrateV5ToV6(state: LegacyGameStateV5): GameState {
+  const events = [
+    ...state.events,
+    ...Object.values(EVENT_DEFINITIONS)
+      .filter((definition) => !state.events.some((event) => event.eventId === definition.id))
+      .map((definition) => ({
+        eventId: definition.id as GameState['events'][number]['eventId'],
+        status: 'available' as const,
+      })),
+  ];
+  return {
+    ...state,
+    schemaVersion: 6,
+    contentVersion: INITIAL_SCENARIO.contentVersion,
+    events,
+    diplomacy: {
+      civilizations: state.diplomacy.civilizations.map((relation) => ({
+        ...relation,
+        warStatus: 'none' as const,
+      })),
+    },
+    military: { nextUnitId: 1, units: [], battle: null, history: [] },
   };
 }

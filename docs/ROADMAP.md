@@ -375,3 +375,9 @@ Não estimar a data de lançamento com precisão antes de concluir as
 primeiras fases e medir a velocidade real de desenvolvimento. A
 prioridade é validar o ciclo de jogo e a arquitetura antes de aumentar o
 escopo.
+
+## Fase 14 — Exército, defesa e combate
+
+**Status: implementada e validada por testes automatizados.** Adicionado Posto de Defesa que libera quatro vagas por posto, três perfis de unidade com custo, saúde, ataque, defesa e manutenção em alimentos; tropas sem alimento ficam sem suprimento. A hostilidade existente permite declarar guerra com relação em -30 ou menos; pactos ativos bloqueiam essa ação. O jogador inicia um confronto contra uma das três sociedades por vez, pode recuar ou estabelecer paz, e o líder atual comanda automaticamente. Combates por tick usam valores determinísticos, registram baixas e resultado, e geram alertas/relatórios no motor de eventos. Unidades são estado do domínio com posições no grid e recebem representação Babylon.js sem meshes no save.
+
+O save avança para schema 6/content 0.9.0; saves v1–v5 migram preservando estoques, progresso, eventos e descobertas. `npm run validate` passou: typecheck, lint, Prettier, 50 arquivos/746 testes e build. Não houve teste manual em navegador/WebGL. O combate é abstrato, há uma batalha ativa por vez, não há IA de campo, movimentação/pathfinding, equipamento, cura ou guerra autônoma; os relatórios estáticos não se repetem para a mesma civilização.

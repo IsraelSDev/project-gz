@@ -161,6 +161,7 @@ describe('GameController: estado inicial e tick', () => {
         'events',
         'exploration',
         'government',
+        'military',
         'nextEntityId',
         'population',
         'relationships',

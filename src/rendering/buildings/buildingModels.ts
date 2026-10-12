@@ -390,6 +390,25 @@ const buildThermalGenerator: BuildingModelBuilder = (kit, materials, size) => {
   return { solid, glowing: [vent] };
 };
 
+const buildGuardPost: BuildingModelBuilder = (kit, materials, size) => {
+  const solid = kit.merge('guard-post', [
+    kit.cylinder({ height: 0.25, bottom: size.width * 0.43, tessellation: 16 }, metal.pad, {
+      y: 0.12,
+    }),
+    kit.cylinder({ height: 1.8, bottom: 0.72, top: 0.58, tessellation: 12 }, metal.hullLight, {
+      y: 1.05,
+    }),
+    kit.box({ w: 1.8, h: 0.2, d: 0.2 }, metal.steel, { y: 1.9 }),
+    kit.box({ w: 0.2, h: 1.1, d: 0.2 }, metal.steel, { y: 2.15 }),
+  ]);
+  solid.material = materials.solid;
+  const beacon = kit.merge('guard-post-beacon', [
+    kit.sphere({ diameter: 0.38, segments: 8 }, glow.ember, { y: 2.2 }),
+  ]);
+  beacon.material = materials.glowEmber;
+  return { solid, glowing: [beacon] };
+};
+
 /** Um construtor por definição: o compilador exige um modelo para cada `BuildingDefinitionId`. */
 export const BUILDING_MODELS: Record<BuildingDefinitionId, BuildingModelBuilder> = {
   'habitat-module': buildHabitat,
@@ -400,4 +419,5 @@ export const BUILDING_MODELS: Record<BuildingDefinitionId, BuildingModelBuilder>
   'field-laboratory': buildLaboratory,
   'protein-cultivator': buildFarm,
   'thermal-generator': buildThermalGenerator,
+  'guard-post': buildGuardPost,
 };

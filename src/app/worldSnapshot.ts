@@ -10,7 +10,10 @@ import type { WorldSnapshot } from '@/rendering/world/WorldSnapshot';
  * de `buildings`: assim a cena não é refeita quando só o `tick` ou os recursos mudam.
  */
 export function toWorldSnapshot(
-  state: Pick<GameState, 'buildings'>,
+  state: Pick<GameState, 'buildings'> &
+    Partial<Pick<GameState, 'military'>> & {
+      readonly militaryUnits?: GameState['military']['units'];
+    },
   scenario: ScenarioDefinition,
 ): WorldSnapshot {
   return {
@@ -26,6 +29,15 @@ export function toWorldSnapshot(
       position: building.position,
       rotation: building.rotation,
       size: getBuildingDefinition(building.definitionId).footprint,
+    })),
+    units: (state.militaryUnits ?? state.military?.units ?? []).map((unit) => ({
+      unitId: unit.unitId,
+      type: unit.type,
+      health: unit.health,
+      supplied: unit.supplied,
+      position: unit.position,
+      size: { width: 1, depth: 1 },
+      rotation: 0,
     })),
   };
 }

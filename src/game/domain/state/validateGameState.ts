@@ -1,6 +1,7 @@
 import { isBuildingDefinitionId } from '@/game/content/buildings';
 import { EVENT_DEFINITIONS, isEventId } from '@/game/content/events';
 import { RESOURCE_IDS } from '@/game/content/resources';
+import { UNIT_DEFINITIONS } from '@/game/content/military';
 import { isRotation } from '@/shared/grid/gridMath';
 import type { CharacterSkill } from '@/game/content/characters';
 import { isTechnologyId, TECHNOLOGY_DEFINITIONS } from '@/game/content/technologies';
@@ -10,9 +11,16 @@ import {
   civilizationForDiscoveryPoint,
   isIndependentCivilizationId,
 } from '@/game/content/independentCivilizations';
-import { GAME_STATE_SCHEMA_VERSION, type GameEventState, type GameState } from './GameState';
+import {
+  GAME_STATE_SCHEMA_VERSION,
+  type GameEventState,
+  type GameState,
+  type MilitaryUnitType,
+} from './GameState';
 
 const isWholeNumber = (value: unknown): value is number => Number.isSafeInteger(value);
+const isMilitaryUnitType = (value: unknown): value is MilitaryUnitType =>
+  typeof value === 'string' && Object.hasOwn(UNIT_DEFINITIONS, value);
 const hasExactKeys = (value: object, expected: readonly string[]): boolean => {
   const keys = Object.keys(value);
   return keys.length === expected.length && expected.every((key) => Object.hasOwn(value, key));
@@ -118,6 +126,7 @@ export function validateGameState(state: GameState): readonly string[] {
           'informationRequested',
           'giftOffered',
           'nonAggressionPact',
+          'warStatus',
           'history',
         ])
       ) {
@@ -141,6 +150,9 @@ export function validateGameState(state: GameState): readonly string[] {
       }
       if (!['none', 'active', 'rejected', 'ended'].includes(relation.nonAggressionPact)) {
         issues.push(`Estado do pacto inválido para ${relation.civilizationId}.`);
+      }
+      if (!['none', 'active', 'ended'].includes(relation.warStatus)) {
+        issues.push(`Estado de guerra invÃ¡lido para ${relation.civilizationId}.`);
       }
       if (!Array.isArray(relation.history)) {
         issues.push(`Histórico diplomático inválido para ${relation.civilizationId}.`);
@@ -168,6 +180,9 @@ export function validateGameState(state: GameState): readonly string[] {
             'pact-accepted',
             'pact-rejected',
             'pact-ended',
+            'war-declared',
+            'war-ended',
+            'battle-resolved',
           ].includes(entry.action) ||
           !isWholeNumber(entry.relationshipChange) ||
           entry.relationshipChange < -100 ||
@@ -196,6 +211,13 @@ export function validateGameState(state: GameState): readonly string[] {
       ) {
         issues.push(`Histórico e estado diplomático divergem para ${relation.civilizationId}.`);
       }
+      if (
+        count('war-ended') > count('war-declared') ||
+        count('war-declared') - count('war-ended') !== (relation.warStatus === 'active' ? 1 : 0) ||
+        (relation.warStatus !== 'none' && relation.contactStatus !== 'contacted') ||
+        (relation.warStatus === 'active' && relation.nonAggressionPact === 'active')
+      )
+        issues.push(`HistÃ³rico e estado de guerra divergem para ${relation.civilizationId}.`);
       if (
         (relation.informationRequested ||
           relation.giftOffered ||
@@ -435,6 +457,75 @@ export function validateGameState(state: GameState): readonly string[] {
   if (!Array.isArray(state.buildings)) {
     issues.push('buildings deve ser uma lista.');
     return issues;
+  }
+
+  const military = state.military;
+  if (
+    !military ||
+    !hasExactKeys(military, ['nextUnitId', 'units', 'battle', 'history']) ||
+    !isWholeNumber(military.nextUnitId) ||
+    military.nextUnitId < 1 ||
+    !Array.isArray(military.units) ||
+    !Array.isArray(military.history)
+  ) {
+    issues.push('Estado militar invÃ¡lido.');
+  } else {
+    const ids = new Set<string>();
+    for (const unit of military.units) {
+      if (!unit || typeof unit !== 'object') {
+        issues.push('Unidade militar invÃ¡lida.');
+        continue;
+      }
+      const unitType: unknown = unit.type;
+      const maximumHealth = isMilitaryUnitType(unitType) ? UNIT_DEFINITIONS[unitType].health : 0;
+      if (
+        !hasExactKeys(unit, ['unitId', 'type', 'position', 'health', 'supplied']) ||
+        typeof unit.unitId !== 'string' ||
+        !/^unit-[1-9][0-9]*$/.test(unit.unitId) ||
+        ids.has(unit.unitId) ||
+        !isMilitaryUnitType(unitType) ||
+        !isWholeNumber(unit.health) ||
+        unit.health < 1 ||
+        unit.health > maximumHealth ||
+        typeof unit.supplied !== 'boolean' ||
+        !unit.position ||
+        !isWholeNumber(unit.position.x) ||
+        !isWholeNumber(unit.position.y) ||
+        unit.position.x < 0 ||
+        unit.position.y < 0
+      )
+        issues.push('Unidade militar invÃ¡lida.');
+      ids.add(unit.unitId);
+    }
+    const nextUnit = Math.max(0, ...[...ids].map((id) => Number(id.slice(5))));
+    if (military.nextUnitId <= nextUnit)
+      issues.push('nextUnitId militar precisa apontar para um identificador livre.');
+    const battle = military.battle;
+    if (
+      battle !== null &&
+      (!hasExactKeys(battle, ['civilizationId', 'enemyHealth', 'round', 'status', 'commanderId']) ||
+        !isIndependentCivilizationId(battle.civilizationId) ||
+        !isWholeNumber(battle.enemyHealth) ||
+        battle.enemyHealth < 0 ||
+        !isWholeNumber(battle.round) ||
+        !['active', 'victory', 'defeat', 'retreated'].includes(battle.status) ||
+        (battle.commanderId !== null &&
+          !characters.some((character) => character.characterId === battle.commanderId)))
+    ) {
+      issues.push('Confronto militar invÃ¡lido.');
+    }
+    for (const entry of military.history) {
+      if (
+        !hasExactKeys(entry, ['tick', 'civilizationId', 'outcome', 'rounds']) ||
+        !isWholeNumber(entry.tick) ||
+        entry.tick > state.tick ||
+        !isIndependentCivilizationId(entry.civilizationId) ||
+        !['victory', 'defeat', 'retreated'].includes(entry.outcome) ||
+        !isWholeNumber(entry.rounds)
+      ) {
+        issues.push('HistÃ³rico militar invÃ¡lido.');
+      }
+    }
   }
 
   if (!Array.isArray(state.events)) {

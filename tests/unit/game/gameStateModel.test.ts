@@ -27,6 +27,7 @@ describe('modelo de estado da partida', () => {
         'events',
         'exploration',
         'government',
+        'military',
         'nextEntityId',
         'population',
         'relationships',

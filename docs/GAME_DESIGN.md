@@ -363,3 +363,7 @@ de distribuição para PC.
 ### Sobrevivência do MVP (Fase 9)
 
 A colônia começa com 8 sobreviventes e capacidade habitacional 8. A cada tick, depois da economia dos edifícios, cada grupo de até 4 sobreviventes consome 1 unidade de comida e 1 de água. O estoque disponível é consumido até zero; recursos nunca ficam negativos. A falta de qualquer um dos dois recursos por 60 ticks consecutivos remove 1 sobrevivente; abastecimento completo reinicia a contagem. A capacidade é a soma de `housingCapacity` nas estruturas construídas. A vitória exige 900 ticks consecutivos com abastecimento e abrigo para todos e pelo menos 6 sobreviventes. Zero sobreviventes significa derrota.
+
+### Complemento da seção 8.8 — Primeira camada militar (Fase 14)
+
+Um Posto de Defesa fornece quatro vagas e três perfis de unidade. Recrutamento custa materiais e cada unidade consome alimento por tick; falta de alimento suspende o suprimento e sua participação no combate. A guerra só pode ser declarada após contato, com relação hostil (≤ -30) e sem pacto ativo. O jogador inicia um confronto abstrato contra uma sociedade por vez. Ataque e defesa de unidades, defesa dos postos e liderança do governante produzem rodadas determinísticas; unidades derrotadas são perdidas. O jogador pode recuar e, fora de combate, estabelecer paz. Eventos notificam a declaração e o primeiro resultado de combate contra cada sociedade. Não existem exércitos inimigos no mapa, conquista territorial, pathfinding, cura ou combate automático.

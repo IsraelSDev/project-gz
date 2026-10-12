@@ -11,7 +11,13 @@ import {
 } from '@/game/domain/state/GameState';
 import { freezeDeep } from '@/game/domain/state/freezeDeep';
 import { validateGameState } from '@/game/domain/state/validateGameState';
-import { migrateV1ToV2, migrateV2ToV3, migrateV3ToV4, migrateV4ToV5 } from './saveMigrations';
+import {
+  migrateV1ToV2,
+  migrateV2ToV3,
+  migrateV3ToV4,
+  migrateV4ToV5,
+  migrateV5ToV6,
+} from './saveMigrations';
 import { err, ok, type Result } from '@/shared/result/result';
 
 export const SAVE_FORMAT = 'alien-civilization-save';
@@ -59,6 +65,7 @@ function copySaveState(value: unknown): Result<GameState, SaveError> {
       ])
     )
       return err('CORRUPT_SAVE');
+    if (!Array.isArray(value.events) || !value.events.every(isRecord)) return err('CORRUPT_SAVE');
     return copySaveState(migrateV1ToV2(value as unknown as Parameters<typeof migrateV1ToV2>[0]));
   }
   if (value.schemaVersion === 2) {
@@ -76,6 +83,7 @@ function copySaveState(value: unknown): Result<GameState, SaveError> {
       ])
     )
       return err('CORRUPT_SAVE');
+    if (!Array.isArray(value.events) || !value.events.every(isRecord)) return err('CORRUPT_SAVE');
     return copySaveState(migrateV2ToV3(value as unknown as Parameters<typeof migrateV2ToV3>[0]));
   }
   if (value.schemaVersion === 3) {
@@ -96,6 +104,7 @@ function copySaveState(value: unknown): Result<GameState, SaveError> {
       ])
     )
       return err('CORRUPT_SAVE');
+    if (!Array.isArray(value.events) || !value.events.every(isRecord)) return err('CORRUPT_SAVE');
     return copySaveState(migrateV3ToV4(value as unknown as Parameters<typeof migrateV3ToV4>[0]));
   }
   if (value.schemaVersion === 4) {
@@ -118,7 +127,46 @@ function copySaveState(value: unknown): Result<GameState, SaveError> {
       ])
     )
       return err('CORRUPT_SAVE');
+    if (
+      !Array.isArray(value.events) ||
+      !value.events.every(isRecord) ||
+      !isRecord(value.exploration) ||
+      !hasExactKeys(value.exploration, ['discoveredPointIds']) ||
+      !Array.isArray(value.exploration.discoveredPointIds)
+    )
+      return err('CORRUPT_SAVE');
     return copySaveState(migrateV4ToV5(value as unknown as Parameters<typeof migrateV4ToV5>[0]));
+  }
+  if (value.schemaVersion === 5) {
+    if (value.contentVersion !== '0.8.0') return err('INCOMPATIBLE_SAVE');
+    if (
+      !hasExactKeys(value, [
+        'schemaVersion',
+        'contentVersion',
+        'tick',
+        'resources',
+        'buildings',
+        'nextEntityId',
+        'events',
+        'population',
+        'characters',
+        'government',
+        'relationships',
+        'research',
+        'exploration',
+        'diplomacy',
+      ])
+    )
+      return err('CORRUPT_SAVE');
+    if (
+      !Array.isArray(value.events) ||
+      !value.events.every(isRecord) ||
+      !isRecord(value.diplomacy) ||
+      !hasExactKeys(value.diplomacy, ['civilizations']) ||
+      !Array.isArray(value.diplomacy.civilizations)
+    )
+      return err('CORRUPT_SAVE');
+    return copySaveState(migrateV5ToV6(value as unknown as Parameters<typeof migrateV5ToV6>[0]));
   }
   if (value.schemaVersion !== GAME_STATE_SCHEMA_VERSION) return err('INCOMPATIBLE_SAVE');
   if (typeof value.contentVersion !== 'string') return err('CORRUPT_SAVE');
@@ -139,6 +187,7 @@ function copySaveState(value: unknown): Result<GameState, SaveError> {
       'research',
       'exploration',
       'diplomacy',
+      'military',
     ]) ||
     !isRecord(value.resources) ||
     !hasExactKeys(value.resources, ['food', 'water', 'materials', 'energy']) ||
@@ -160,7 +209,11 @@ function copySaveState(value: unknown): Result<GameState, SaveError> {
     !Array.isArray(value.exploration.discoveredPointIds) ||
     !isRecord(value.diplomacy) ||
     !hasExactKeys(value.diplomacy, ['civilizations']) ||
-    !Array.isArray(value.diplomacy.civilizations)
+    !Array.isArray(value.diplomacy.civilizations) ||
+    !isRecord(value.military) ||
+    !hasExactKeys(value.military, ['nextUnitId', 'units', 'battle', 'history']) ||
+    !Array.isArray(value.military.units) ||
+    !Array.isArray(value.military.history)
   ) {
     return err('CORRUPT_SAVE');
   }
@@ -240,8 +293,10 @@ function copySaveState(value: unknown): Result<GameState, SaveError> {
     research: value.research as unknown as GameState['research'],
     exploration: value.exploration as unknown as GameState['exploration'],
     diplomacy: value.diplomacy as unknown as GameState['diplomacy'],
+    military: value.military as unknown as GameState['military'],
   });
-  if (validateGameState(state).length > 0) return err('CORRUPT_SAVE');
+  const stateIssues = validateGameState(state);
+  if (stateIssues.length > 0) return err('CORRUPT_SAVE');
 
   const placedBuildings: GameState['buildings'][number][] = [];
   let highestGeneratedId = 0;

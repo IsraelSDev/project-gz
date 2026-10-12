@@ -21,6 +21,7 @@ import { TutorialPanel } from './TutorialPanel';
 import { CharacterGovernmentPanel } from './CharacterGovernmentPanel';
 import { ResearchExplorationPanel } from './ResearchExplorationPanel';
 import { DiplomacyPanel } from './DiplomacyPanel';
+import { MilitaryPanel } from './MilitaryPanel';
 import './hud.css';
 
 export interface GameHUDProps {
@@ -42,6 +43,7 @@ type HUDSection =
   | 'people'
   | 'research'
   | 'diplomacy'
+  | 'military'
   | 'events'
   | 'tutorial'
   | 'save'
@@ -57,6 +59,7 @@ const NAV_ITEMS: readonly {
   { id: 'people', label: 'Personagens e governo', icon: '☻' },
   { id: 'research', label: 'Pesquisa e exploração', icon: '⌕' },
   { id: 'diplomacy', label: 'Diplomacia', icon: '◇' },
+  { id: 'military', label: 'Exército e defesa', icon: '⚔' },
   { id: 'events', label: 'Eventos', icon: '!' },
   { id: 'tutorial', label: 'Primeiros passos', icon: '?' },
   { id: 'save', label: 'Partida e salvamento', icon: '▣' },
@@ -184,6 +187,9 @@ export function GameHUD({
           </div>
           <div hidden={!sectionVisible('diplomacy')}>
             <DiplomacyPanel controller={controller} />
+          </div>
+          <div hidden={!sectionVisible('military')}>
+            <MilitaryPanel controller={controller} />
           </div>
           <div hidden={!sectionVisible('events')}>
             <EventPanel controller={controller} showEmptyState />

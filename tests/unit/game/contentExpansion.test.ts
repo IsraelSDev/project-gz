@@ -133,8 +133,10 @@ describe('expansão de conteúdo da Fase 11', () => {
       research: undefined,
       exploration: undefined,
       diplomacy: undefined,
+      military: undefined,
     };
     delete old.diplomacy;
+    delete old.military;
     const migrated = decodeGameSave(
       JSON.stringify({ format: 'alien-civilization-save', formatVersion: 1, state: old }),
     );

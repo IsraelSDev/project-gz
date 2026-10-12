@@ -14,7 +14,7 @@ describe('selectBuildCatalog', () => {
     const catalog = selectBuildCatalog(state().resources);
 
     expect(catalog.map((entry) => entry.definitionId)).toEqual(Object.keys(BUILDING_DEFINITIONS));
-    expect(catalog).toHaveLength(8);
+    expect(catalog).toHaveLength(9);
   });
 
   it('traz nome, categoria, footprint e custo da definição (nada é inventado na interface)', () => {

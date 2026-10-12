@@ -13,7 +13,14 @@ export interface BuildingDefinition {
   readonly id: string;
   readonly name: string;
   readonly category:
-    'shelter' | 'infrastructure' | 'food' | 'water' | 'energy' | 'industry' | 'research';
+    | 'shelter'
+    | 'infrastructure'
+    | 'food'
+    | 'water'
+    | 'energy'
+    | 'industry'
+    | 'research'
+    | 'military';
   readonly requiredTechnologyId?: TechnologyId;
   /** Capacidade agregada de sobreviventes, apenas para estruturas habitacionais. */
   readonly housingCapacity?: number;
@@ -116,6 +123,15 @@ export const BUILDING_DEFINITIONS = {
     cost: { materials: 70 },
     production: { energy: 10 },
     consumption: {},
+  },
+  'guard-post': {
+    id: 'guard-post',
+    name: 'Posto de Defesa',
+    category: 'military',
+    footprint: { width: 3, depth: 2 },
+    cost: { materials: 65 },
+    production: {},
+    consumption: { energy: 1 },
   },
 } as const satisfies Readonly<Record<string, BuildingDefinition>>;
 

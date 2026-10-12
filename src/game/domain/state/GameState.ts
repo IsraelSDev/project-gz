@@ -5,7 +5,7 @@ import type { GridPosition, Rotation } from '@/shared/grid/types';
 import type { Character, CharacterRelationship, Government } from '@/game/content/characters';
 
 /** Versão do formato do estado. Migrações encadeadas são definidas em `application/saveMigrations.ts`. */
-export const GAME_STATE_SCHEMA_VERSION = 5;
+export const GAME_STATE_SCHEMA_VERSION = 6;
 
 export interface PopulationState {
   readonly survivors: number;
@@ -28,6 +28,7 @@ export interface BuildingInstance {
 export type ResourceStock = Readonly<Record<ResourceId, number>>;
 
 export type GameEventStatus = 'available' | 'active' | 'resolved' | 'closed';
+export type MilitaryUnitType = 'scout' | 'guardian' | 'striker';
 
 /** Estado serializável do evento; conteúdo narrativo fica separado em `game/content/events.ts`. */
 export interface GameEventState {
@@ -58,7 +59,10 @@ export type DiplomaticAction =
   | 'pact-proposed'
   | 'pact-accepted'
   | 'pact-rejected'
-  | 'pact-ended';
+  | 'pact-ended'
+  | 'war-declared'
+  | 'war-ended'
+  | 'battle-resolved';
 
 export interface DiplomaticHistoryEntry {
   readonly tick: number;
@@ -73,7 +77,35 @@ export interface CivilizationDiplomacyState {
   readonly informationRequested: boolean;
   readonly giftOffered: boolean;
   readonly nonAggressionPact: DiplomaticTreatyStatus;
+  readonly warStatus: 'none' | 'active' | 'ended';
   readonly history: readonly DiplomaticHistoryEntry[];
+}
+
+export interface MilitaryUnit {
+  readonly unitId: string;
+  readonly type: MilitaryUnitType;
+  readonly position: GridPosition;
+  readonly health: number;
+  readonly supplied: boolean;
+}
+export interface MilitaryBattle {
+  readonly civilizationId: string;
+  readonly enemyHealth: number;
+  readonly round: number;
+  readonly status: 'active' | 'victory' | 'defeat' | 'retreated';
+  readonly commanderId: string | null;
+}
+export interface MilitaryHistoryEntry {
+  readonly tick: number;
+  readonly civilizationId: string;
+  readonly outcome: 'victory' | 'defeat' | 'retreated';
+  readonly rounds: number;
+}
+export interface MilitaryState {
+  readonly nextUnitId: number;
+  readonly units: readonly MilitaryUnit[];
+  readonly battle: MilitaryBattle | null;
+  readonly history: readonly MilitaryHistoryEntry[];
 }
 
 export interface DiplomacyState {
@@ -106,4 +138,5 @@ export interface GameState {
   readonly research: ResearchState;
   readonly exploration: ExplorationState;
   readonly diplomacy: DiplomacyState;
+  readonly military: MilitaryState;
 }

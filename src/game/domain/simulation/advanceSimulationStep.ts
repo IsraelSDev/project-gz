@@ -4,6 +4,7 @@ import { freezeDeep } from '@/game/domain/state/freezeDeep';
 import type { GameState } from '@/game/domain/state/GameState';
 import { advancePopulation } from '@/game/domain/population/advancePopulation';
 import { advanceResearch } from '@/game/domain/research/researchCommands';
+import { advanceMilitary } from '@/game/domain/military/militaryCommands';
 
 /** Fase do passo em que os comandos de simulação pendentes são aplicados (item 2 da ordem). */
 export type CommandPhase = (state: GameState) => GameState;
@@ -22,9 +23,10 @@ const noCommands: CommandPhase = (state) => state;
  *     ele entrega esta fase em `applyCommands`; sem ela, nenhum comando é aplicado.
  *  3. Calcular produção.            (`advanceEconomy`, Fase 5)
  *  4. Calcular consumo.             (`advanceEconomy`, Fase 5)
- *  5. Atualizar necessidades.       (Fase 9)
- *  6. Avaliar gatilhos de eventos.  (Fase 7)
- *  7. Publicar um novo snapshot.    (feito pelo `GameController`)
+ *  5. Atualizar pesquisa.          (Fase 11)
+ *  6. Cobrar manutenção e combate. (Fase 14)
+ *  7. Avaliar gatilhos de eventos. (Fase 7)
+ *  8. Publicar um novo snapshot.   (feito pelo `GameController`)
  *
  * Como os comandos vêm antes da economia, um edifício criado ou recurso gasto por um comando já
  * vale no mesmo passo. `resources` e `buildings` mantêm a referência quando não mudam
@@ -43,5 +45,5 @@ export function advanceSimulationStep(
   const resources = advanceEconomy(commanded.resources, commanded.buildings);
   const economical =
     resources === commanded.resources ? commanded : freezeDeep({ ...commanded, resources });
-  return advanceEvents(advancePopulation(advanceResearch(economical)));
+  return advanceEvents(advanceMilitary(advancePopulation(advanceResearch(economical))));
 }

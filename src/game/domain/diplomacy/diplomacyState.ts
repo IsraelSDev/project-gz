@@ -37,6 +37,7 @@ export function createInitialDiplomacy(): DiplomacyState {
       informationRequested: false,
       giftOffered: false,
       nonAggressionPact: 'none' as const,
+      warStatus: 'none' as const,
       history: [],
     })),
   };

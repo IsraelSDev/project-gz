@@ -208,20 +208,22 @@ describe('diplomacia da Fase 13', () => {
       contentVersion: '0.7.0',
       exploration: { discoveredPointIds: ['crystal-spring'] },
       diplomacy: undefined,
+      military: undefined,
       events: state.events.filter(
         (event) => event.eventId === 'wreck-signal' || event.eventId === 'ruins-cache',
       ),
     };
     const legacy = { ...v4 } as Record<string, unknown>;
     delete legacy.diplomacy;
+    delete legacy.military;
     const decoded = decodeGameSave(
       JSON.stringify({ format: 'alien-civilization-save', formatVersion: 1, state: legacy }),
     );
     expect(decoded.ok).toBe(true);
     if (!decoded.ok) return;
     expect(decoded.value).toMatchObject({
-      schemaVersion: 5,
-      contentVersion: '0.8.0',
+      schemaVersion: 6,
+      contentVersion: '0.9.0',
       tick: state.tick,
     });
     expect(

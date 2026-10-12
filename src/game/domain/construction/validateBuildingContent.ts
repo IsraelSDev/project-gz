@@ -10,6 +10,7 @@ const CATEGORIES: readonly string[] = [
   'energy',
   'industry',
   'research',
+  'military',
 ];
 
 const isPositiveInteger = (value: unknown): boolean =>

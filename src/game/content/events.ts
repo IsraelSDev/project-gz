@@ -71,7 +71,79 @@ export const EVENT_DEFINITIONS = {
     'As luzes do bosque se alinham em uma saudação. Uma sociedade local percebeu a presença da colônia.',
     'ithari-gardeners',
   ),
+  'war-alert-selari-commons': warAlert(
+    'war-alert-selari-commons',
+    'Comunidade Selari',
+    'selari-commons',
+  ),
+  'war-alert-oruun-clans': warAlert('war-alert-oruun-clans', 'Clãs Oruun', 'oruun-clans'),
+  'war-alert-ithari-gardeners': warAlert(
+    'war-alert-ithari-gardeners',
+    'Jardineiros Ithari',
+    'ithari-gardeners',
+  ),
+  'battle-report-selari-commons': battleReport(
+    'battle-report-selari-commons',
+    'Comunidade Selari',
+    'selari-commons',
+  ),
+  'battle-report-oruun-clans': battleReport(
+    'battle-report-oruun-clans',
+    'Clãs Oruun',
+    'oruun-clans',
+  ),
+  'battle-report-ithari-gardeners': battleReport(
+    'battle-report-ithari-gardeners',
+    'Jardineiros Ithari',
+    'ithari-gardeners',
+  ),
 } as const satisfies Readonly<Record<string, EventDefinition>>;
+
+function warAlert(
+  id: string,
+  name: string,
+  civilizationId: IndependentCivilizationId,
+): EventDefinition {
+  return {
+    id,
+    title: `Hostilidades com ${name}`,
+    description: `A relação com ${name} chegou ao conflito armado. Organize a defesa e acompanhe o confronto no painel militar.`,
+    trigger: { kind: 'war-declared', civilizationId },
+    options: [
+      {
+        id: 'acknowledge-threat',
+        label: 'Entendido',
+        description: 'Acompanhar a situação militar.',
+        cost: {},
+        effects: {},
+        consequence: 'O alerta foi registrado.',
+      },
+    ],
+  };
+}
+
+function battleReport(
+  id: string,
+  name: string,
+  civilizationId: IndependentCivilizationId,
+): EventDefinition {
+  return {
+    id,
+    title: `Relatório de combate: ${name}`,
+    description: `O confronto com ${name} foi concluído. O resultado e as perdas estão registrados no painel militar.`,
+    trigger: { kind: 'battle-resolved', civilizationId },
+    options: [
+      {
+        id: 'acknowledge-battle-report',
+        label: 'Entendido',
+        description: 'Arquivar este relatório.',
+        cost: {},
+        effects: {},
+        consequence: 'O relatório foi arquivado.',
+      },
+    ],
+  };
+}
 
 function firstContactEvent(
   id: string,
@@ -140,7 +212,9 @@ export interface EventDefinition {
     | {
         readonly kind: 'civilization-discovered';
         readonly civilizationId: IndependentCivilizationId;
-      };
+      }
+    | { readonly kind: 'war-declared'; readonly civilizationId: IndependentCivilizationId }
+    | { readonly kind: 'battle-resolved'; readonly civilizationId: IndependentCivilizationId };
   readonly options: readonly EventOption[];
 }
 

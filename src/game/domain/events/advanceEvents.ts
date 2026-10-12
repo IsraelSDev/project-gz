@@ -19,6 +19,14 @@ export function advanceEvents(state: GameState): GameState {
         (relation) =>
           relation.civilizationId === civilizationId && relation.contactStatus !== 'unknown',
       );
+    } else if (definition.trigger.kind === 'war-declared') {
+      const civilizationId = definition.trigger.civilizationId;
+      triggered = state.diplomacy.civilizations.some(
+        (relation) => relation.civilizationId === civilizationId && relation.warStatus === 'active',
+      );
+    } else if (definition.trigger.kind === 'battle-resolved') {
+      const civilizationId = definition.trigger.civilizationId;
+      triggered = state.military.history.some((entry) => entry.civilizationId === civilizationId);
     }
     if (!triggered) return event;
     changed = true;

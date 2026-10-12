@@ -72,6 +72,7 @@ export function createInitialGameState(scenario: ScenarioDefinition): GameState 
     research: { unlockedTechnologyIds: [], activeTechnologyId: null, progress: 0 },
     exploration: { discoveredPointIds: [] },
     diplomacy: createInitialDiplomacy(),
+    military: { nextUnitId: 1, units: [], battle: null, history: [] },
   });
 
   const stateIssues = validateGameState(state);
