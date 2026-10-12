@@ -6,11 +6,15 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 import { StrictMode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { App } from '@/app/App';
+import { getBuildingDefinition } from '@/game/content/buildings';
+import { RESOURCE_DEFINITIONS, RESOURCE_IDS } from '@/game/content/resources';
+import { INITIAL_SCENARIO } from '@/game/content/scenario';
 import {
   getLiveRendererCount,
   type GameRenderer,
   type GameRendererOptions,
 } from '@/rendering/GameRenderer';
+import { expectedResourcesAfter } from '../../support/economyExpectations';
 import type { FakeTimeEnvironment } from '../../support/fakeTimeEnvironment';
 import { click, onBuilding } from '../../support/headlessRenderer';
 
@@ -205,17 +209,6 @@ describe('relógio de ponta a ponta (App + tempo falso + NullEngine)', () => {
     expect(panelName()).toBe('Extrator de Água');
   });
 
-  it('os ticks não alteram os recursos da HUD (a economia é da Fase 5)', () => {
-    render(<App />);
-    const before = resources();
-
-    fireEvent.click(button('Retomar'));
-    pass(30_000);
-
-    expect(tick()).not.toBe('0');
-    expect(resources()).toEqual(before);
-  });
-
   it('aba oculta pausa a simulação; ao voltar continua pausada e retomar não gera salto de tempo', () => {
     render(<App />);
     fireEvent.click(button('Retomar'));
@@ -264,5 +257,132 @@ describe('relógio de ponta a ponta (App + tempo falso + NullEngine)', () => {
     expect(envs().every((env) => env.visibilityListeners() === 0)).toBe(true);
     expect(engines().every((engine) => engine.isDisposed)).toBe(true);
     expect(getLiveRendererCount()).toBe(0);
+  });
+});
+
+/*
+ * Economia (Fase 5) de ponta a ponta: a barra de recursos do App real mostra o estado da simulação,
+ * que só evolui com os ticks. Os valores esperados vêm de uma soma simples das definições dos
+ * edifícios (tests/support/economyExpectations.ts), não de uma cópia da regra do domínio.
+ */
+const barText = (stockAfter: Record<string, number>) =>
+  RESOURCE_IDS.map(
+    (id) =>
+      `${RESOURCE_DEFINITIONS[id].name}${new Intl.NumberFormat('pt-BR').format(stockAfter[id] ?? NaN)}`,
+  );
+
+/** Valor mostrado para um rótulo do painel da construção (par `dt`/`dd`). */
+const panelFact = (label: string): string | null => {
+  const term = within(screen.getByRole('complementary', { name: 'Construção selecionada' }))
+    .queryAllByText(label)
+    .find((element) => element.tagName === 'DT');
+  return term?.nextElementSibling?.textContent ?? null;
+};
+
+describe('economia de ponta a ponta (App + tempo falso + NullEngine)', () => {
+  it('abre com os estoques iniciais do cenário, e os quadros com o jogo pausado não os alteram', () => {
+    render(<App />);
+
+    expect(resources()).toEqual(barText(INITIAL_SCENARIO.initialResources));
+
+    pass(5_000);
+    pass(5_000);
+
+    expect(resources()).toEqual(barText(INITIAL_SCENARIO.initialResources));
+    expect(tick()).toBe('0');
+  });
+
+  it('retomar faz a economia andar com os ticks, e a velocidade multiplica os passos por segundo', () => {
+    render(<App />);
+    fireEvent.click(button('Retomar'));
+
+    pass(1_000);
+    expect(tick()).toBe('1');
+    expect(resources()).toEqual(barText(expectedResourcesAfter(1)));
+
+    fireEvent.click(button('4×'));
+    pass(1_000);
+    expect(tick()).toBe('5');
+    expect(resources()).toEqual(barText(expectedResourcesAfter(5)));
+  });
+
+  it('o resultado não depende do FPS: muitos quadros curtos ou poucos longos dão os mesmos recursos', () => {
+    const { unmount } = render(<App />);
+    fireEvent.click(button('Retomar'));
+    for (let frame = 0; frame < 200; frame += 1) {
+      pass(25);
+    }
+    const manyShortFrames = resources();
+    unmount();
+    harness.envs.length = 0;
+
+    render(<App />);
+    fireEvent.click(button('Retomar'));
+    pass(5_000);
+
+    expect(manyShortFrames).toEqual(barText(expectedResourcesAfter(5)));
+    expect(resources()).toEqual(manyShortFrames);
+  });
+
+  it('um quadro muito longo rende no máximo 10 passos de economia (teto de recuperação)', () => {
+    render(<App />);
+    fireEvent.click(button('Retomar'));
+
+    pass(30_000);
+
+    expect(tick()).toBe('10');
+    expect(resources()).toEqual(barText(expectedResourcesAfter(10)));
+  });
+
+  it('pausar congela a economia na tela e retomar continua dali', () => {
+    render(<App />);
+    fireEvent.click(button('Retomar'));
+    pass(2_000);
+
+    fireEvent.click(button('Pausar'));
+    pass(10_000);
+    expect(resources()).toEqual(barText(expectedResourcesAfter(2)));
+
+    fireEvent.click(button('Retomar'));
+    pass(1_000);
+    expect(resources()).toEqual(barText(expectedResourcesAfter(3)));
+  });
+
+  it('a seleção e o painel seguem funcionando com a economia em andamento, e o painel mostra produção e consumo', () => {
+    render(<App />);
+    const scene = liveScene();
+    const syncs = harness.syncCalls.count;
+    const extractor = getBuildingDefinition('water-extractor');
+
+    act(() => click(scene, onBuilding(scene, 'building-extractor-01')));
+    expect(panelName()).toBe('Extrator de Água');
+    expect(panelFact('Produção por tick')).toBe(`Água ${extractor.production.water}`);
+    expect(panelFact('Consumo por tick')).toBe(`Energia ${extractor.consumption.energy}`);
+
+    fireEvent.click(button('Retomar'));
+    pass(3_000);
+
+    expect(panelName()).toBe('Extrator de Água');
+    expect(panelFact('Produção por tick')).toBe(`Água ${extractor.production.water}`);
+    expect(resources()).toEqual(barText(expectedResourcesAfter(3)));
+    // A economia mexe nos recursos, não nas construções: a cena não é sincronizada de novo.
+    expect(harness.syncCalls.count).toBe(syncs);
+  });
+
+  it('com a aba oculta a economia para; ao voltar continua parada até retomar', () => {
+    render(<App />);
+    fireEvent.click(button('Retomar'));
+    pass(2_000);
+    expect(resources()).toEqual(barText(expectedResourcesAfter(2)));
+
+    act(() => activeEnv().setHidden(true));
+    pass(60 * 60 * 1000);
+    act(() => activeEnv().setHidden(false));
+    expect(statusText()).toBe('Pausado');
+    expect(resources()).toEqual(barText(expectedResourcesAfter(2)));
+
+    fireEvent.click(button('Retomar'));
+    pass(1_000);
+    expect(resources()).toEqual(barText(expectedResourcesAfter(3)));
   });
 });

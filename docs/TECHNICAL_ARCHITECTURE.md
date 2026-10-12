@@ -140,11 +140,11 @@ que recebe o snapshot e um callback `onPick(entityId)`).
 ## 4. Estrutura de pastas
 
 Estrutura-alvo. **Criar pastas somente quando houver código nelas.** Até a
-Fase 4 existem `app/`, `game/application/` (com `ports/` e `time/`),
+Fase 6 existem `app/`, `game/application/` (com `ports/` e `time/`),
 `game/content/`, `game/domain/` (`state/`, `time/`, `simulation/`,
-`commands/`), `platform/time/`, `presentation/` (`hud/`, `game-ui/`,
-`hooks/`), `rendering/`, `session/`, `shared/` (`grid/`, `result/`,
-`store/`) e `main.tsx`; as demais ainda não têm código.
+`commands/`, `economy/`, `construction/`), `platform/time/`, `presentation/`
+(`hud/`, `game-ui/`, `build/`, `hooks/`), `rendering/`, `session/`, `shared/`
+(`grid/`, `result/`, `store/`) e `main.tsx`; as demais ainda não têm código.
 
 ``` text
 src/
@@ -156,7 +156,7 @@ src/
 │   ├── hud/                  # barra de recursos, controles de tempo (Fases 3 e 4)
 │   ├── game-ui/              # HUD e painel de detalhes (Fase 3)
 │   └── hooks/                # useGameSelector, useClock, useSelection
-├── session/                  # estado de sessão da UI (seleção) — Fase 3
+├── session/                  # estado de sessão da UI (seleção: Fase 3; construção: Fase 6)
 ├── rendering/                # Babylon.js — Fase 2 (fora de game/)
 │   ├── scene/
 │   ├── camera/
@@ -176,9 +176,9 @@ src/
 │   │   ├── time/             # duração do tick (Fase 4)
 │   │   ├── simulation/       # passo de simulação (Fase 4)
 │   │   ├── commands/         # comandos de simulação (infraestrutura: Fase 4)
-│   │   ├── economy/
+│   │   ├── economy/          # produção, consumo e regra de falta (Fase 5)
 │   │   ├── population/
-│   │   ├── construction/
+│   │   ├── construction/     # posicionamento, custo e PlaceBuilding (Fase 6)
 │   │   └── events/
 │   └── content/
 ├── shared/
@@ -212,7 +212,7 @@ interface GameState {
   resources: Record<ResourceId, number>; // inteiros em unidades escaladas
   buildings: BuildingInstance[];
   // Adicionados quando o sistema que os usa for implementado:
-  nextEntityId: number;      // Fase 6 (IDs por contador)
+  nextEntityId: number;      // Fase 6, feito: §21.3 (IDs por contador)
   rng: RngState;             // Fase 7 (estado do PRNG, não só a seed)
   population: PopulationState; // Fase 9 (via migração de esquema)
   events: GameEventState[];  // Fase 7
@@ -255,6 +255,13 @@ mantido em `src/session/` [Fase 3]:
     (edifício removido) ou for desconhecido, a seleção é limpa e a
     interface exibe o estado vazio.
 
+O **modo de construção** [Fase 6, §21.5] segue o mesmo desenho
+(`src/session/buildStore.ts`): o edifício em posicionamento, a rotação, a
+célula apontada e se a posição está fixada. Também não faz parte do
+`GameState`, não é salvo e não é um comando: só a **confirmação** envia o
+comando `PlaceBuilding`; mover, girar e cancelar a prévia não alteram a
+partida. A seleção atual é preservada durante a construção.
+
 ## 6. Tempo e simulação
 
 ### 6.1 Relógio e passo fixo [Fase 4, feito: §19.2]
@@ -286,11 +293,11 @@ a aba fica oculta.
 -   Aleatoriedade somente via PRNG do domínio, cujo **estado completo**
     (`rng`) é parte do `GameState` e do salvamento [Fase 7; algoritmo:
     pendência P-07].
--   IDs por contador (`nextEntityId`).
+-   IDs por contador (`nextEntityId`) [Fase 6, feito: §21.3].
 -   O relógio e o tempo real ficam fora do domínio: o domínio recebe
     "execute um passo".
 
-### 6.4 Política numérica e de recursos [Fase 5]
+### 6.4 Política numérica e de recursos [Fase 5, feito: §20]
 
 -   Quantidades como **inteiros em unidades escaladas**; sem ponto
     flutuante nas regras econômicas.
@@ -312,7 +319,13 @@ apresentação.
 A ordem deve ser confirmada por testes e refinada conforme os sistemas
 forem adicionados.
 
-## 7. Comandos [Fase 4, infraestrutura feita: §19.3]
+**Refinamento da Fase 5 (§20.2):** os itens 3 e 4 viram um único passo
+econômico (`advanceEconomy`), que decide a partir do estoque do início do
+passo quais edifícios operam e depois aplica produção e consumo. Os itens
+1, 2 e 3-4 estão nesta ordem em `advanceSimulationStep`, que é o único
+lugar que define a ordem dos sistemas.
+
+## 7. Comandos [Fase 4, infraestrutura feita: §19.3; `PlaceBuilding`: Fase 6, §21]
 
 Há dois tipos de comando, com regras distintas.
 
@@ -361,11 +374,17 @@ Uma instância construída pode conter: - `instanceId` - `definitionId` -
 posição (célula do grid) e orientação (0/90/180/270°) - condição
 operacional - nível - progresso de construção, se houver.
 
+**Fase 5:** `production` e `consumption` existem (inteiros positivos por
+tick, `ResourceRates`). Detalhes em §20.4. **Fase 6:** `cost` existe (mesmo
+formato); os `requirements` se resumem a posição válida e recursos
+suficientes (§21.2), porque nada usa requisitos de tecnologia ou de outros
+edifícios. Detalhes em §21.3.
+
 Os tipos definitivos deverão distinguir dados de domínio e dados
 puramente visuais. Posição e orientação podem ser persistidas, mas
 meshes e materiais não.
 
-## 9. Posicionamento no mundo [Fase 2 e Fase 6]
+## 9. Posicionamento no mundo [Fase 2 e Fase 6, feito: §21.1 e §21.2]
 
 -   O domínio usa um **grid discreto 2D** de células inteiras `(x, y)`.
 -   Cada edifício ocupa um `footprint` retangular de células, com
@@ -373,7 +392,7 @@ meshes e materiais não.
 -   A área construível é **plana e limitada**; o relevo do terreno é
     visual no início.
 -   Regras de ocupação (sem sobreposição, dentro da área) vivem no
-    domínio e são testadas sem renderização [Fase 6].
+    domínio e são testadas sem renderização [Fase 6, feito: §21.2].
 -   O espaço do Babylon.js (esquerdo, Y para cima) é uma questão de
     renderização: a conversão grid → mundo 3D existe em **um único
     módulo**, `rendering/world/gridToWorld.ts` [Fase 2, feito].
@@ -440,8 +459,9 @@ passo ou comando aplicado publica um **snapshot imutável**.
     estado.
 -   A **barra de recursos lê somente do snapshot**. É proibido copiar
     valores de recursos para o estado do React ou manter números fixos
-    na interface. Na Fase 3, antes da economia, a barra lê os recursos
-    do `GameState` mínimo (valores iniciais vindos do conteúdo).
+    na interface. Na Fase 3 a barra lia os valores iniciais do
+    `GameState`; desde a Fase 5 ela mostra o estado que a economia
+    atualiza a cada passo (§20), sem lógica econômica no React.
 -   `rendering/` recebe o snapshot por um contrato injetado pelo `app/`
     e atualiza apenas o que mudou (sem recriar a cena inteira).
 -   A interface envia comandos (seção 7) ao controlador. O controlador
@@ -895,3 +915,336 @@ A camada de aplicação passa a proibir `Date.now`, `performance`,
 -   **Não cobertos:** `requestAnimationFrame` e visibilidade de um
     navegador real em segundo plano, e o desempenho (verificados à mão ou
     pendentes).
+
+## 20. Notas de implementação da Fase 5
+
+Registro do que foi implementado (decisões em `DECISIONS.md`, D-47 a D-52).
+
+### 20.1 Unidade e política numérica
+
+-   Estoques são **inteiros** e a unidade armazenada é a própria unidade
+    exibida (escala 1, D-47). Taxas de produção e consumo são inteiros
+    positivos **por tick** (1 tick = 1 s de tempo de jogo). Não há ponto
+    flutuante nem arredondamento: não existe divisão nas regras. Se um
+    sistema futuro precisar de frações, a escala muda por migração do
+    esquema do estado (Fase 8), nunca por arredondamento escondido.
+-   Cada número vive em **um só lugar**: estoques iniciais em
+    `game/content/scenario.ts` (`initialResources`), taxas na definição de
+    cada edifício em `game/content/buildings.ts` e o teto técnico
+    (`MAX_RESOURCE_AMOUNT`) em `game/content/resources.ts`. Não há número
+    econômico em `domain/`, `application/` nem `presentation/`.
+-   Valores inválidos (NaN, infinito, fracionário, negativo) são
+    **rejeitados, não corrigidos**: `validateGameState` (estado),
+    `validateBuildingEconomy` (taxas do conteúdo) e um `RangeError` no
+    próprio passo econômico se o resultado não for um inteiro seguro não
+    negativo.
+
+### 20.2 O passo econômico e a regra de falta
+
+`advanceEconomy(resources, buildings, definitions?)`, em
+`game/domain/economy/advanceEconomy.ts`, é uma função **pura e
+determinística** (sem relógio, aleatoriedade, DOM, React nem Babylon.js).
+Devolve um novo estoque congelado ou a **mesma referência** quando nada
+muda. Em cada passo:
+
+1.  **Decidir quem opera.** Os edifícios são avaliados na **ordem do
+    estado** (a de construção), que é a prioridade. Cada um tenta
+    **reservar todo o seu consumo** do estoque que sobrou. Se algum recurso
+    não cobrir o consumo, o edifício fica **parado**: não reserva, não
+    consome e **não produz**.
+2.  **Produção.** Soma a produção de cada edifício que opera, limitada ao
+    teto técnico (D-51).
+3.  **Consumo.** Subtrai o consumo de cada edifício que opera.
+
+Consequências, todas testadas:
+
+-   **A disponibilidade é o estoque do início do passo.** A produção do
+    passo só pode pagar consumo a partir do passo seguinte (por isso, com
+    o estoque zerado, um consumidor fica parado por um passo mesmo que um
+    produtor esteja funcionando).
+-   **O estoque nunca fica negativo, por construção:** cada reserva sai do
+    estoque inicial, então o consumo total não passa do que existe. Não há
+    dívida: o que faltou num passo não é cobrado depois.
+-   **Disputa:** se dois edifícios competem pelo mesmo recurso, o mais
+    antigo tem prioridade. Um edifício parado não reserva nada, então o
+    seguinte ainda pode usar o estoque.
+-   **Tudo ou nada por edifício:** a falta de um insumo impede o consumo
+    dos outros insumos do mesmo edifício.
+-   **Teto técnico:** uma produção que passaria de `MAX_RESOURCE_AMOUNT`
+    (o maior inteiro seguro) é limitada a ele. Não é capacidade de
+    armazenamento do jogo (P-19).
+-   Estoque de entrada inválido, taxa inválida ou definição desconhecida
+    lançam `RangeError` (erro de conteúdo ou de programação). O driver de
+    tempo pausa o relógio e relança o erro; a economia nunca produz um
+    valor inválido em silêncio.
+
+Esta regra **refina** a ordem do §6.5: os itens 3 (produção) e 4
+(consumo) formam um único passo econômico, decidido sobre o estoque
+inicial; produção e consumo são aplicados nessa ordem, e o resultado não
+depende da ordem entre eles.
+
+### 20.3 Ligação com ticks, relógio e comandos
+
+-   `advanceSimulationStep(state, applyCommands?)` é o **único** lugar que
+    define a ordem dos sistemas de um passo: (1) tick, (2) fase de
+    comandos, (3-4) economia. O `GameController` entrega a fase de comandos
+    (a fila é dele), então a regra do §7 não muda: os comandos são
+    aplicados depois do tick e **antes** da economia, e a economia já vê o
+    resultado deles.
+-   A economia só roda **dentro do passo**. Pausado, nenhum passo é
+    executado, então nenhum estoque muda. Um comando aplicado com o jogo
+    pausado não executa produção nem consumo (§7.2).
+-   **A velocidade** (1x, 2x, 4x) muda quantos passos acontecem por segundo
+    real; a quantidade por passo é a mesma. O teto de recuperação (10
+    passos por chamada) e a pausa com a aba oculta valem para a economia
+    sem código extra. Não existe segundo relógio.
+-   O `GameState` continua com os mesmos cinco campos: `resources` já
+    existia e é a **única fonte de verdade** dos estoques. O formato não
+    mudou (`schemaVersion` continua 1); o conteúdo mudou
+    (`contentVersion` 0.3.0). Um passo troca `tick` e, se algum estoque
+    mudou, `resources`; `buildings` mantém a referência.
+
+### 20.4 Conteúdo econômico (provisório, D-48)
+
+Taxas por tick, em `game/content/buildings.ts`. São os números mínimos
+para a economia funcionar e ser testada, **não balanceamento** (P-21):
+
+| Edifício           | Produz     | Consome    |
+| ------------------ | ---------- | ---------- |
+| Módulo Habitacional | —          | Energia 2  |
+| Extrator de Água   | Água 4     | Energia 3  |
+| Matriz Solar       | Energia 6  | —          |
+
+Saldo do cenário inicial: energia +1, água +4, alimentos e materiais 0.
+**Alimentos e materiais não têm produtor nem consumidor ainda**: o consumo
+de alimentos é da população (Fase 9) e os materiais entram com a
+construção (Fase 6). Como também não há consumidores de água nem
+capacidade de armazenamento, água e energia crescem sem limite (P-19).
+
+O GDD (§8.3) pede insumos, mão de obra, tempo e resultado: os **insumos** e o
+**resultado** estão modelados; o **tempo** é o tick; a **mão de obra** só
+existe com a população (Fase 9). A validação do conteúdo é
+`validateBuildingEconomy` (taxas inteiras positivas de recursos que
+existem), chamada por `createInitialGameState`: o jogo recusa começar com
+conteúdo econômico inválido.
+
+### 20.5 Interface
+
+-   `ResourceBar` não ganhou lógica: já lia a fatia `resources` do snapshot
+    (D-08, D-46) e agora os números mudam porque o estado muda. Ela só
+    re-renderiza quando algum estoque muda (verificado por teste), e não
+    há regra econômica nem valor próprio no React.
+-   `selectBuildingDetails` passou a trazer `production` e `consumption`
+    (da definição, por tick) e o painel mostra "Produção por tick" e
+    "Consumo por tick" ("Nenhum" quando vazio). O painel **não** mostra o
+    estado operacional ("parado por falta de energia"): isso depende de
+    uma condição operacional do edifício (P-20).
+-   A seleção, o painel e a cena não mudaram: a economia mexe em
+    `resources`, e a cena só é sincronizada quando `buildings` muda.
+
+### 20.6 Testes da Fase 5
+
+-   **Regras** (`economy.test.ts`, definições fictícias com os quatro
+    recursos, sem relógio nem interface): produção, consumo, limite
+    inclusivo, falta (parado, tudo ou nada, sem dívida), produção do passo
+    não paga o consumo do mesmo passo, prioridade por ordem, parado não
+    reserva, nunca negativo em 300 passos de déficit, teto técnico, taxas e
+    estoques inválidos, pureza, imutabilidade e determinismo.
+-   **Conteúdo** (`economyContent.test.ts`): o conteúdo entregue é válido,
+    o estado recusa conteúdo inválido, o estoque inicial cobre o consumo e
+    o jogo produz o que a soma simples das definições prevê
+    (`tests/support/economyExpectations.ts`, calculada à parte e sem fixar
+    os números provisórios).
+-   **Passo, relógio e comandos** (`economySimulation.test.ts`): ordem
+    tick → comandos → economia, pausa, retomada, velocidades, mudança de
+    velocidade, independência de FPS, determinismo, teto de recuperação,
+    comandos na fila e aba oculta.
+-   **Interface e fluxo** (`ResourceBar`, `BuildingDetailsPanel`,
+    `renderIsolation`, `clockFlow` com o `App` real, tempo falso e
+    `NullEngine`): a barra acompanha o estado, pausa congela, a seleção e
+    o painel continuam funcionando e a cena não é refeita por mudança de
+    recursos.
+-   **Não cobertos:** o `requestAnimationFrame` e a visibilidade de um
+    navegador real em segundo plano (P-18), o desempenho e o balanceamento.
+
+## 21. Notas de implementação da Fase 6
+
+Registro do que foi implementado (decisões em `DECISIONS.md`, D-53 a D-58).
+
+### 21.1 Convenção do grid e do posicionamento
+
+A convenção é a de §9 (Fase 2), agora também aplicada às regras:
+
+-   **Origem e eixos:** a célula `(0, 0)` é o canto noroeste do terreno; `x`
+    cresce para **leste** e `y` para o **sul**, em células inteiras. O
+    terreno do cenário inicial tem 40 × 40 células; a área construível
+    é o retângulo `(12, 12)` com 16 × 16.
+-   **Dimensões:** `width` é a extensão em `x` e `depth` a extensão em
+    `y` (não é altura vertical). O `footprint` da definição é medido com
+    rotação 0.
+-   **Rotação:** `0 | 90 | 180 | 270`, no sentido horário visto de cima.
+    90° e 270° **trocam** largura e profundidade. A rotação ocorre em torno
+    do centro do retângulo ocupado.
+-   **Posição:** `position` é a célula de **menor `x` e menor `y`** do
+    retângulo ocupado **já rotacionado**. Células ocupadas =
+    `[x, x + largura) × [y, y + profundidade)`.
+-   **Ponteiro → posição:** o ponteiro aponta uma **célula** (o ponto do
+    plano do chão sob o ponteiro, `y = 0`, convertido por `worldToGridCell`,
+    único módulo de conversão mundo → grid junto de `gridToWorld.ts`).
+    O edifício fica **centrado** nessa célula (`positionForAnchorCell`):
+    `position = célula − ⌊extensão / 2⌋` em cada eixo, com a extensão já
+    rotacionada. Em extensões pares o centro cai na célula de menor índice
+    das duas do meio.
+-   **Obstáculos:** a nave acidentada é cenário (D-25) e ocupa células; para o
+    posicionamento ela é um **obstáculo** (`createPlacementTerrain`). Os
+    edifícios existentes vêm do estado.
+
+### 21.2 Regras de validação (domínio)
+
+`game/domain/construction/placement.ts`. Uma só definição de construção
+válida, usada pelo comando **e** pela prévia da interface
+(`evaluatePlacement`; sem Babylon.js, React, relógio nem aleatoriedade):
+
+1.  **Área construível:** o retângulo ocupado precisa estar **inteiro**
+    dentro dela (`OUT_OF_BUILDABLE_AREA`). Encostar na borda vale.
+2.  **Edifícios:** o retângulo não pode sobrepor nenhum edifício do estado,
+    considerando a rotação de cada um (`OVERLAPS_BUILDING`). Bordas ou
+    cantos que apenas se tocam **não** são sobreposição.
+3.  **Obstáculos:** não pode sobrepor a nave (`OVERLAPS_OBSTACLE`).
+4.  **Recursos:** o estoque precisa cobrir o **custo inteiro** de todos os
+    recursos (`INSUFFICIENT_RESOURCES`); o limite é inclusivo.
+
+A **primeira** verificação que falha decide o código, nessa ordem. O espaço
+(1 a 3) é validado por `evaluatePlacementSpace`, que ignora os recursos.
+Definição desconhecida lança `RangeError` (erro de programação); no
+comando ela é `INVALID_COMMAND`.
+
+### 21.3 `PlaceBuilding`, custos e identificadores
+
+-   **Comando** `{ type: 'PlaceBuilding', definitionId, position, rotation }`,
+    registrado em `COMMAND_HANDLERS`. O tratador lê o comando (que chega sem
+    tipos) e devolve `INVALID_COMMAND` se estiver malformado (definição
+    desconhecida ou herdada como `__proto__`, rotação inválida, posição não
+    inteira); depois aplica `evaluatePlacement`. Os códigos de
+    `PlacementErrorCode` entram em `CommandErrorCode`, para a interface
+    explicar o motivo (`COMMAND_REJECTED` continua sendo a recusa genérica).
+-   **Custo:** declarado em cada definição (`BuildingDefinition.cost`,
+    `ResourceRates`, inteiros positivos; vazio = grátis). É descontado **uma
+    vez**, junto da criação do edifício, só quando a construção é válida. Uma
+    recusa devolve erro e **não altera nada**: nem recursos, nem edifícios,
+    nem contador.
+-   **Identidade:** `GameState.nextEntityId` (inteiro ≥ 1, só cresce) é o
+    contador. A instância nova recebe `building-<n>` e o contador avança. Os
+    edifícios iniciais mantêm os identificadores fixos do cenário. Uma recusa
+    não consome número. O contador no limite do inteiro seguro recusa o
+    comando (`INVALID_STATE`) em vez de gerar um identificador inexato. O
+    formato do estado não ganhou versão nova (`schemaVersion` continua 1:
+    ainda não existe formato salvo; o primeiro é o da Fase 8).
+-   **Instância:** só dados de domínio (`instanceId`, `definitionId`, posição,
+    rotação). Nenhum mesh, nó ou objeto do Babylon.js entra no estado: a cena
+    é uma representação do estado (`toWorldSnapshot`), não uma segunda fonte.
+-   **Validação do conteúdo:** `validateBuildingContent` (manual, sem
+    biblioteca) confere id igual à chave, nome, categoria, footprint e, pela
+    validação econômica, custo, produção e consumo. O jogo recusa começar com
+    conteúdo inválido (`createInitialGameState`).
+
+### 21.4 Prévia visual
+
+-   **Contrato:** `PlacementPreviewSpec` (em `rendering/world/WorldSnapshot.ts`):
+    o edifício, o tamanho, a posição, a rotação e `valid`. Quem o monta é o
+    `app/` (`GameCanvas`), a partir de `selectPlacementPreview` (aplicação),
+    que usa as regras do domínio. A cena **só desenha**: não conhece regras,
+    custo nem estado.
+-   **Camada** `rendering/buildings/PlacementPreview.ts`: um **fantasma**
+    translúcido do edifício (com a frente apontando para o sul em 0°, então a
+    rotação fica visível), um **preenchimento** e uma **moldura** no chão e,
+    **só se inválida, um "X"**. Válida e inválida se distinguem por cor
+    **e** por forma (o X), e o painel diz o motivo em texto com ✔ ou ✖.
+-   Nada da prévia é "pickable", projeta sombra, tem metadados de entidade ou
+    entra na lista de edifícios. Os materiais do fantasma são próprios; os
+    materiais compartilhados dos edifícios reais não são tocados. Trocar só a
+    validade, a posição ou a rotação não recria nada.
+-   **Entrada** (`rendering/interaction/PlacementInput.ts`): com o modo ligado,
+    o ponteiro vira uma **célula** (`groundPicking`, raio da câmera contra o
+    plano do chão): `hover` quando a célula muda e `click` num clique do botão
+    principal (mesma tolerância de 6 px da seleção, para o arrasto continuar
+    girando a câmera). A área construível é exatamente plana em `y = 0`;
+    fora dela o plano é aproximado, o que não importa porque a posição é
+    inválida de qualquer jeito. Um edifício na frente não muda a célula.
+
+### 21.5 Modo de construção e interface
+
+-   **Estado de sessão** (`session/buildStore.ts`, como a seleção): o
+    identificador do edifício em posicionamento, a rotação, a célula e se a
+    posição está **fixada**. Fora do `GameState`, não é salvo e não é comando.
+    Mover, girar e cancelar a prévia **não** enviam comando nenhum.
+-   **Fluxo:** "Construir" abre o catálogo → escolher um edifício → o
+    ponteiro move a prévia → **clicar no terreno fixa** a posição (o ponteiro
+    indo até os botões não a move; outro clique a muda) → `R` ou "Girar 90°"
+    → **"Confirmar construção"** (ou `Enter`) ou **"Cancelar"** (ou `Esc`).
+    Fechar o painel também cancela. A confirmação é sempre explícita.
+-   **Seleção:** no modo de construção o clique **não seleciona** (a seleção
+    atual é preservada e o painel de detalhes continua); `Esc` com um edifício
+    em posicionamento cancela a prévia **sem** limpar a seleção. Ao sair do
+    modo, o clique volta a selecionar.
+-   **Catálogo e custos:** `selectBuildCatalog` (nome, categoria, footprint,
+    custo e disponibilidade, tudo do conteúdo e do estado). O que falta
+    aparece em **texto** ("faltam 20", "Recursos insuficientes agora").
+-   **Gasto duplicado:** ao confirmar com sucesso, o posicionamento é
+    **encerrado na mesma chamada**, antes de qualquer novo clique; um segundo
+    clique ou `Enter` não encontra nada a confirmar. Por outro caminho, um
+    comando repetido é recusado por sobreposição (jogo pausado) ou na
+    revalidação do passo (em andamento): o custo é cobrado uma vez só.
+-   **Acessibilidade:** botões com nome, grupo "Posicionar …", `aria-pressed`
+    no edifício escolhido, `aria-expanded`/`aria-controls` no botão
+    "Construir", resultado em `role="status"`, foco visível. Posicionar ainda
+    exige um ponteiro (P-16).
+
+### 21.6 Pausa, fila e feedback
+
+-   Valem as regras de §7.2: com o jogo **pausado** o comando válido é
+    aplicado **na hora**, sem avançar o tick e sem rodar a economia; **em
+    andamento** entra na fila, é aplicado no início do próximo passo (depois
+    do tick e **antes** da economia, então o edifício novo já produz e
+    consome nesse passo) e é **revalidado**. Pausar aplica o que estava na
+    fila, em ordem, sem avançar o tempo.
+-   `submitCommand` devolve `applied` ou `queued`, e o aviso diz qual dos dois
+    aconteceu ("construído" ou "será aplicada no próximo passo").
+-   **Recusa tardia (resolve P-17 para a construção):** um comando aceito na
+    fila e recusado ao ser aplicado (por exemplo, outro pedido gastou os
+    recursos antes) chega à interface por `GameController.subscribeRejections`;
+    o `App` o converte em aviso e a interface o traduz (`ERROR_MESSAGES`, que
+    o compilador obriga a cobrir todo código). A construção é **instantânea**:
+    não há tempo de obra nem progresso (P-22).
+
+### 21.7 Testes da Fase 6
+
+-   **Regras** (`placement.test.ts`, terreno e definições fictícios): rotação
+    e dimensões, célula → posição, posição válida, limites da grade,
+    sobreposição (inclusive rotação e ordem das verificações), recursos e
+    pureza; o conteúdo real tem espaço para todo edifício em qualquer rotação.
+-   **Comando** (`placeBuildingCommand.test.ts`): criação, desconto exato por
+    edifício, operações inválidas sem alterar nada, comando malformado,
+    identificadores únicos e determinismo.
+-   **Pausa e fila** (`constructionCommands.test.ts`): aplicação imediata,
+    fila, revalidação, pedidos repetidos, recursos esgotados na aplicação,
+    pausa que descarrega a fila, independência de FPS e canal de recusa.
+-   **Seletores e sessão** (`buildSelectors`, `buildStore`), **cena**
+    (`placementPreview`: conversão mundo → grade, entrada do ponteiro, seleção
+    suspensa, prévia válida e inválida, sem sobras e sem picking),
+    **painel** (`BuildPanel`) e **fluxo** com o `App` real, tempo falso e
+    `NullEngine` (`buildFlow`): prévia, fixar, confirmar, cancelar, seleção,
+    fila e recusa tardia.
+-   **Não cobertos:** o mouse e o toque reais, o WebGL e a cor na tela, a
+    sensação do arrasto e o desempenho em um navegador real (verificados à
+    mão ou pendentes).
+
+### 21.8 Limitações conhecidas
+
+-   Construção instantânea, sem tempo de obra, demolição, mover ou melhorar
+    (P-22).
+-   Custos e taxas provisórios (P-21); a estufa produz alimentos que ninguém
+    consome até a população (Fase 9).
+-   Posicionar exige ponteiro; sem alternativa por teclado (P-16). Em telas
+    de toque não há "passar o ponteiro": o primeiro toque fixa a posição e
+    "Confirmar construção" conclui (verificar em um aparelho real, P-23).

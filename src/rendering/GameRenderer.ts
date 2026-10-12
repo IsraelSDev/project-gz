@@ -1,13 +1,16 @@
 import type { AbstractEngine } from '@babylonjs/core/Engines/abstractEngine';
 import { Engine } from '@babylonjs/core/Engines/engine';
+import type { GridPosition, GridSize } from '@/shared/grid/types';
 import { createBuildingLayer } from './buildings/BuildingLayer';
+import { createPlacementPreviewLayer } from './buildings/PlacementPreview';
 import { createCameraRig } from './camera/cameraRig';
 import { createBuildingPicking } from './interaction/BuildingPicking';
+import { createPlacementInput, type PlacementCellSource } from './interaction/PlacementInput';
 import { createSceneContext } from './scene/createSceneContext';
 import { CELL_SIZE, gridRectCenterToWorld } from './world/gridToWorld';
 import { createHeightField, type HeightField } from './world/heightField';
 import { createStaticWorld, type StaticWorld } from './world/StaticWorld';
-import type { WorldSnapshot } from './world/WorldSnapshot';
+import type { PlacementPreviewSpec, WorldSnapshot } from './world/WorldSnapshot';
 
 /**
  * Estado do renderizador, para a interface poder avisar o jogador (nada falha em silêncio):
@@ -42,6 +45,12 @@ export interface GameRendererOptions {
    * não atingiu uma construção. Registrado uma vez na criação; sem ele não há seleção por clique.
    */
   readonly onPick?: (entityId: string | null) => void;
+  /**
+   * Chamado, no modo de posicionamento, com a CÉLULA do grid sob o ponteiro: `hover` quando o
+   * ponteiro passa para outra célula e `click` num clique (apertar e soltar sem arrastar). O
+   * renderizador só diz qual célula; o significado (e a validade) é de quem o cria.
+   */
+  readonly onPlacementCell?: (cell: GridPosition, source: PlacementCellSource) => void;
 }
 
 export interface GameRenderer {
@@ -52,6 +61,17 @@ export interface GameRenderer {
    * Um identificador inexistente é aceito e simplesmente não marca nada. Não recria a cena.
    */
   setSelectedEntity(entityId: string | null): void;
+  /**
+   * Liga ou desliga o modo de posicionamento. Ligado, o ponteiro informa células por
+   * `onPlacementCell` e o clique NÃO seleciona construções (a seleção atual é preservada, só deixa
+   * de mudar). Desligado, a seleção por clique volta ao normal.
+   */
+  setPlacementMode(active: boolean): void;
+  /**
+   * Mostra a prévia de construção (ou a esconde, com `null`). É só visual: não altera o estado do
+   * jogo nem participa do picking. Pode ser chamado antes do primeiro \`sync\`.
+   */
+  setPlacementPreview(preview: PlacementPreviewSpec | null): void;
   getFrameStats(): FrameStats;
   /** Libera tudo (render loop, observadores, meshes, materiais, cena e engine). Idempotente. */
   dispose(): void;
@@ -106,9 +126,17 @@ export function createGameRenderer(
   let sceneContext: ReturnType<typeof createSceneContext> | null = null;
   let cameraRig: ReturnType<typeof createCameraRig> | null = null;
   let buildingLayer: ReturnType<typeof createBuildingLayer> | null = null;
+  let previewLayer: ReturnType<typeof createPlacementPreviewLayer> | null = null;
   let staticWorld: StaticWorld | null = null;
   let staticWorldKey: string | null = null;
   let heightField: HeightField | null = null;
+  /** Extensão do terreno do último snapshot: converte o ponteiro em célula e a prévia em mundo. */
+  let terrainSize: GridSize | null = null;
+  /** Prévia pedida; guardada porque pode chegar antes do primeiro `sync` e a cada novo `sync`. */
+  let previewSpec: PlacementPreviewSpec | null = null;
+  /** No modo de posicionamento o clique posiciona e NÃO seleciona. */
+  let placementActive = false;
+  let placementInput: ReturnType<typeof createPlacementInput> | null = null;
 
   const dispose = (): void => {
     if (disposed) {
@@ -123,6 +151,7 @@ export function createGameRenderer(
     for (const cleanup of cleanups.splice(0).reverse()) {
       cleanup();
     }
+    previewLayer?.dispose();
     buildingLayer?.dispose();
     staticWorld?.dispose();
     cameraRig?.dispose();
@@ -153,11 +182,22 @@ export function createGameRenderer(
       }
     }
 
+    terrainSize = snapshot.terrain.sizeCells;
     const field = heightField;
     buildingLayer.sync(snapshot.buildings, snapshot.terrain.sizeCells, (x, z) =>
       field ? field.heightAt(x, z) : 0,
     );
+    applyPreview();
   };
+
+  /** Mostra a prévia pedida, assim que o terreno é conhecido (depois do primeiro `sync`). */
+  function applyPreview(): void {
+    if (disposed || !previewLayer || !terrainSize) {
+      return;
+    }
+    const field = heightField;
+    previewLayer.update(previewSpec, terrainSize, (x, z) => (field ? field.heightAt(x, z) : 0));
+  }
 
   const renderer: GameRenderer = {
     sync,
@@ -165,6 +205,20 @@ export function createGameRenderer(
       if (!disposed) {
         buildingLayer?.setSelected(entityId);
       }
+    },
+    setPlacementMode: (active) => {
+      if (disposed) {
+        return;
+      }
+      placementActive = active;
+      placementInput?.setActive(active);
+    },
+    setPlacementPreview: (preview) => {
+      if (disposed) {
+        return;
+      }
+      previewSpec = preview;
+      applyPreview();
     },
     getFrameStats: () => ({ fps: engine.getFps(), frameTimeMs: engine.getDeltaTime() }),
     dispose,
@@ -175,6 +229,7 @@ export function createGameRenderer(
     cameraRig = createCameraRig(sceneContext.scene);
     cameraRig.setGroundHeight((x, z) => (heightField ? heightField.heightAt(x, z) : 0));
     buildingLayer = createBuildingLayer(sceneContext);
+    previewLayer = createPlacementPreviewLayer(sceneContext);
 
     const lostObserver = engine.onContextLostObservable.add(() => {
       options.onStatusChange?.('context-lost');
@@ -193,8 +248,15 @@ export function createGameRenderer(
 
     const scene = sceneContext.scene;
     if (options.onPick) {
-      const picking = createBuildingPicking(scene, options.onPick);
+      // No modo de posicionamento o clique posiciona a prévia, então a seleção é suspensa.
+      const picking = createBuildingPicking(scene, options.onPick, () => !placementActive);
       cleanups.push(() => picking.dispose());
+    }
+    const onPlacementCell = options.onPlacementCell;
+    if (onPlacementCell) {
+      placementInput = createPlacementInput(scene, () => terrainSize, onPlacementCell);
+      const input = placementInput;
+      cleanups.push(() => input.dispose());
     }
     engine.runRenderLoop(() => scene.render());
   } catch (error) {

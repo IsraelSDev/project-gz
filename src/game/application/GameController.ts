@@ -46,6 +46,12 @@ export interface CommandLogEntry {
   readonly error?: CommandErrorCode;
 }
 
+/** Um comando aceito na fila que as regras recusaram na hora de aplicar (revalidação). */
+export type RejectedCommand = CommandLogEntry & {
+  readonly outcome: 'rejected';
+  readonly error: CommandErrorCode;
+};
+
 export interface GameController extends GameStateReader {
   /**
    * Relógio da simulação. A interface lê `getSnapshot`/`subscribe` e usa os comandos de controle
@@ -60,6 +66,13 @@ export interface GameController extends GameStateReader {
   submitCommand(command: SimulationCommand): Result<CommandOutcome, CommandErrorCode>;
   /** Últimos comandos aplicados ou recusados, do mais antigo ao mais novo (para testes e depuração). */
   getCommandLog(): readonly CommandLogEntry[];
+  /**
+   * Canal de feedback dos comandos RECUSADOS NA APLICAÇÃO (P-17): um comando aceito na fila pode ser
+   * recusado quando o passo o aplica (por exemplo, outro comando gastou os recursos antes). O
+   * ouvinte recebe o comando e o código do erro, e a interface o traduz em texto. Comandos recusados
+   * no envio não passam por aqui: o próprio `submitCommand` já devolveu o erro.
+   */
+  subscribeRejections(listener: (rejection: RejectedCommand) => void): () => void;
 }
 
 export interface GameControllerOptions {
@@ -90,6 +103,7 @@ export function createGameController(
     options.executeCommand ?? ((state, command) => executeSimulationCommand(state, command));
   const logLimit = options.commandLogLimit ?? DEFAULT_COMMAND_LOG_LIMIT;
   const listeners = createListenerSet();
+  const rejectionListeners = new Set<(rejection: RejectedCommand) => void>();
 
   let state: GameSnapshot = initialState;
   /** Comandos aceitos e ainda não aplicados, em ordem de chegada (FIFO). Só existe com o jogo em andamento. */
@@ -124,15 +138,28 @@ export function createGameController(
         record({ tick: current.tick, command, outcome: 'applied' });
         current = result.value;
       } else {
-        record({ tick: current.tick, command, outcome: 'rejected', error: result.error });
+        const rejection: RejectedCommand = {
+          tick: current.tick,
+          command,
+          outcome: 'rejected',
+          error: result.error,
+        };
+        record(rejection);
+        for (const listener of [...rejectionListeners]) {
+          listener(rejection);
+        }
       }
     }
     return current;
   };
 
-  /** Um passo de simulação: tick, depois comandos pendentes (Arquitetura §6.5), e UM snapshot novo. */
+  /**
+   * Um passo de simulação e UM snapshot novo. A ordem dos sistemas (tick, comandos pendentes,
+   * economia: Arquitetura §6.5) é do domínio; a fila de comandos é daqui, então entra como a fase
+   * de comandos do passo.
+   */
   const runStep = (): void => {
-    publish(applyPending(advanceSimulationStep(state)));
+    publish(advanceSimulationStep(state, applyPending));
   };
 
   const clock = createSimulationClock({
@@ -170,5 +197,12 @@ export function createGameController(
     },
 
     getCommandLog: () => [...log],
+
+    subscribeRejections: (listener) => {
+      rejectionListeners.add(listener);
+      return () => {
+        rejectionListeners.delete(listener);
+      };
+    },
   };
 }

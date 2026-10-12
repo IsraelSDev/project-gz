@@ -154,8 +154,8 @@ real (P-14).
 
 ## Fase 4 — Estado do jogo e relógio
 
-**Status:** concluída e validada; aguardando aprovação para iniciar a
-Fase 5. Detalhes em `TECHNICAL_ARCHITECTURE.md` §19 e em `DECISIONS.md`
+**Status:** concluída, validada e aprovada. Detalhes em
+`TECHNICAL_ARCHITECTURE.md` §19 e em `DECISIONS.md`
 (D-41 a D-46; P-04 resolvida). **Pendências que não bloqueiam a fase:**
 verificação com uma aba realmente em segundo plano (P-18) e feedback dos
 comandos recusados na aplicação (P-17). Nenhum comando de simulação
@@ -192,6 +192,14 @@ comandos de teste.
     comandos.
 
 ## Fase 5 — Economia mínima
+
+**Status:** concluída e validada; aguardando aprovação para iniciar a
+Fase 6. Detalhes em `TECHNICAL_ARCHITECTURE.md` §20 e em `DECISIONS.md`
+(D-47 a D-52; P-19 a P-21 novas). **Pendências que não bloqueiam a fase:**
+a verificação com uma aba realmente em segundo plano (P-18, herdada da
+Fase 4) e o balanceamento dos números provisórios (P-21). Alimentos e
+materiais ainda não têm produtor nem consumidor: o consumo de alimentos é
+da população (Fase 9) e os materiais entram com a construção (Fase 6).
 
 ### Tarefas
 

@@ -3,12 +3,18 @@
 Jogo 3D de estratégia e simulação de civilização alienígena, executado no navegador.
 Stack: TypeScript (estrito), Vite, React e Babylon.js.
 
-**Status:** Fases 1 a 4 do roadmap implementadas; a Fase 4 aguarda aprovação. Ao abrir o jogo você
+**Status:** Fases 1 a 6 do roadmap implementadas; a Fase 6 aguarda aprovação. Ao abrir o jogo você
 vê a cena 3D (terreno alienígena, céu, vegetação provisória, a nave acidentada e três construções
 iniciais), tudo derivado de um `GameState` somente leitura, com uma HUD: barra de recursos, controles
 de tempo e painel da construção selecionada. A simulação tem um relógio de passo fixo (1 tick = 1 s
-de jogo, velocidades 1x, 2x e 4x) e a partida **começa pausada**. **Ainda não há** jogabilidade: os
-recursos não mudam (economia é a Fase 5), o jogador não constrói e não há eventos nem salvamento.
+de jogo, velocidades 1x, 2x e 4x) e a partida **começa pausada**. A economia mínima roda a cada tick:
+cada edifício produz e consome recursos (o painel da construção mostra as taxas) e a barra de recursos
+mostra o estado real. Com a simulação em andamento, **água e energia sobem**; alimentos e materiais
+ainda não mudam, até você construir a Estufa Hidropônica (alimentos) ou o Reciclador de Materiais.
+Com o botão **Construir** você escolhe um edifício, vê a prévia no terreno (verde se a posição vale,
+vermelha e com um "X" se não vale), gira, confirma ou cancela; a construção custa recursos e só é
+cobrada quando é confirmada. **Ainda não há** população, eventos nem salvamento, e a construção é
+instantânea (sem tempo de obra nem demolição).
 
 ## Controles da câmera
 
@@ -19,10 +25,14 @@ recursos não mudam (economia é a Fase 5), o jogador não constrói e não há 
 | Zoom                                   | Roda do mouse ou pinça do trackpad (com limites)             |
 | Mover pelo teclado                     | `W` frente, `A` esquerda, `S` trás, `D` direita (relativos à direção da câmera; mais rápido com a câmera afastada) |
 | Outras teclas                          | Setas giram; `Ctrl` + setas movem; `+`/`-` ou `Alt` + setas = zoom |
-| Selecionar uma construção              | Clique esquerdo (sem arrastar)                               |
+| Selecionar uma construção              | Clique esquerdo (sem arrastar), fora do modo de construção   |
 | Limpar a seleção                       | Clicar em área vazia ou na nave, `Esc` (com o canvas focado) ou o botão do painel |
 | Pausar / retomar a simulação           | Botão "Pausar"/"Retomar" na barra superior                   |
 | Velocidade da simulação                | Botões 1×, 2× e 4× na barra superior                         |
+| Construir                              | Botão "Construir": escolher o edifício; o ponteiro move a prévia no terreno |
+| Fixar a posição da prévia              | Clique esquerdo no terreno (outro clique a muda)             |
+| Girar a prévia                         | `R` ou o botão "Girar 90°"                                   |
+| Confirmar / cancelar a construção      | `Enter` ou o botão "Confirmar construção" / `Esc` ou o botão "Cancelar" |
 
 A inclinação é limitada (≈14° a ≈64° de elevação), o zoom tem mínimo e máximo, o pan é restrito ao
 redor do acampamento e a câmera nunca fica abaixo do terreno.
@@ -86,11 +96,12 @@ src/
 │   ├── application/         GameController (estado, relógio, fila de comandos), seletores,
 │   │                        SimulationClock e driver de tempo, porta TimeEnvironment
 │   ├── content/             definições estáticas e o cenário inicial
-│   └── domain/              GameState e validação, passo de simulação, comandos, tick
+│   └── domain/              GameState e validação, passo de simulação, economia, construção
+│                            (posicionamento, custo, PlaceBuilding), comandos, tick
 ├── platform/time/           ambiente de tempo do navegador (rAF, performance.now, visibilidade)
-├── presentation/            React: HUD, barra de recursos, controles de tempo, painel, hooks
+├── presentation/            React: HUD, barra de recursos, controles de tempo, painel, construção, hooks
 ├── rendering/               Babylon.js: GameRenderer, cena, câmera, picking, edifícios
-├── session/                 estado de sessão da UI (seleção), fora do GameState
+├── session/                 estado de sessão da UI (seleção e modo de construção), fora do GameState
 ├── shared/                  grid, Result e conjunto de ouvintes (usados por várias camadas)
 └── main.tsx                 ponto de entrada (React em StrictMode)
 tests/unit/                  testes (Vitest; Node, e jsdom nos de componentes)
@@ -116,6 +127,17 @@ As demais pastas só são criadas quando houver código nelas. A estrutura-alvo 
   usam um ambiente de tempo **falso**, sem esperas reais. Nada disso cobre o navegador real: WebGL,
   mouse e canvas reais, `requestAnimationFrame`, aba em segundo plano, redimensionamento e controles
   de câmera são verificados manualmente.
+- **Economia (Fase 5):** estoques são inteiros e as taxas de produção e consumo ficam na definição de
+  cada edifício (`src/game/content/buildings.ts`, valores provisórios). Um edifício só opera se o
+  estoque do início do passo cobre todo o seu consumo; senão fica parado, e nenhum estoque fica
+  negativo. A economia roda só dentro do passo de simulação (pausado não evolui). Regras em
+  [`docs/TECHNICAL_ARCHITECTURE.md`](docs/TECHNICAL_ARCHITECTURE.md) §20.
+- **Construção (Fase 6):** a posição é uma célula do grid (`x` para leste, `y` para o sul; a posição
+  de um edifício é a célula de menor `x` e `y` do retângulo já rotacionado, e 90°/270° trocam largura e
+  profundidade). Uma só regra no domínio (`evaluatePlacement`) decide se uma construção vale (área,
+  sobreposição, nave, recursos) e é usada pelo comando `PlaceBuilding` e pela prévia. A prévia é só
+  visual e não altera a partida. Regras em
+  [`docs/TECHNICAL_ARCHITECTURE.md`](docs/TECHNICAL_ARCHITECTURE.md) §21.
 - **Determinismo e tempo:** o ESLint proíbe no domínio `Math.random`, `Date.now`, `performance`,
   `crypto`, timers e `globalThis`; a camada de aplicação não lê o tempo real (ele entra pela porta
   `TimeEnvironment`, implementada em `platform/time/`).

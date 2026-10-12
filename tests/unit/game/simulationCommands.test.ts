@@ -22,8 +22,13 @@ const execute = (state: GameState, command: SimulationCommand) =>
   executeTestCommand(state, command);
 
 describe('executeSimulationCommand', () => {
-  it('não há comandos concretos registrados nesta fase', () => {
-    expect(Object.keys(COMMAND_HANDLERS)).toEqual([]);
+  it('o único comando concreto registrado é PlaceBuilding (Fase 6); os demais não existem', () => {
+    expect(Object.keys(COMMAND_HANDLERS)).toEqual(['PlaceBuilding']);
+    expect(executeSimulationCommand(initial(), { type: 'ResolveEvent' })).toEqual({
+      ok: false,
+      error: 'INVALID_COMMAND',
+    });
+    // Um PlaceBuilding sem os dados do pedido é malformado.
     expect(executeSimulationCommand(initial(), { type: 'PlaceBuilding' })).toEqual({
       ok: false,
       error: 'INVALID_COMMAND',

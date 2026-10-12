@@ -3,7 +3,11 @@ import { PointerEventTypes, PointerInfo } from '@babylonjs/core/Events/pointerEv
 import { Matrix, Vector3 } from '@babylonjs/core/Maths/math.vector';
 import type { Scene } from '@babylonjs/core/scene';
 import { createInitialWorldSnapshot } from '@/app/worldSnapshot';
-import { createGameRenderer, type GameRenderer } from '@/rendering/GameRenderer';
+import {
+  createGameRenderer,
+  type GameRenderer,
+  type GameRendererOptions,
+} from '@/rendering/GameRenderer';
 import { resolveEntityId } from '@/rendering/interaction/entityMetadata';
 import type { WorldSnapshot } from '@/rendering/world/WorldSnapshot';
 
@@ -30,6 +34,8 @@ export interface HeadlessRenderer {
 export interface MountOptions {
   /** Callback de seleção por clique; sem ele o renderizador não registra picking. */
   readonly onPick?: (entityId: string | null) => void;
+  /** Callback do modo de posicionamento (célula sob o ponteiro); sem ele não há entrada de posicionamento. */
+  readonly onPlacementCell?: GameRendererOptions['onPlacementCell'];
   /** Sincroniza o snapshot inicial logo após criar (padrão: sim). */
   readonly sync?: boolean;
 }
@@ -43,6 +49,7 @@ export function mountHeadlessRenderer(options: MountOptions = {}): HeadlessRende
       return engine;
     },
     onPick: options.onPick,
+    onPlacementCell: options.onPlacementCell,
   });
   if (!renderer) {
     throw new Error('O renderizador deveria ter sido criado.');
@@ -108,7 +115,10 @@ export function pointer(scene: Scene, type: number, x: number, y: number, button
   scene.pointerY = y;
   const event = {
     button,
-    buttons: type === PointerEventTypes.POINTERUP ? 0 : 1 << button,
+    buttons:
+      type === PointerEventTypes.POINTERUP || type === PointerEventTypes.POINTERMOVE
+        ? 0
+        : 1 << button,
     pointerId: 1,
     pointerType: 'mouse',
     clientX: x,
@@ -123,6 +133,11 @@ export function pointer(scene: Scene, type: number, x: number, y: number, button
     preventDefault: () => undefined,
   } as unknown as PointerEventInit;
   scene.onPointerObservable.notifyObservers(new PointerInfo(type, event, null), type);
+}
+
+/** Move o ponteiro (sem botão apertado) para o ponto. */
+export function move(scene: Scene, point: { x: number; y: number }): void {
+  pointer(scene, PointerEventTypes.POINTERMOVE, point.x, point.y);
 }
 
 /** Aperta e solta o botão principal no mesmo ponto. */

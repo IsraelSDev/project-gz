@@ -1,3 +1,8 @@
+import type { PlacementErrorCode } from '@/game/domain/construction/placement';
+import {
+  handlePlaceBuilding,
+  PLACE_BUILDING,
+} from '@/game/domain/construction/placeBuildingCommand';
 import { freezeDeep } from '@/game/domain/state/freezeDeep';
 import type { GameState } from '@/game/domain/state/GameState';
 import { validateGameState } from '@/game/domain/state/validateGameState';
@@ -9,8 +14,8 @@ import { err, ok, type Result } from '@/shared/result/result';
  * (pausar, retomar, velocidade), que atuam no relógio e nunca passam por aqui, nem com a seleção,
  * que é estado de sessão da interface.
  *
- * Nesta fase existe só a infraestrutura: nenhum comando concreto ainda. Cada comando futuro é um
- * objeto `{ type, ...dados }` com um tratador registrado em `COMMAND_HANDLERS`.
+ * Cada comando é um objeto `{ type, ...dados }` com um tratador registrado em `COMMAND_HANDLERS`.
+ * Existe `PlaceBuilding` (Fase 6); `ResolveEvent` entra na Fase 7.
  */
 
 export interface SimulationCommand {
@@ -22,10 +27,14 @@ export interface SimulationCommand {
  * Códigos de erro esperados ao validar ou aplicar um comando. O domínio devolve só o código; o
  * texto é da interface (Arquitetura §14).
  *  - INVALID_COMMAND: o comando não existe ou está malformado.
- *  - COMMAND_REJECTED: o comando é bem formado, mas as regras do jogo o recusam no estado atual.
+ *  - COMMAND_REJECTED: o comando é bem formado, mas as regras do jogo o recusam no estado atual
+ *    (recusa genérica, sem um motivo mais específico).
  *  - INVALID_STATE: aplicar o comando produziria um estado que viola as invariantes do `GameState`.
+ *  - Os códigos de `PlacementErrorCode` (Fase 6): recusas específicas de `PlaceBuilding`, para a
+ *    interface explicar o motivo (fora da área, sobreposição, recursos insuficientes).
  */
-export type CommandErrorCode = 'INVALID_COMMAND' | 'COMMAND_REJECTED' | 'INVALID_STATE';
+export type CommandErrorCode =
+  'INVALID_COMMAND' | 'COMMAND_REJECTED' | 'INVALID_STATE' | PlacementErrorCode;
 
 /** Resultado de aplicar um comando: o NOVO estado (o de entrada nunca é alterado) ou um erro. */
 export type CommandResult = Result<GameState, CommandErrorCode>;
@@ -38,8 +47,10 @@ export type CommandHandler = (state: GameState, command: SimulationCommand) => C
 
 export type CommandHandlers = Readonly<Record<string, CommandHandler>>;
 
-/** Tratadores dos comandos existentes. Vazio na Fase 4: os comandos concretos entram nas Fases 6 e 7. */
-export const COMMAND_HANDLERS: CommandHandlers = {};
+/** Tratadores dos comandos existentes. */
+export const COMMAND_HANDLERS: CommandHandlers = {
+  [PLACE_BUILDING]: handlePlaceBuilding,
+};
 
 /**
  * Valida E aplica um comando em uma única passada, sem alterar o estado de entrada. É o único ponto

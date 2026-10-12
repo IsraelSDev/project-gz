@@ -4,7 +4,9 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { createGameController } from '@/game/application/GameController';
 import { INITIAL_SCENARIO } from '@/game/content/scenario';
 import { createInitialGameState } from '@/game/domain/state/createInitialGameState';
+import { createBuildActions } from '@/presentation/build/buildActions';
 import { GameHUD } from '@/presentation/game-ui/GameHUD';
+import { createBuildStore } from '@/session/buildStore';
 import { createSelectionStore } from '@/session/selectionStore';
 
 afterEach(cleanup);
@@ -12,8 +14,17 @@ afterEach(cleanup);
 const setup = () => {
   const controller = createGameController(createInitialGameState(INITIAL_SCENARIO));
   const selection = createSelectionStore();
-  render(<GameHUD controller={controller} selection={selection} />);
-  return { controller, selection };
+  const build = createBuildStore();
+  const buildActions = createBuildActions(controller, build);
+  render(
+    <GameHUD
+      controller={controller}
+      selection={selection}
+      build={build}
+      buildActions={buildActions}
+    />,
+  );
+  return { controller, selection, build };
 };
 
 describe('GameHUD', () => {
@@ -40,11 +51,12 @@ describe('GameHUD', () => {
   it('só oferece controles que funcionam: o de limpar a seleção aparece apenas com uma seleção', () => {
     const { selection } = setup();
     const names = () => screen.getAllByRole('button').map((button) => button.textContent?.trim());
-    expect(names()).toEqual(['Retomar', '1×', '2×', '4×']);
+    // Controles de tempo e o botão "Construir" (o catálogo só aparece com o painel aberto).
+    expect(names()).toEqual(['Retomar', '1×', '2×', '4×', '+Construir']);
 
     act(() => selection.select('building-habitat-01'));
 
     expect(screen.getByRole('button', { name: 'Limpar seleção' })).toBeTruthy();
-    expect(screen.getAllByRole('button')).toHaveLength(5);
+    expect(screen.getAllByRole('button')).toHaveLength(6);
   });
 });

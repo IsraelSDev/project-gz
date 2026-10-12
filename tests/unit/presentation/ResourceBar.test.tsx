@@ -8,6 +8,7 @@ import { INITIAL_SCENARIO } from '@/game/content/scenario';
 import { createInitialGameState } from '@/game/domain/state/createInitialGameState';
 import type { GameState } from '@/game/domain/state/GameState';
 import { ResourceBar } from '@/presentation/hud/ResourceBar';
+import { expectedResourcesAfter } from '../../support/economyExpectations';
 import { createFakeController, trackSubscriptions } from '../../support/storeDoubles';
 
 afterEach(cleanup);
@@ -142,5 +143,91 @@ describe('ResourceBar', () => {
     unmount();
 
     expect(controller.activeSubscriptions()).toBe(0);
+  });
+});
+
+describe('ResourceBar: acompanha a economia da simulação (Fase 5)', () => {
+  const expectedText = (resources: Record<string, number>) =>
+    RESOURCE_IDS.map((id) => `${RESOURCE_DEFINITIONS[id].name}${format(resources[id] ?? NaN)}`);
+
+  it('mostra o estado real a cada passo, igual ao snapshot e ao previsto pelas definições', () => {
+    const controller = createGameController(initialState());
+    render(<ResourceBar controller={controller} />);
+    const atStart = shownResources();
+    act(() => controller.clock.resume());
+
+    act(() => {
+      controller.clock.advance(3_000);
+    });
+
+    expect(shownResources()).toEqual(expectedText(controller.getSnapshot().resources));
+    expect(shownResources()).toEqual(expectedText(expectedResourcesAfter(3)));
+    expect(shownResources()).not.toEqual(atStart);
+  });
+
+  it('atualiza a cada passo, não só no final', () => {
+    const controller = createGameController(initialState());
+    render(<ResourceBar controller={controller} />);
+    act(() => controller.clock.resume());
+
+    const seen: string[][] = [];
+    for (let tick = 1; tick <= 3; tick += 1) {
+      act(() => {
+        controller.clock.advance(1_000);
+      });
+      seen.push(shownResources());
+    }
+
+    expect(new Set(seen.map((texts) => texts.join('|'))).size).toBe(3);
+    expect(seen[2]).toEqual(expectedText(expectedResourcesAfter(3)));
+  });
+
+  it('com o jogo pausado, o tempo passa e a barra não muda', () => {
+    const controller = createGameController(initialState());
+    render(<ResourceBar controller={controller} />);
+    const atStart = shownResources();
+
+    act(() => {
+      controller.clock.advance(60_000);
+    });
+
+    expect(shownResources()).toEqual(atStart);
+    expect(shownResources()).toEqual(expectedText(INITIAL_SCENARIO.initialResources));
+  });
+
+  it('pausar no meio congela os valores exibidos; retomar continua deles', () => {
+    const controller = createGameController(initialState());
+    render(<ResourceBar controller={controller} />);
+    act(() => controller.clock.resume());
+    act(() => {
+      controller.clock.advance(2_000);
+    });
+    act(() => controller.clock.pause());
+    const frozen = shownResources();
+
+    act(() => {
+      controller.clock.advance(20_000);
+    });
+    expect(shownResources()).toEqual(frozen);
+
+    act(() => controller.clock.resume());
+    act(() => {
+      controller.clock.advance(1_000);
+    });
+    expect(shownResources()).toEqual(expectedText(expectedResourcesAfter(3)));
+  });
+
+  it('sem edifícios não há economia: os valores seguem iguais mesmo com a simulação em andamento', () => {
+    const controller = createGameController({ ...initialState(), buildings: [] });
+    render(<ResourceBar controller={controller} />);
+    const atStart = shownResources();
+    act(() => controller.clock.resume());
+
+    act(() => {
+      controller.clock.advance(5_000);
+    });
+
+    expect(controller.getSnapshot().tick).toBe(5);
+    expect(shownResources()).toEqual(atStart);
   });
 });

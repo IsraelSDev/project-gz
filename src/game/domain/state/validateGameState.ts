@@ -24,6 +24,9 @@ export function validateGameState(state: GameState): readonly string[] {
   if (!isWholeNumber(state.tick) || state.tick < 0) {
     issues.push('tick deve ser um inteiro não negativo.');
   }
+  if (!isWholeNumber(state.nextEntityId) || state.nextEntityId < 1) {
+    issues.push('nextEntityId deve ser um inteiro maior ou igual a 1.');
+  }
 
   const resources: Record<string, unknown> = state.resources;
   for (const id of RESOURCE_IDS) {

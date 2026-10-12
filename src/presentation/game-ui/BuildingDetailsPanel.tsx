@@ -20,6 +20,17 @@ export interface BuildingDetailsPanelProps {
   readonly onDismissed?: () => void;
 }
 
+const amountFormat = new Intl.NumberFormat('pt-BR');
+
+/** Taxas por tick da definição ("Água 4 · Energia 3"), ou "Nenhum" quando não há nenhuma. */
+function formatRates(entries: BuildingDetails['production']): string {
+  return entries.length === 0
+    ? 'Nenhum'
+    : entries
+        .map((entry) => `${entry.name} ${amountFormat.format(entry.amountPerTick)}`)
+        .join(' · ');
+}
+
 function BuildingFacts({ details }: { readonly details: BuildingDetails }) {
   return (
     <>
@@ -41,6 +52,14 @@ function BuildingFacts({ details }: { readonly details: BuildingDetails }) {
         <div className="hud-facts__row">
           <dt>Rotação</dt>
           <dd>{details.rotation}°</dd>
+        </div>
+        <div className="hud-facts__row">
+          <dt>Produção por tick</dt>
+          <dd>{formatRates(details.production)}</dd>
+        </div>
+        <div className="hud-facts__row">
+          <dt>Consumo por tick</dt>
+          <dd>{formatRates(details.consumption)}</dd>
         </div>
         <div className="hud-facts__row">
           <dt>Identificador</dt>

@@ -19,7 +19,7 @@ describe('modelo de estado da partida', () => {
 
   it('tem exatamente os campos persistentes previstos (sem paused, speed nem seleção)', () => {
     expect(Object.keys(initial()).sort()).toEqual(
-      ['buildings', 'contentVersion', 'resources', 'schemaVersion', 'tick'].sort(),
+      ['buildings', 'contentVersion', 'nextEntityId', 'resources', 'schemaVersion', 'tick'].sort(),
     );
   });
 
@@ -111,13 +111,26 @@ describe('validação do estado', () => {
 });
 
 describe('transição de estado por passo de simulação', () => {
-  it('incrementa o tick em exatamente 1 e não altera mais nada', () => {
-    const state = initial();
+  /** Estado sem edifícios: a economia não tem o que produzir nem consumir. */
+  const withoutBuildings = (): GameState => ({ ...initial(), buildings: [] });
+
+  it('incrementa o tick em exatamente 1 e não altera mais nada quando a economia não tem o que fazer', () => {
+    const state = withoutBuildings();
 
     const next = advanceSimulationStep(state);
 
     expect(next.tick).toBe(state.tick + 1);
     expect({ ...next, tick: 0 }).toEqual({ ...state, tick: 0 });
+  });
+
+  it('com edifícios, só o tick e os recursos mudam (a economia roda no passo, Fase 5)', () => {
+    const state = initial();
+
+    const next = advanceSimulationStep(state);
+
+    expect(next.tick).toBe(state.tick + 1);
+    expect(next.resources).not.toEqual(state.resources);
+    expect({ ...next, tick: 0, resources: state.resources }).toEqual({ ...state, tick: 0 });
   });
 
   it('não altera o estado de entrada (pura)', () => {
@@ -137,7 +150,16 @@ describe('transição de estado por passo de simulação', () => {
 
     expect(validateGameState(next)).toEqual([]);
     expect(Object.isFrozen(next)).toBe(true);
+    expect(Object.isFrozen(next.resources)).toBe(true);
     expect(next).not.toBe(state);
+    expect(next.buildings).toBe(state.buildings);
+  });
+
+  it('mantém também a referência dos recursos quando a economia não os altera', () => {
+    const state = withoutBuildings();
+
+    const next = advanceSimulationStep(state);
+
     expect(next.resources).toBe(state.resources);
     expect(next.buildings).toBe(state.buildings);
   });

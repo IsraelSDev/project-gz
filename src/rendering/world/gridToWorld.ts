@@ -68,6 +68,18 @@ export function placedCenterToWorld(placed: PlacedSpec, terrainSize: GridSize): 
   );
 }
 
+/**
+ * Inverso de `gridPointToWorld`: a CÉLULA do grid que contém o ponto (x, z) do mundo. Usado para
+ * descobrir qual célula está sob o ponteiro. O resultado pode cair fora do terreno (índices
+ * negativos ou além da extensão): quem usa decide o que fazer com isso.
+ */
+export function worldToGridCell(point: WorldPoint, terrainSize: GridSize): GridPosition {
+  return {
+    x: Math.round(point.x / CELL_SIZE + terrainSize.width / 2),
+    y: Math.floor(terrainSize.depth / 2 - point.z / CELL_SIZE),
+  };
+}
+
 /** Valor para `node.rotation.y` no Babylon.js (horário visto de cima). */
 export function rotationToRadians(rotation: Rotation): number {
   return (rotation * Math.PI) / 180;
