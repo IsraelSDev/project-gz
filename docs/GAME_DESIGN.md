@@ -282,7 +282,7 @@ item é entregue.
 | -- | ----------------------------------------------------------------------------------------- | ---- |
 | 1  | Cena 3D de um planeta alienígena estilizado.                                              | 2    |
 | 2  | Nave acidentada.                                                                          | 2    |
-| 3  | Câmera com zoom e rotação (pan: pendência P-01).                                          | 2    |
+| 3  | Câmera com zoom, rotação e pan (D-24).                                          | 2    |
 | 4  | Três construções provisórias iniciais (até cinco com as estruturas produtivas).            | 2, 6 |
 | 5  | Seleção de objetos e painel de informações.                                               | 3    |
 | 6  | Barra de recursos que exibe o **estado real** da simulação (sem dados de demonstração).    | 3, 5 |

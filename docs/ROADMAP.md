@@ -81,9 +81,15 @@ escondidas.
 
 ## Fase 2 — Primeira cena 3D
 
+**Status:** concluída e verificada; aguardando aprovação para iniciar a
+Fase 3. Detalhes em `TECHNICAL_ARCHITECTURE.md` §17 e em `DECISIONS.md`
+(D-24 a D-33). **Pendências que não bloqueiam a fase:** medir o FPS em
+hardware real (P-02) e confirmar o pan com o botão direito do mouse em
+um mouse real (P-14).
+
 ### Tarefas
 
--   Resolver a pendência P-01 (câmera) antes de começar.
+-   Resolver a pendência P-01 (câmera) antes de começar (resolvida: D-24).
 -   Criar o **`GameState` mínimo somente leitura** (`schemaVersion`,
     `contentVersion`, `tick`, `resources`, `buildings` com
     `instanceId` estáveis) a partir de um cenário inicial em
@@ -95,7 +101,8 @@ escondidas.
 -   Adicionar nave acidentada e três construções provisórias, **criadas
     a partir das `BuildingInstance` do estado**, nunca de dados fixos
     na renderização.
--   Implementar zoom, rotação e limites de câmera (pan conforme P-01).
+-   Implementar zoom, rotação, pan e limites de câmera (pan incluído, D-24).
+-   Incluir, só em desenvolvimento, um indicador simples de FPS (D-32).
 -   Garantir redimensionamento da cena.
 -   Liberar recursos ao desmontar a aplicação (`dispose` idempotente,
     StrictMode ativo, HMR e perda de contexto WebGL tratados).
