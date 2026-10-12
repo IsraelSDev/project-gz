@@ -140,7 +140,8 @@ que recebe o snapshot e um callback `onPick(entityId)`).
 ## 4. Estrutura de pastas
 
 Estrutura-alvo. **Criar pastas somente quando houver código nelas.** Na
-Fase 1 existem apenas `src/app/`, `src/main.tsx` e `tests/`.
+Fase 2 existem `app/`, `game/content/`, `game/domain/state/`, `rendering/`,
+`shared/grid/` e `main.tsx`; as demais ainda não têm código.
 
 ``` text
 src/
@@ -156,6 +157,7 @@ src/
 │   ├── camera/
 │   ├── world/                # inclui a conversão grid → espaço Babylon
 │   ├── buildings/
+│   ├── props/                # kit de primitivas com cor por vértice
 │   └── interaction/
 ├── game/
 │   ├── application/
@@ -171,7 +173,7 @@ src/
 │   │   └── events/
 │   └── content/
 ├── shared/
-│   ├── types/
+│   ├── grid/                 # tipos e matemática do grid (Fase 2)
 │   └── validation/
 └── main.tsx
 
@@ -363,9 +365,32 @@ meshes e materiais não.
     domínio e são testadas sem renderização [Fase 6].
 -   O espaço do Babylon.js (esquerdo, Y para cima) é uma questão de
     renderização: a conversão grid → mundo 3D existe em **um único
-    módulo** de `rendering/world/` [Fase 2].
+    módulo**, `rendering/world/gridToWorld.ts` [Fase 2, feito].
 -   As posições dos edifícios da Fase 2 já são células do grid, definidas
     no cenário inicial do conteúdo.
+
+**Convenções implementadas (Fase 2):**
+
+-   **Grid** (vista de cima, norte para cima): `x` cresce para leste e
+    `y` cresce para o **sul**. Medidas em células inteiras; `width` é a
+    extensão em `x` e `depth` a extensão em `y` (não é altura vertical).
+-   **Posição:** é a célula de menor `x` e menor `y` do retângulo
+    ocupado, **já rotacionado**. A rotação ocorre em torno do centro do
+    retângulo, que não muda com a rotação. Com 90° e 270° largura e
+    profundidade trocam (`rotatedSize` / `occupiedRect`).
+-   **Mundo (Babylon.js):** o terreno é centrado em `(0, 0)`; `x` do
+    grid → `+X` (leste); `y` do grid → `-Z` (sul), logo **norte = +Z**.
+    Uma célula mede `CELL_SIZE = 2` unidades de mundo.
+-   **Orientação:** `Rotation` é `0 | 90 | 180 | 270`, em graus no
+    sentido **horário visto de cima**. Os modelos são construídos com a
+    frente voltada para o **sul (-Z)** em rotação 0 e giram com
+    `node.rotation.y = rotationToRadians(r)`. Sul → oeste → norte → leste
+    a cada 90°. Essa convenção é verificada em teste contra
+    `Matrix.RotationY` do Babylon.js.
+-   **Onde ficam:** tipos e matemática do grid em `src/shared/grid/`
+    (porque `domain`, `content` e `rendering` precisam deles e
+    `rendering/` só importa **tipos** de `domain`); a conversão para o
+    mundo 3D só em `rendering/world/gridToWorld.ts`.
 
 ## 10. Persistência e portabilidade [Fase 8]
 
@@ -513,3 +538,127 @@ Combate completo. - Distribuição em lojas de PC.
 
 A arquitetura pode manter caminhos de extensão, mas não deve antecipar
 toda a complexidade desses sistemas.
+
+## 17. Notas de implementação da Fase 2
+
+Registro do que foi implementado e das escolhas locais (decisões em
+`DECISIONS.md`, D-24 a D-33).
+
+### 17.1 Do estado à cena
+
+```
+INITIAL_SCENARIO (content) ──createInitialGameState──▶ GameState (domain, congelado)
+                                         │
+              app/worldSnapshot.ts: toWorldSnapshot(state, scenario)
+                                         ▼
+                      WorldSnapshot (contrato definido em rendering/)
+                                         ▼
+                 GameRenderer.sync(snapshot)  ──▶  cena Babylon.js
+```
+
+-   `createInitialGameState` valida o cenário (`validateScenario`) e lança
+    se ele for inválido (erro de conteúdo). O estado é congelado em
+    profundidade (somente leitura em tempo de execução) e é serializável.
+-   `toWorldSnapshot` é a **única** ponte domínio → renderização. Os
+    edifícios da cena vêm das `BuildingInstance` do estado, com o
+    `footprint` da definição; nenhuma construção nasce de dados fixos na
+    renderização. Um modelo visual por `BuildingDefinitionId` é exigido
+    pelo compilador (`Record<BuildingDefinitionId, ...>`).
+-   `BuildingLayer.sync` identifica cada edifício pelo `instanceId`:
+    cria os novos, atualiza posição e rotação dos existentes e libera os
+    removidos. O terreno e a nave são refeitos apenas quando os dados do
+    cenário mudam.
+-   Preparação para a seleção (Fase 3): todo nó e mesh de edifício leva
+    `metadata = { kind: 'building', entityId: instanceId }`;
+    `resolveEntityId(node)` sobe pela hierarquia até achar o
+    identificador; o módulo importa `Culling/ray` (habilita
+    `scene.pick`). Cenário e terreno não são selecionáveis. A seleção em
+    si **não** foi implementada.
+
+### 17.2 Ciclo de vida do renderizador
+
+-   `createGameRenderer(canvas, { createEngine?, onStatusChange? })`
+    devolve `GameRenderer | null` (`sync`, `getFrameStats`, `dispose`).
+    Falha de inicialização: erro registrado, `onStatusChange('failed')`
+    e `null` (nada fica alocado).
+-   Uma engine e uma cena por renderizador. O render loop só chama
+    `scene.render()`; não conhece simulação.
+-   `ResizeObserver` no canvas chama `engine.resize()`. A engine usa
+    `adaptToDeviceRatio` (o canvas interno acompanha o DPR).
+-   Perda e restauração do contexto: observadores em
+    `onContextLostObservable` e `onContextRestoredObservable` viram
+    `context-lost` / `running`; o Babylon.js reconstrói os recursos.
+-   `dispose()` é **idempotente** e libera, nesta ordem: render loop,
+    observadores e `ResizeObserver`, edifícios, mundo estático, câmera,
+    cena (com luzes e sombras) e engine. `sync` após o `dispose` não faz
+    nada.
+-   `GameCanvas` (em `app/`) cria o renderizador no efeito e o descarta
+    na limpeza; o StrictMode continua ativo (em desenvolvimento ocorre
+    criar → descartar → criar, sempre com no máximo 1 renderizador).
+    `getLiveRendererCount()` e o log `[renderer]` (só em dev) permitem
+    conferir isso.
+-   HMR: ver D-30. Mudanças em `rendering/` recarregam a página; mudanças
+    de conteúdo atualizam a cena ao vivo.
+
+### 17.3 Câmera
+
+-   `ArcRotateCamera` em perspectiva, com os controles nativos do
+    Babylon.js 9 (mapa de entrada padrão: botão esquerdo gira; botão
+    direito ou `Ctrl` + esquerdo faz pan; roda dá zoom; teclado:
+    `W/A/S/D` fazem pan, setas giram, `Ctrl` + setas movem, `+`/`-` ou
+    `Alt` + setas dão zoom).
+-   `W/A/S/D` (`addWasdNavigation`): as teclas entram nas listas
+    `keysUp/Left/Down/Right` do teclado nativo e uma entrada do mapa de
+    entrada (`keyboard`, `key: [W, A, S, D]`, `pan`) as liga ao pan; o
+    mapa resolve por especificidade, então `Ctrl`/`Alt` mantêm seus
+    comportamentos. A sensibilidade é ajustada a cada quadro em
+    proporção ao raio (`wasdPanSensitivity`). O teclado nativo lê as
+    teclas **a cada quadro** e só recebe eventos com o canvas focado
+    (`GameCanvas` o foca ao iniciar).
+-   Limites: `beta` entre 0,45 e 1,32 rad (≈ 64° a ≈ 14° de elevação);
+    raio entre 14 e 72; pan no plano do terreno
+    (`panningAxis = (1, 0, 1)`) e a no máximo 28 unidades do centro do
+    acampamento.
+-   `clampCameraAboveGround` (função pura, testada) reduz `beta` quando a
+    posição da câmera ficaria abaixo do terreno.
+-   Enquadramento inicial: centro e maior extensão da área construível,
+    com a distância aumentada em janelas mais estreitas que 1,3 de
+    proporção (o campo de visão é vertical). Só ocorre na primeira
+    sincronização.
+-   A sensibilidade do pan (`panningSensibility = 100`) foi **medida**
+    no Babylon.js 9 (≈ 1:1 com o ponteiro no enquadramento inicial).
+    Valores menores deixam o pan mais rápido.
+
+### 17.4 Cenário visual e desempenho
+
+-   Sem arquivos externos: terreno (malha 100×100 com cor por vértice),
+    céu (domo com gradiente e duas luas), vegetação e rochas (thin
+    instances, uma chamada de desenho por tipo), nave e edifícios
+    (primitivas fundidas em um mesh com cor por vértice). Materiais
+    compartilhados e poucos.
+-   Iluminação: luz hemisférica de preenchimento e uma luz direcional
+    com um mapa de sombra de 2048 (filtragem PCF de qualidade baixa).
+-   Linha de base medida em `NullEngine` (não é FPS): ≈ 199 mil
+    triângulos, 24 meshes, 6 chamadas instanciadas (≈ 456 instâncias),
+    12 materiais, 2 luzes. O indicador de FPS em desenvolvimento ajuda a
+    medir em hardware real (P-02).
+-   Build: o chunk principal tem ≈ 1,28 MB (≈ 323 kB com gzip); os
+    shaders e carregadores de textura do Babylon.js já são divididos em
+    chunks sob demanda (D-33).
+
+### 17.5 Testes da Fase 2
+
+-   Domínio e conteúdo: estrutura do estado, três construções,
+    `instanceId` único e não vazio, posições dentro da área, estado
+    congelado e serializável, validação de cenários inválidos.
+-   Renderização pura: conversão de coordenadas (incluindo a convenção
+    de rotação contra o Babylon.js), relevo plano na área construível,
+    dispersão determinística, câmera acima do terreno.
+-   Integração headless (`NullEngine`): um objeto 3D por edifício com o
+    `instanceId` correto, posição derivada do grid, `sync` idempotente,
+    remoção e movimento por diff, refazer o terreno sem vazar meshes,
+    `dispose` idempotente, remonte estilo StrictMode, perda de contexto e
+    falha de inicialização.
+-   **Não coberto por testes automáticos:** WebGL real, `ResizeObserver`,
+    controles de câmera por entrada real e aparência visual. São
+    verificados manualmente no navegador (relatório da Fase 2).
