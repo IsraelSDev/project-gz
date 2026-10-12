@@ -1289,8 +1289,10 @@ A capacidade habitacional deriva da soma de `housingCapacity` nas definições d
 
 A migração de save encadeia v1/0.4.0 → v2/0.5.0 → v3/0.6.0. Saves v2 preservam todos os campos existentes e recebem o elenco e governo iniciais. A carga valida campos, IDs únicos, elegibilidade, ocupação exclusiva e relações antes de substituir o estado ativo. A versão do envelope continua 1; saves inválidos não substituem a partida.
 
-## 24. Pesquisa e explora??o (Fase 11)
 
-O schema 4/content 0.7.0 persiste research (tecnologias conclu?das, projeto ativo e progresso) e exploration (IDs de pontos descobertos). O cat?logo de tecnologias e POIs usa IDs est?veis. StartResearch verifica pr?-requisitos, laborat?rio, cientista e recursos, cobrando o custo ao iniciar; a simula??o avan?a pesquisa deterministicamente ap?s economia. A compet?ncia de ci?ncia do ocupante do cargo define pontos por tick.
 
-ExplorePoint valida disponibilidade, requisitos e custo, e aplica recompensa e descoberta atomicamente; repetir uma descoberta ? recusado. As Ru?nas de Eco acionam evento no motor existente. Edif?cios com requisito tecnol?gico s?o recusados no comando e desabilitados no cat?logo at? o desbloqueio. Saves schema 3 migram para schema 4 sem alterar tick, estoques, personagens ou eventos resolvidos; eventos novos da Fase 11 come?am dispon?veis. O envelope de save continua na vers?o 1.
+## 24. Pesquisa e exploracao (Fase 11)
+
+O schema 4/content 0.7.0 persiste research (tecnologias concluidas, projeto ativo e progresso) e exploration (IDs de pontos descobertos). Os catalogos de tecnologias e pontos de interesse usam IDs estaveis. StartResearch verifica pre-requisitos, laboratorio, cientista e recursos, cobrando o custo ao iniciar; a simulacao avanca a pesquisa deterministicamente apos a economia. A competencia de ciencia define pontos por tick.
+
+ExplorePoint valida disponibilidade, requisito e custo, e aplica recompensa e descoberta atomicamente; repetir descoberta e recusado. As Ruinas de Eco acionam o motor de eventos existente. Edificios com requisito tecnologico sao recusados no comando e desabilitados no catalogo ate o desbloqueio. Saves schema 3 migram para schema 4 sem alterar progresso anterior; eventos novos comecam disponiveis. O envelope continua na versao 1.

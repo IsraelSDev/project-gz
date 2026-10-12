@@ -8,6 +8,7 @@ import { createInitialGameState } from '@/game/domain/state/createInitialGameSta
 import { BuildingDetailsPanel } from '@/presentation/game-ui/BuildingDetailsPanel';
 import { ResourceBar } from '@/presentation/hud/ResourceBar';
 import { TimeControls } from '@/presentation/hud/TimeControls';
+import { CharacterGovernmentPanel } from '@/presentation/game-ui/CharacterGovernmentPanel';
 import { createSelectionStore } from '@/session/selectionStore';
 
 afterEach(cleanup);
@@ -99,5 +100,22 @@ describe('isolamento de renderização por fatia do estado', () => {
     expect([barRender, panelRender, timeRender].map((spy) => spy.mock.calls.length)).toEqual(
       counts,
     );
+  });
+
+  it('o painel de personagens não re-renderiza por tick sem mudança no elenco, governo ou população', () => {
+    const controller = createGameController(createInitialGameState(INITIAL_SCENARIO));
+    const characterPanelRender = vi.fn();
+    render(
+      <Profiler id="characters" onRender={characterPanelRender}>
+        <CharacterGovernmentPanel controller={controller} />
+      </Profiler>,
+    );
+    act(() => controller.clock.resume());
+    const afterMount = characterPanelRender.mock.calls.length;
+
+    for (let second = 0; second < 5; second += 1) tickOnce(controller);
+
+    expect(controller.getSnapshot().tick).toBe(5);
+    expect(characterPanelRender).toHaveBeenCalledTimes(afterMount);
   });
 });

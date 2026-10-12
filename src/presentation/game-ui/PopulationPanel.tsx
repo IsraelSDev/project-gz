@@ -3,8 +3,10 @@ import { selectPopulationSummary } from '@/game/application/populationSelectors'
 import { useGameSelector } from '@/presentation/hooks/useGameSelector';
 
 export function PopulationPanel({ controller }: { readonly controller: GameController }) {
-  const state = useGameSelector(controller, (snapshot) => snapshot);
-  const summary = selectPopulationSummary(state);
+  const population = useGameSelector(controller, (snapshot) => snapshot.population);
+  const buildings = useGameSelector(controller, (snapshot) => snapshot.buildings);
+  const resources = useGameSelector(controller, (snapshot) => snapshot.resources);
+  const summary = selectPopulationSummary({ population, buildings, resources });
   const crowded = summary.survivors > summary.capacity;
   const foodLow = summary.food < summary.foodNeed;
   const waterLow = summary.water < summary.waterNeed;

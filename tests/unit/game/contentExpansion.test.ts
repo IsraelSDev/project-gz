@@ -7,6 +7,11 @@ import { advanceResearch, startResearchCommand } from '@/game/domain/research/re
 import { createInitialGameState } from '@/game/domain/state/createInitialGameState';
 import { decodeGameSave, encodeGameSave } from '@/game/application/saveGame';
 import { selectBuildCatalog } from '@/game/application/buildSelectors';
+import {
+  describeContentExpansionError,
+  selectPointOfInterestCatalog,
+  selectTechnologyCatalog,
+} from '@/game/application/contentExpansion';
 
 const initial = () => createInitialGameState(INITIAL_SCENARIO);
 const withLab = () => {
@@ -26,6 +31,20 @@ const withLab = () => {
 };
 
 describe('expansão de conteúdo da Fase 11', () => {
+  it('apresenta custos, recompensas e erros com nomes localizados', () => {
+    expect(selectTechnologyCatalog()[0]?.costLines).toEqual([
+      { id: 'materials', name: 'Materiais', amount: 20 },
+      { id: 'energy', name: 'Energia', amount: 10 },
+    ]);
+    expect(selectPointOfInterestCatalog()[0]?.rewardLines).toEqual([
+      { id: 'water', name: 'Água', amount: 18 },
+      { id: 'materials', name: 'Materiais', amount: 6 },
+    ]);
+    expect(describeContentExpansionError('INSUFFICIENT_RESOURCES')).toBe(
+      'Recursos insuficientes para esta ação.',
+    );
+  });
+
   it('cobra a pesquisa uma vez, progride com cientista e laboratório, e desbloqueia a tecnologia', () => {
     const state = withLab();
     const started = executeSimulationCommand(state, startResearchCommand('protein-cultures'));

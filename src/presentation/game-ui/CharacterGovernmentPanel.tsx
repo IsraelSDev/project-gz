@@ -18,14 +18,15 @@ function qualification(character: Character, office: GovernmentOffice | 'leader'
 }
 
 export function CharacterGovernmentPanel({ controller }: { readonly controller: GameController }) {
-  const state = useGameSelector(controller, (snapshot) => snapshot);
+  const people = useGameSelector(controller, (snapshot) => snapshot.characters);
+  const government = useGameSelector(controller, (snapshot) => snapshot.government);
+  const survivors = useGameSelector(controller, (snapshot) => snapshot.population.survivors);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState('');
-  const people = state.characters;
   const selected = people.find((person) => person.characterId === selectedId) ?? people[0];
   const assignments: Readonly<Record<GovernmentOffice | 'leader', string | null>> = {
-    leader: state.government.leaderId,
-    ...state.government.offices,
+    leader: government.leaderId,
+    ...government.offices,
   };
   const currentOffice = (characterId: string) =>
     Object.entries(assignments).find(([, holder]) => holder === characterId)?.[0] as
@@ -55,8 +56,8 @@ export function CharacterGovernmentPanel({ controller }: { readonly controller: 
         <h2 className="hud-panel__title">Personagens e governo</h2>
       </header>
       <p className="character-panel__population">
-        {state.population.survivors} habitantes · {people.filter((person) => person.alive).length}{' '}
-        personagens importantes
+        {survivors} habitantes · {people.filter((person) => person.alive).length} personagens
+        importantes
       </p>
       <ul className="character-roster" aria-label="Personagens importantes">
         {people.map((person, index) => (

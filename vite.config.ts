@@ -4,6 +4,8 @@ import { defineConfig } from 'vitest/config';
 // O alias "@/" é resolvido a partir do "paths" de tsconfig.app.json (um único ponto de configuração).
 // Vitest reutiliza esta configuração. Domínio e aplicação são testados em ambiente Node (sem DOM).
 export default defineConfig({
+  // Assets relativos permitem publicar o build em uma raiz ou subpasta estática.
+  base: './',
   plugins: [react()],
   resolve: { tsconfigPaths: true },
   build: {

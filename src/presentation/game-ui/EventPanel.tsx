@@ -10,8 +10,9 @@ export interface EventPanelProps {
 }
 
 export function EventPanel({ controller }: EventPanelProps) {
-  const state = useGameSelector(controller, (snapshot) => snapshot);
-  const visible = selectVisibleEvents(state);
+  const events = useGameSelector(controller, (snapshot) => snapshot.events);
+  const resources = useGameSelector(controller, (snapshot) => snapshot.resources);
+  const visible = selectVisibleEvents({ events, resources });
   const [feedback, setFeedback] = useState<{ readonly eventId: string; readonly text: string }>();
   const [pendingEventId, setPendingEventId] = useState<string>();
 
