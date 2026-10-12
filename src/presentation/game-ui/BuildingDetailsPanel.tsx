@@ -122,11 +122,11 @@ export function BuildingDetailsPanel({
         {details && (
           <button
             type="button"
-            className="hud-panel__close"
+            className="hud-panel__clear-selection"
             aria-label="Limpar seleção"
             onClick={dismiss}
           >
-            <span aria-hidden="true">×</span>
+            Limpar seleção
           </button>
         )}
       </header>

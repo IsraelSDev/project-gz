@@ -1,8 +1,4 @@
-import { useState } from 'react';
-
-export function TutorialPanel() {
-  const [visible, setVisible] = useState(true);
-  if (!visible) return null;
+export function TutorialPanel({ onDismissed }: { readonly onDismissed: () => void }) {
   return (
     <section className="hud-panel tutorial-panel" aria-label="Como sobreviver">
       <header className="hud-panel__header">
@@ -11,12 +7,12 @@ export function TutorialPanel() {
           className="hud-panel__close"
           type="button"
           aria-label="Fechar tutorial"
-          onClick={() => setVisible(false)}
+          onClick={onDismissed}
         >
           ×
         </button>
       </header>
-      <p className="event-panel__description">
+      <p className="event-panel__description tutorial-panel__copy">
         Mantenha comida e água para os 8 sobreviventes. Construa uma estufa hidropônica antes que os
         estoques acabem; ela precisa de água e energia. A energia diminui enquanto os edifícios
         funcionam, então amplie a geração com outra matriz solar. O abrigo comporta 8. Use Espaço

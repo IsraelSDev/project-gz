@@ -36,67 +36,55 @@ const setup = () => {
   return { controller, selection, build };
 };
 
+const openSection = (label: string) =>
+  act(() => screen.getByRole('button', { name: label }).click());
+
 describe('GameHUD', () => {
-  it('compõe título, barra de recursos, painel vazio e a dica de controles', () => {
+  it('mantém recursos, população e controles de tempo na barra superior', () => {
     setup();
 
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Civilização Alienígena');
     expect(
       within(screen.getByRole('list', { name: 'Recursos da colônia' })).getAllByRole('listitem'),
     ).toHaveLength(4);
-    expect(screen.getByRole('complementary', { name: 'Construção selecionada' })).toBeTruthy();
-    expect(screen.getByRole('region', { name: 'Sobrevivência' }).textContent).toContain(
-      'Sobreviventes8',
-    );
-    expect(screen.getByRole('region', { name: 'Sobrevivência' }).textContent).toContain('Abrigo8');
-    expect(screen.getByRole('region', { name: 'Como sobreviver' })).toBeTruthy();
+    expect(screen.getByLabelText('População e capacidade').textContent).toContain('8/8');
+    expect(screen.getByRole('button', { name: 'Retomar' })).toBeTruthy();
+    expect(screen.getByRole('region', { name: 'Sobrevivência' })).toBeTruthy();
+    expect(screen.queryByRole('region', { name: 'Personagens e governo' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Como sobreviver' })).toBeNull();
     expect(screen.getByText(/Arrastar: girar/).textContent).toContain('W A S D');
   });
 
-  it('tem hierarquia de títulos coerente: h1 do jogo, h2 do painel e h3 do nome da construção', () => {
-    const { selection } = setup();
-    act(() => selection.select('building-habitat-01'));
-
-    const levels = screen.getAllByRole('heading').map((heading) => heading.tagName);
-
-    expect(levels).toEqual([
-      'H1',
-      'H2',
-      'H2',
-      'H3',
-      'H2',
-      'H3',
-      'H3',
-      'H2',
-      'H2',
-      'H2',
-      'H2',
-      'H3',
-    ]);
-  });
-
-  it('só oferece controles que funcionam: o de limpar a seleção aparece apenas com uma seleção', () => {
-    const { selection } = setup();
-    const names = () => screen.getAllByRole('button').map((button) => button.textContent?.trim());
-    // Controles de tempo e o botão "Construir" (o catálogo só aparece com o painel aberto).
-    expect(names()).toContain('Retomar');
-    expect(
-      within(screen.getByRole('list', { name: 'Personagens importantes' })).getByRole('button', {
-        name: /Aru Nuvem/,
-      }),
-    ).toBeTruthy();
-    expect(names()).toContain('Remover');
-    expect(names()).not.toContain('Limpar seleção');
-    const controlsBeforeSelection = names().length;
-
-    act(() => selection.select('building-habitat-01'));
-
-    expect(screen.getByRole('button', { name: 'Limpar seleção' })).toBeTruthy();
-    expect(screen.getAllByRole('button')).toHaveLength(controlsBeforeSelection + 1);
-  });
-
-  it('seleciona personagem separadamente e executa nomeação e remoção pela interface', () => {
+  it('abre uma única seção por vez e permite recolher o painel contextual', () => {
     setup();
+
+    openSection('Diplomacia');
+    expect(screen.getAllByRole('region', { name: 'Diplomacia' })).toHaveLength(1);
+    expect(screen.queryByRole('region', { name: 'Sobrevivência' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Personagens e governo' })).toBeNull();
+
+    openSection('Diplomacia');
+    expect(screen.queryByRole('complementary', { name: 'Painel da colônia' })).toBeNull();
+  });
+
+  it('abre os detalhes quando um edifício é selecionado e limpa a seleção pelo painel', () => {
+    const { selection } = setup();
+    act(() => selection.select('building-habitat-01'));
+
+    expect(screen.getByRole('complementary', { name: 'Construção selecionada' })).toBeTruthy();
+    expect(
+      screen
+        .getByRole('complementary', { name: 'Construção selecionada' })
+        .textContent?.includes('Posição no grid'),
+    ).toBe(true);
+    act(() => screen.getByRole('button', { name: 'Limpar seleção' }).click());
+    expect(selection.getSnapshot().selectedEntityId).toBeNull();
+    expect(screen.getByRole('region', { name: 'Sobrevivência' })).toBeTruthy();
+  });
+
+  it('preserva nomeações de cargos pela seção de personagens e governo', () => {
+    setup();
+    openSection('Personagens e governo');
     const roster = within(screen.getByRole('list', { name: 'Personagens importantes' }));
     act(() => roster.getByRole('button', { name: /Veli Faísca/ }).click());
     const roles = within(screen.getByRole('region', { name: 'Cargos governamentais' }));
@@ -109,5 +97,21 @@ describe('GameHUD', () => {
         .getAllByRole('status')
         .some((status) => status.textContent?.includes('nomeado: Ciência')),
     ).toBe(true);
+  });
+
+  it('mantém acessíveis construção, eventos, tutorial e salvamento pela navegação', () => {
+    setup();
+
+    openSection('Construção');
+    expect(screen.getByRole('list', { name: 'Edifícios disponíveis' })).toBeTruthy();
+    openSection('Eventos');
+    expect(screen.getByText('Nenhum evento ativo no momento.')).toBeTruthy();
+    openSection('Primeiros passos');
+    expect(screen.getByRole('region', { name: 'Como sobreviver' })).toBeTruthy();
+    act(() => screen.getByRole('button', { name: 'Fechar tutorial' }).click());
+    expect(screen.getByRole('region', { name: 'Sobrevivência' })).toBeTruthy();
+    openSection('Partida e salvamento');
+    expect(screen.getByRole('button', { name: 'Salvar' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Carregar' })).toBeTruthy();
   });
 });

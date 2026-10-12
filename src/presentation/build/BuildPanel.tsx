@@ -21,6 +21,8 @@ export interface BuildPanelProps {
   /** Estado de sessão do modo de construção (fora do `GameState`). */
   readonly build: BuildStore;
   readonly actions: BuildActions;
+  /** Abre o catálogo quando a seção de construção é escolhida na navegação. */
+  readonly initialOpen?: boolean;
 }
 
 /** "Materiais 40", e "— faltam 10" quando o estoque não cobre. O texto, não só a cor, diz que falta. */
@@ -212,8 +214,8 @@ function BuildBody({ controller, build, actions, id }: BuildPanelProps & { reado
  * as mesmas regras do comando `PlaceBuilding`, e envia a confirmação pelas ações. O estado do modo
  * (qual edifício, rotação, posição) vive no store de sessão, não aqui.
  */
-export function BuildPanel({ controller, build, actions }: BuildPanelProps) {
-  const [open, setOpen] = useState(false);
+export function BuildPanel({ controller, build, actions, initialOpen = false }: BuildPanelProps) {
+  const [open, setOpen] = useState(initialOpen);
   const bodyId = useId();
 
   const toggle = () => {
@@ -233,8 +235,8 @@ export function BuildPanel({ controller, build, actions }: BuildPanelProps) {
         aria-controls={open ? bodyId : undefined}
         onClick={toggle}
       >
-        <span aria-hidden="true">{open ? '×' : '+'}</span>
-        <span>{open ? 'Fechar construção' : 'Construir'}</span>
+        <span aria-hidden="true">{open ? '⌃' : '⌄'}</span>
+        <span>{open ? 'Recolher catálogo' : 'Exibir catálogo'}</span>
       </button>
       {open && <BuildBody controller={controller} build={build} actions={actions} id={bodyId} />}
     </section>

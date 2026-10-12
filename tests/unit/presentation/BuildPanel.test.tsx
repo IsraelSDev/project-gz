@@ -34,8 +34,8 @@ function setup(patch: Partial<GameState['resources']> = {}) {
   return { controller, build, actions };
 }
 
-const toggle = () => screen.getByRole('button', { name: /^(Construir|Fechar construção)$/ });
-const open = () => fireEvent.click(screen.getByRole('button', { name: 'Construir' }));
+const toggle = () => screen.getByRole('button', { name: /^(Exibir catálogo|Recolher catálogo)$/ });
+const open = () => fireEvent.click(screen.getByRole('button', { name: 'Exibir catálogo' }));
 const item = (name: RegExp) => screen.getByRole('button', { name });
 const status = () => document.querySelector('.build-placement__status')?.textContent ?? '';
 const feedback = () => document.querySelector('.build-panel__feedback')?.textContent ?? '';
@@ -45,7 +45,7 @@ const buildingCount = (controller: { getSnapshot: () => GameState }) =>
 const INITIAL_COUNT = INITIAL_SCENARIO.initialBuildings.length;
 
 describe('BuildPanel: abrir e fechar', () => {
-  it('começa fechado, só com o botão "Construir"', () => {
+  it('começa fechado, só com o botão para exibir o catálogo', () => {
     setup();
 
     expect(toggle().getAttribute('aria-expanded')).toBe('false');

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { GameController } from '@/game/application/GameController';
 import type { BuildStore } from '@/session/buildStore';
 import type { SelectionStore } from '@/session/selectionStore';
@@ -5,8 +6,11 @@ import type { SaveProvider } from '@/game/application/ports/SaveProvider';
 import type { GameState } from '@/game/domain/state/GameState';
 import type { BuildActions } from '../build/buildActions';
 import { BuildPanel } from '../build/BuildPanel';
+import { selectPopulationSummary } from '@/game/application/populationSelectors';
 import { usePlacementActive } from '../hooks/useBuild';
 import { useClock } from '../hooks/useClock';
+import { useSelection } from '../hooks/useSelection';
+import { useGameSelector } from '../hooks/useGameSelector';
 import { ResourceBar } from '../hud/ResourceBar';
 import { TimeControls } from '../hud/TimeControls';
 import { BuildingDetailsPanel } from './BuildingDetailsPanel';
@@ -32,11 +36,46 @@ export interface GameHUDProps {
   readonly onPanelDismissed?: () => void;
 }
 
-/**
- * HUD de estratégia: HTML sobreposto ao canvas (não se usa Babylon GUI). O contêiner não captura o
- * ponteiro; só a barra superior e o painel o capturam, então o resto da tela continua entregando
- * cliques, arrastos e a roda do mouse ao canvas (câmera e seleção).
- */
+type HUDSection =
+  | 'overview'
+  | 'build'
+  | 'people'
+  | 'research'
+  | 'diplomacy'
+  | 'events'
+  | 'tutorial'
+  | 'save'
+  | 'building';
+
+const NAV_ITEMS: readonly {
+  readonly id: HUDSection;
+  readonly label: string;
+  readonly icon: string;
+}[] = [
+  { id: 'overview', label: 'Visão geral', icon: '◉' },
+  { id: 'build', label: 'Construção', icon: '⌂' },
+  { id: 'people', label: 'Personagens e governo', icon: '☻' },
+  { id: 'research', label: 'Pesquisa e exploração', icon: '⌕' },
+  { id: 'diplomacy', label: 'Diplomacia', icon: '◇' },
+  { id: 'events', label: 'Eventos', icon: '!' },
+  { id: 'tutorial', label: 'Primeiros passos', icon: '?' },
+  { id: 'save', label: 'Partida e salvamento', icon: '▣' },
+];
+
+function PopulationIndicator({ controller }: { readonly controller: GameController }) {
+  const population = useGameSelector(controller, (snapshot) => snapshot.population);
+  const buildings = useGameSelector(controller, (snapshot) => snapshot.buildings);
+  const resources = useGameSelector(controller, (snapshot) => snapshot.resources);
+  const summary = selectPopulationSummary({ population, buildings, resources });
+
+  return (
+    <p className="hud-population" aria-label="População e capacidade">
+      <span aria-hidden="true">☻</span> {summary.survivors}/{summary.capacity}
+    </p>
+  );
+}
+
+/** HUD de estratégia: HTML sobreposto ao canvas; apenas seus controles capturam o ponteiro. */
 export function GameHUD({
   controller,
   selection,
@@ -49,35 +88,127 @@ export function GameHUD({
 }: GameHUDProps) {
   const { paused } = useClock(controller.clock);
   const placing = usePlacementActive(build);
+  const { selectedEntityId } = useSelection(selection);
+  const activeEventCount = useGameSelector(
+    controller,
+    (snapshot) => snapshot.events.filter((event) => event.status === 'active').length,
+  );
+  const [activeSection, setActiveSection] = useState<HUDSection | null>('overview');
+  const [selectionAtNavigation, setSelectionAtNavigation] = useState(selectedEntityId);
+  // Uma nova seleção abre os detalhes; a navegação explícita do jogador passa a ter prioridade.
+  const visibleSection =
+    selectedEntityId !== null && selectedEntityId !== selectionAtNavigation
+      ? 'building'
+      : activeSection === 'building' && selectedEntityId === null
+        ? 'overview'
+        : activeSection;
+
+  const showSection = (section: HUDSection) => {
+    setSelectionAtNavigation(selectedEntityId);
+    setActiveSection((active) => (active === section ? null : section));
+  };
+  const sectionVisible = (section: HUDSection) => visibleSection === section;
+  const panelOpen = visibleSection !== null;
+  const navItems =
+    selectedEntityId === null
+      ? NAV_ITEMS
+      : [...NAV_ITEMS, { id: 'building' as const, label: 'Edifício selecionado', icon: '▦' }];
 
   return (
     <div className="hud">
-      {/* `data-paused` deixa evidente, pela cor da barra, que a simulação não está avançando. */}
       <header className="hud__top hud-topbar" data-paused={paused}>
         <h1 className="hud-title">Civilização Alienígena</h1>
         <TimeControls controller={controller} />
+        <PopulationIndicator controller={controller} />
         <ResourceBar controller={controller} />
       </header>
-      <div className="hud__side">
-        <PopulationPanel controller={controller} />
-        <CharacterGovernmentPanel controller={controller} />
-        <ResearchExplorationPanel controller={controller} />
-        <DiplomacyPanel controller={controller} />
-        <TutorialPanel />
-        <SavePanel
-          controller={controller}
-          provider={saveProvider}
-          initialState={initialState}
-          onStateReplaced={onStateReplaced}
-        />
-        <EventPanel controller={controller} />
-        <BuildPanel controller={controller} build={build} actions={buildActions} />
-        <BuildingDetailsPanel
-          controller={controller}
-          selection={selection}
-          onDismissed={onPanelDismissed}
-        />
-      </div>
+
+      <nav className="hud-nav" aria-label="Seções da colônia">
+        {navItems.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            className="hud-nav__item"
+            data-active={sectionVisible(item.id)}
+            aria-label={item.label}
+            aria-pressed={sectionVisible(item.id)}
+            title={item.label}
+            onClick={() => showSection(item.id)}
+          >
+            <span className="hud-nav__icon" aria-hidden="true">
+              {item.icon}
+            </span>
+            <span className="hud-nav__label">{item.label}</span>
+            {item.id === 'events' && activeEventCount > 0 && (
+              <span className="hud-nav__badge" aria-hidden="true">
+                {activeEventCount}
+              </span>
+            )}
+          </button>
+        ))}
+      </nav>
+
+      <aside className="hud-context" aria-label="Painel da colônia" hidden={!panelOpen}>
+        <header className="hud-context__header">
+          <h2>
+            {visibleSection === 'building'
+              ? 'Construção selecionada'
+              : navItems.find((item) => item.id === visibleSection)?.label}
+          </h2>
+          <button
+            type="button"
+            className="hud-panel__close"
+            aria-label="Fechar painel"
+            onClick={() => {
+              setSelectionAtNavigation(selectedEntityId);
+              setActiveSection(null);
+              onPanelDismissed?.();
+            }}
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+        </header>
+
+        <div className="hud-context__content">
+          <div hidden={!sectionVisible('overview')}>
+            <PopulationPanel controller={controller} />
+          </div>
+          <div hidden={!sectionVisible('build')}>
+            <BuildPanel controller={controller} build={build} actions={buildActions} initialOpen />
+          </div>
+          <div hidden={!sectionVisible('people')}>
+            <CharacterGovernmentPanel controller={controller} />
+          </div>
+          <div hidden={!sectionVisible('research')}>
+            <ResearchExplorationPanel controller={controller} />
+          </div>
+          <div hidden={!sectionVisible('diplomacy')}>
+            <DiplomacyPanel controller={controller} />
+          </div>
+          <div hidden={!sectionVisible('events')}>
+            <EventPanel controller={controller} showEmptyState />
+          </div>
+          <div hidden={!sectionVisible('tutorial')}>
+            <TutorialPanel onDismissed={() => setActiveSection('overview')} />
+          </div>
+          <div hidden={!sectionVisible('save')}>
+            <SavePanel
+              controller={controller}
+              provider={saveProvider}
+              initialState={initialState}
+              onStateReplaced={onStateReplaced}
+            />
+          </div>
+          <div hidden={!sectionVisible('building')}>
+            <BuildingDetailsPanel
+              controller={controller}
+              selection={selection}
+              onDismissed={onPanelDismissed}
+            />
+          </div>
+        </div>
+      </aside>
+
       <p className="hud__hint">
         {placing
           ? 'Arrastar: girar · W A S D: mover · Roda do mouse: zoom · Clique: fixar a posição · R: girar a prévia · Enter: confirmar · Esc: cancelar'
