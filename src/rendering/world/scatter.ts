@@ -14,12 +14,18 @@ export interface SceneryPlacement {
   readonly yaw: number;
 }
 
-/** Margem (unidades de mundo) mantida livre ao redor da área construível. */
-const CLEAR_MARGIN = 3;
+/** Início da faixa livre ao redor da área construível, em unidades de mundo. */
+const CLEAR_MARGIN = 4.5;
+/** A densidade de vegetação cresce gradualmente até esta distância da colônia. */
+const FULL_DENSITY_DISTANCE = 14;
+/** Rochas grandes ficam nas encostas externas, longe da colônia e do enquadramento inicial. */
+const LARGE_ROCK_MIN_DISTANCE = 18;
+const MAX_LARGE_ROCKS = 5;
+const MAX_SMALL_ROCKS = 44;
 /** Distância mínima da borda do terreno. */
 const EDGE_MARGIN = 2.5;
-const ATTEMPTS = 1600;
-const MAX_PROPS = 440;
+const ATTEMPTS = 2200;
+const MAX_PROPS = 340;
 const DEBRIS_COUNT = 16;
 const DEBRIS_RING = 3;
 
@@ -28,6 +34,23 @@ const inside = (bounds: WorldBounds, x: number, z: number, margin: number): bool
   x < bounds.maxX + margin &&
   z > bounds.minZ - margin &&
   z < bounds.maxZ + margin;
+
+function propRadius(kind: SceneryKind, scale: number): number {
+  switch (kind) {
+    case 'rockLarge':
+      return 1.7 * scale;
+    case 'rockSmall':
+      return 0.9 * scale;
+    case 'mushroom':
+      return 1.1 * scale;
+    case 'crystal':
+      return 0.75 * scale;
+    case 'stalk':
+      return 0.65 * scale;
+    case 'debris':
+      return 0;
+  }
+}
 
 /**
  * Distribui vegetação, rochas e destroços de forma determinística a partir da semente do cenário.
@@ -45,6 +68,8 @@ export function scatterScenery(
   const halfDepth = world.depth / 2 - EDGE_MARGIN;
   const plateau = gridRectToWorldBounds(terrain.buildableArea, terrain.sizeCells);
   const placements: SceneryPlacement[] = [];
+  let largeRocks = 0;
+  let smallRocks = 0;
 
   for (let attempt = 0; attempt < ATTEMPTS && placements.length < MAX_PROPS; attempt += 1) {
     const x = (random() * 2 - 1) * halfWidth;
@@ -54,39 +79,94 @@ export function scatterScenery(
     const sizeRoll = random();
     const densityRoll = random();
 
-    if (inside(plateau, x, z, CLEAR_MARGIN)) {
+    if (inside(plateau, x, z, 0)) {
+      continue;
+    }
+
+    const plateauDistance = field.distanceToPlateau(x, z);
+    if (plateauDistance < CLEAR_MARGIN) {
       continue;
     }
 
     const moisture = fbm(x * 0.045 + 120, z * 0.045 - 60, terrain.seed + 3);
-    const density = 0.18 + 0.75 * smoothstep(0.4, 0.7, moisture);
+    const plantClusters = smoothstep(
+      0.36,
+      0.66,
+      fbm(x * 0.13 + 47, z * 0.13 - 28, terrain.seed + 19),
+    );
+    const rockClusters = smoothstep(
+      0.52,
+      0.75,
+      fbm(x * 0.105 - 67, z * 0.105 + 35, terrain.seed + 31),
+    );
+    const plantCover = smoothstep(0.4, 0.7, moisture) * plantClusters;
+    const groundCover = Math.max(plantCover, rockClusters * 0.42);
+    const density =
+      (0.055 + 0.62 * groundCover) *
+      smoothstep(CLEAR_MARGIN, FULL_DENSITY_DISTANCE, plateauDistance);
     if (densityRoll > density) {
       continue;
     }
 
     const height = field.heightAt(x, z);
-    if (height > 3.5) {
-      placements.push({
-        kind: roll < 0.5 ? 'rockLarge' : 'rockSmall',
-        x,
-        z,
-        scale: 0.8 + sizeRoll * 0.9,
-        yaw,
-      });
-    } else if (moisture > 0.55) {
-      if (roll < 0.55) {
-        placements.push({ kind: 'stalk', x, z, scale: 0.8 + sizeRoll * 0.7, yaw });
-      } else if (roll < 0.8) {
-        placements.push({ kind: 'mushroom', x, z, scale: 0.8 + sizeRoll * 0.6, yaw });
-      } else {
-        placements.push({ kind: 'crystal', x, z, scale: 0.7 + sizeRoll * 0.8, yaw });
+    let kind: SceneryKind | null = null;
+    let scale = 1;
+    if (height > 4.5) {
+      if (
+        height > 5.5 &&
+        plateauDistance > LARGE_ROCK_MIN_DISTANCE &&
+        largeRocks < MAX_LARGE_ROCKS &&
+        roll < 0.14
+      ) {
+        kind = 'rockLarge';
+        scale = 0.5 + sizeRoll * 0.38;
+      } else if (roll < 0.42 && smallRocks < MAX_SMALL_ROCKS && rockClusters > 0.3) {
+        kind = 'rockSmall';
+        scale = 0.62 + sizeRoll * 0.34;
       }
-    } else if (roll < 0.35) {
-      placements.push({ kind: 'rockSmall', x, z, scale: 0.7 + sizeRoll * 0.9, yaw });
-    } else if (roll < 0.6) {
-      placements.push({ kind: 'stalk', x, z, scale: 0.6 + sizeRoll * 0.5, yaw });
-    } else if (roll < 0.7) {
-      placements.push({ kind: 'crystal', x, z, scale: 0.6 + sizeRoll * 0.6, yaw });
+    } else if (plantCover > 0.08) {
+      if (roll < 0.55) {
+        kind = 'stalk';
+        scale = 0.62 + sizeRoll * 0.38;
+      } else if (roll < 0.8) {
+        kind = 'mushroom';
+        scale = 0.62 + sizeRoll * 0.32;
+      } else if (roll < 0.94) {
+        kind = 'crystal';
+        scale = 0.58 + sizeRoll * 0.34;
+      }
+    } else if (roll < 0.35 + rockClusters * 0.28 && smallRocks < MAX_SMALL_ROCKS) {
+      kind = 'rockSmall';
+      scale = 0.62 + sizeRoll * 0.34;
+    } else if (roll < 0.42) {
+      kind = 'stalk';
+      scale = 0.62 + sizeRoll * 0.38;
+    } else if (roll < 0.52) {
+      kind = 'crystal';
+      scale = 0.58 + sizeRoll * 0.34;
+    }
+
+    if (kind === null) {
+      continue;
+    }
+
+    const radius = propRadius(kind, scale);
+    const overlaps = placements.some(
+      (placed) =>
+        placed.kind !== 'debris' &&
+        Math.hypot(placed.x - x, placed.z - z) <
+          radius + propRadius(placed.kind, placed.scale) + 0.45,
+    );
+    if (overlaps) {
+      continue;
+    }
+
+    placements.push({ kind, x, z, scale, yaw });
+    if (kind === 'rockLarge') {
+      largeRocks += 1;
+    }
+    if (kind === 'rockSmall') {
+      smallRocks += 1;
     }
   }
 

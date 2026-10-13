@@ -3,10 +3,10 @@ import { gridRectToWorldBounds, terrainWorldSize } from './gridToWorld';
 import type { TerrainSpec } from './WorldSnapshot';
 
 /** Largura (em unidades de mundo) da rampa entre a área construível plana e as colinas. */
-const PLATEAU_BLEND = 9;
+const PLATEAU_BLEND = 15;
 /** Distância da borda do terreno em que o anel de colinas começa a subir. */
-const RIM_WIDTH = 14;
-const RIM_HEIGHT = 9;
+const RIM_WIDTH = 22;
+const RIM_HEIGHT = 5.2;
 
 export interface HeightField {
   /** Altura do terreno (Y) no ponto de mundo (x, z). A área construível é exatamente plana (0). */
@@ -16,8 +16,8 @@ export interface HeightField {
 }
 
 /**
- * Relevo provisório: plano na área construível, com colinas suaves fora dela e um anel de colinas
- * nas bordas que esconde o limite do terreno. A forma é decidida só pelos dados do cenário.
+ * Relevo procedural do bioma: planalto plano para construção, colinas estratificadas e um anel
+ * rochoso nas bordas. A forma depende somente dos dados do cenário.
  */
 export function createHeightField(terrain: TerrainSpec): HeightField {
   const plateau = gridRectToWorldBounds(terrain.buildableArea, terrain.sizeCells);
@@ -37,11 +37,15 @@ export function createHeightField(terrain: TerrainSpec): HeightField {
     if (ramp === 0) {
       return 0;
     }
-    const hills = Math.max(0, fbm(x * 0.06, z * 0.06, seed) - 0.32) * 8;
-    const detail = (fbm(x * 0.22 + 40, z * 0.22 - 40, seed + 7) - 0.5) * 0.6;
+    const broadHills = Math.max(0, fbm(x * 0.055, z * 0.055, seed) - 0.32) * 6.2;
+    const ridgeSignal = 1 - Math.abs(fbm(x * 0.115 + 13, z * 0.115 - 29, seed + 17) - 0.5) * 2;
+    const ridges = Math.max(0, ridgeSignal - 0.62) * 1.2;
+    const detail = (fbm(x * 0.2 + 40, z * 0.2 - 40, seed + 7) - 0.5) * 0.28;
     const edgeDistance = Math.min(halfWidth - Math.abs(x), halfDepth - Math.abs(z));
     const rimT = 1 - smoothstep(0, RIM_WIDTH, edgeDistance);
-    return ramp * (hills + detail) + rimT * rimT * RIM_HEIGHT * ramp;
+    const rimVariation = Math.max(0, fbm(x * 0.075 + 83, z * 0.075 - 41, seed + 29) - 0.34);
+    const brokenRim = rimT * RIM_HEIGHT * rimVariation * ramp;
+    return ramp * (broadHills + ridges + detail) + brokenRim;
   };
 
   return { heightAt, distanceToPlateau };

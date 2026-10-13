@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest';
+import { NullEngine } from '@babylonjs/core/Engines/nullEngine';
+import { VertexBuffer } from '@babylonjs/core/Buffers/buffer';
 import { INITIAL_SCENARIO } from '@/game/content/scenario';
 import { clampCameraAboveGround, type OrbitCameraState } from '@/rendering/camera/cameraRig';
+import { createSceneContext } from '@/rendering/scene/createSceneContext';
 import { gridRectToWorldBounds, terrainWorldSize } from '@/rendering/world/gridToWorld';
 import { createHeightField } from '@/rendering/world/heightField';
 import { scatterScenery } from '@/rendering/world/scatter';
+import { createTerrainMesh } from '@/rendering/world/terrain';
 import type { PlacedSpec, TerrainSpec } from '@/rendering/world/WorldSnapshot';
 
 const terrain: TerrainSpec = INITIAL_SCENARIO.terrain;
@@ -45,6 +49,43 @@ describe('relevo do terreno', () => {
   });
 });
 
+describe('malha visual do terreno', () => {
+  it('mantém a grade atual e reproduz geometria e cores com a mesma seed', () => {
+    const engine = new NullEngine();
+    const context = createSceneContext(engine);
+    const first = createTerrainMesh(context, terrain, createHeightField(terrain));
+    const repeat = createTerrainMesh(context, terrain, createHeightField(terrain));
+    const otherTerrain = { ...terrain, seed: terrain.seed + 1 };
+    const other = createTerrainMesh(context, otherTerrain, createHeightField(otherTerrain));
+
+    expect(first.getTotalVertices()).toBe(10_201);
+    expect(first.getVerticesData(VertexBuffer.PositionKind)).toEqual(
+      repeat.getVerticesData(VertexBuffer.PositionKind),
+    );
+    expect(first.getVerticesData(VertexBuffer.ColorKind)).toEqual(
+      repeat.getVerticesData(VertexBuffer.ColorKind),
+    );
+    expect(first.getVerticesData(VertexBuffer.ColorKind)).not.toEqual(
+      other.getVerticesData(VertexBuffer.ColorKind),
+    );
+
+    const positions = first.getVerticesData(VertexBuffer.PositionKind);
+    expect(positions).not.toBeNull();
+    const plateau = gridRectToWorldBounds(terrain.buildableArea, terrain.sizeCells);
+    for (let i = 0; i < positions!.length; i += 3) {
+      const x = positions![i]!;
+      const y = positions![i + 1]!;
+      const z = positions![i + 2]!;
+      if (x >= plateau.minX && x <= plateau.maxX && z >= plateau.minZ && z <= plateau.maxZ) {
+        expect(y).toBe(0);
+      }
+    }
+
+    context.dispose();
+    engine.dispose();
+  });
+});
+
 describe('dispersão do cenário', () => {
   const field = createHeightField(terrain);
   const placements = scatterScenery(terrain, ship, field);
@@ -60,8 +101,20 @@ describe('dispersão do cenário', () => {
     const kinds = new Set(placements.map((placement) => placement.kind));
 
     expect(placements.length).toBeGreaterThan(100);
+    expect(placements.length).toBeLessThanOrEqual(356);
     expect(kinds.has('stalk')).toBe(true);
     expect(kinds.has('debris')).toBe(true);
+  });
+
+  it('mantém rochas grandes raras, pequenas e nas encostas externas', () => {
+    const largeRocks = placements.filter((placement) => placement.kind === 'rockLarge');
+
+    expect(largeRocks.length).toBeLessThanOrEqual(5);
+    for (const rock of largeRocks) {
+      expect(rock.scale).toBeLessThanOrEqual(0.88);
+      expect(field.distanceToPlateau(rock.x, rock.z)).toBeGreaterThan(18);
+      expect(field.heightAt(rock.x, rock.z)).toBeGreaterThan(5.5);
+    }
   });
 
   it('mantém a área construível livre e tudo dentro do terreno', () => {
@@ -75,6 +128,10 @@ describe('dispersão do cenário', () => {
         placement.z > plateau.minZ &&
         placement.z < plateau.maxZ;
       expect(insidePlateau).toBe(false);
+      expect(field.distanceToPlateau(placement.x, placement.z)).toBeGreaterThan(4.5);
+      if (placement.kind === 'stalk' || placement.kind === 'mushroom') {
+        expect(placement.scale).toBeLessThanOrEqual(1);
+      }
     }
     for (const placement of placements) {
       expect(Math.abs(placement.x)).toBeLessThan(world.width / 2);

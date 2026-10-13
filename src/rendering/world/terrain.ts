@@ -19,13 +19,20 @@ const MOSS_DARK = Color3.FromHexString(PALETTE.terrain.mossDark);
 const ROCK = Color3.FromHexString(PALETTE.terrain.rock);
 
 function terrainColor(x: number, z: number, y: number, field: HeightField, seed: number): Color3 {
-  const patch = fbm(x * 0.12 + 31, z * 0.12 - 17, seed + 1);
-  let color = Color3.Lerp(SAND, MOSS, smoothstep(0.38, 0.68, patch));
-  color = Color3.Lerp(color, MOSS_DARK, smoothstep(0.62, 0.88, patch) * 0.6);
-  color = Color3.Lerp(color, ROCK, smoothstep(2, 5, y));
-  color = Color3.Lerp(DUST, color, smoothstep(0, 4, field.distanceToPlateau(x, z)));
-  const speckle = (valueNoise(x * 1.7, z * 1.7, seed + 9) - 0.5) * 0.08;
-  return new Color3(color.r + speckle, color.g + speckle, color.b + speckle);
+  const moisture = fbm(x * 0.075 + 31, z * 0.075 - 17, seed + 1);
+  const localMoisture = fbm(x * 0.19 - 9, z * 0.19 + 23, seed + 3);
+  const mineral = valueNoise(x * 0.28, z * 0.28, seed + 9);
+  let natural = Color3.Lerp(DUST, SAND, smoothstep(0.28, 0.68, moisture));
+  natural = Color3.Lerp(natural, MOSS, smoothstep(0.5, 0.76, moisture) * 0.48);
+  natural = Color3.Lerp(natural, MOSS_DARK, smoothstep(0.76, 0.92, localMoisture) * 0.18);
+
+  // A rocha aparece gradualmente nas elevações; não há faixas senoidais sobrepostas.
+  const exposedRock = smoothstep(4, 8, y) * 0.55;
+  natural = Color3.Lerp(natural, ROCK, exposedRock);
+  const plateauBlend = smoothstep(0, 15, field.distanceToPlateau(x, z));
+  const color = Color3.Lerp(DUST, natural, plateauBlend);
+  const mottling = (mineral - 0.5) * 0.055 * plateauBlend;
+  return new Color3(color.r + mottling, color.g + mottling, color.b + mottling);
 }
 
 /** Malha do terreno: relevo e cores vêm só do campo de altura e da semente do cenário. */
