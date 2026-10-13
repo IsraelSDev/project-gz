@@ -12,6 +12,7 @@ import {
   type PlacementTerrain,
 } from './placement';
 import { INITIAL_PLACEMENT_TERRAIN } from './placementTerrain';
+import { applyConstructionDiscount } from '@/game/domain/research/technologyEffects';
 
 /*
  * Comando de simulação `PlaceBuilding` (docs/TECHNICAL_ARCHITECTURE.md §7.2 e §21). Segue as regras
@@ -108,7 +109,12 @@ export function createPlaceBuildingHandler(
       !state.research.unlockedTechnologyIds.includes(requiredTechnologyId)
     )
       return err('COMMAND_REJECTED');
-    const checked = evaluatePlacement(state, request, terrain, definitions);
+    const adjustedDefinition = {
+      ...definition,
+      cost: applyConstructionDiscount(definition.cost, state.research.unlockedTechnologyIds),
+    };
+    const adjustedDefinitions = { ...definitions, [request.definitionId]: adjustedDefinition };
+    const checked = evaluatePlacement(state, request, terrain, adjustedDefinitions);
     if (!checked.ok) {
       return err(checked.error);
     }
@@ -123,7 +129,7 @@ export function createPlaceBuildingHandler(
     };
     const next: GameState = {
       ...state,
-      resources: payCost(state.resources, definition.cost),
+      resources: payCost(state.resources, adjustedDefinition.cost),
       buildings: [...state.buildings, building],
       nextEntityId: state.nextEntityId + 1,
     };

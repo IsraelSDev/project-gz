@@ -391,3 +391,16 @@ As cidades usam o mesmo motor de economia e a mesma regra de necessidades por ti
 Integração posterior: a estabilidade da base é somente um indicador e não encerra mais a partida. O jogo continua enquanto houver sobreviventes; zero sobreviventes ainda causa derrota e pausa. Saves antigos com vitória por estabilidade voltam como partidas em andamento, sem perder tick, recursos ou construções.
 
 Validação automatizada registrada nesta fase: typecheck, lint, Prettier, suíte de testes e build de produção (resultados finais após ajustes registrados abaixo). O chunk principal final mede 1.398,50 kB minificado/357,67 kB gzip, abaixo do limite configurado de 1.400 kB; painéis de império e pesquisa são carregados sob demanda. Na Fase 12, o principal media 1.348,98/344,84 kB; a diferença atual é +49,52 kB minificados e +12,83 kB gzip. Não houve teste manual em navegador/WebGL nem medição de FPS. Limitações: mapa territorial textual sem coordenadas geográficas ou assentamentos renderizados em 3D; transferências são capital→cidade; não há conquista territorial. Pesquisa continua sendo um sistema imperial único; unidades e defesa da Fase 14 continuam no capital.
+
+## Fase 16 — Tecnologia avançada e eras de desenvolvimento
+
+**Status: concluída e validada.** `npm run validate` passou: typecheck, lint, Prettier, 52 arquivos de teste/763 testes aprovados e build de produção. O chunk principal mediu 1.405,78 kB minificado/359,76 kB gzip e excedeu em 5,78 kB o limite de aviso configurado (1.400 kB); o build terminou com aviso. Não houve teste manual WebGL. A pesquisa da Fase 11 foi ampliada para cinco eras e nove tecnologias. As eras avançam por pesquisas-marco concluídas, nunca por tempo decorrido. IDs e custos das duas tecnologias antigas foram preservados. As novas tecnologias adicionam desconto de materiais, produção especializada, pesquisa distribuída entre laboratórios, bônus administrativo e defesa por posto. Os efeitos são derivados dos IDs concluídos e não são acumulados no save.
+
+A pesquisa permanece imperial e possui um projeto ativo; laboratórios no capital e em assentamentos contribuem para o mesmo progresso. O save avança para schema 8/content 0.11.0; a migração v7 preserva pesquisas concluídas, projeto ativo, progresso e recursos, derivando a era a partir dos marcos antigos. A interface expõe era, categoria, requisitos, custo, pontos necessários, progresso, efeito e motivo de bloqueio e marcos pendentes da próxima era.
+
+Fase 16.1 só começou após a conclusão e validação da Fase 16, conforme solicitado.
+
+
+## Fase 16.1 — Auditoria visual e definição da direção de arte
+
+**Auditoria e planejamento documental concluídos; produção visual aguarda aprovação.** O inventário está em [ART_DIRECTION_AUDIT.md](ART_DIRECTION_AUDIT.md): registra o conteúdo procedural atual, integração/ciclo de vida, ausência de assets e medições disponíveis, direção de arte oficial proposta, riscos e pacote inicial priorizado com dependências, dificuldade e critérios de aceite. Nenhum modelo, textura, regra ou dependência foi alterado. A auditoria não teve visualização manual em navegador/WebGL. A produção em escala só começa após aprovação do plano.

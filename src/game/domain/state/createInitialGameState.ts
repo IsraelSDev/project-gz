@@ -70,7 +70,12 @@ export function createInitialGameState(scenario: ScenarioDefinition): GameState 
     characters: INITIAL_CHARACTERS,
     government: INITIAL_GOVERNMENT,
     relationships: INITIAL_RELATIONSHIPS,
-    research: { unlockedTechnologyIds: [], activeTechnologyId: null, progress: 0 },
+    research: {
+      currentEra: 'survival',
+      unlockedTechnologyIds: [],
+      activeTechnologyId: null,
+      progress: 0,
+    },
     exploration: { discoveredPointIds: [] },
     diplomacy: createInitialDiplomacy(),
     military: { nextUnitId: 1, units: [], battle: null, history: [] },

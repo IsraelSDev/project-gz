@@ -4,6 +4,7 @@ import { freezeDeep } from '@/game/domain/state/freezeDeep';
 import type { GameState } from '@/game/domain/state/GameState';
 import { advancePopulation } from '@/game/domain/population/advancePopulation';
 import { advanceResearch } from '@/game/domain/research/researchCommands';
+import { getTechnologyModifiers } from '@/game/domain/research/technologyEffects';
 import { advanceMilitary } from '@/game/domain/military/militaryCommands';
 import { advanceSettlements } from '@/game/domain/territory/territoryCommands';
 
@@ -43,7 +44,13 @@ export function advanceSimulationStep(
   const ticked = freezeDeep({ ...state, tick: state.tick + 1 });
   const commanded = applyCommands(ticked);
 
-  const resources = advanceEconomy(commanded.resources, commanded.buildings);
+  const technologyModifiers = getTechnologyModifiers(commanded.research.unlockedTechnologyIds);
+  const resources = advanceEconomy(
+    commanded.resources,
+    commanded.buildings,
+    undefined,
+    technologyModifiers.productionByBuilding,
+  );
   const economical =
     resources === commanded.resources ? commanded : freezeDeep({ ...commanded, resources });
   return advanceEvents(

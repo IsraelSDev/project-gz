@@ -5,6 +5,13 @@ import { explorePointCommand, EXPLORE_POINT } from '@/game/domain/exploration/ex
 import { startResearchCommand, START_RESEARCH } from '@/game/domain/research/researchCommands';
 import { RESOURCE_DEFINITIONS, RESOURCE_IDS, type ResourceRates } from '@/game/content/resources';
 import type { CommandErrorCode } from '@/game/domain/commands/simulationCommand';
+import { DEVELOPMENT_ERAS, type EraId } from '@/game/content/developmentEras';
+import { TECHNOLOGY_CATEGORY_LABELS } from '@/game/content/technologies';
+import {
+  countFieldLaboratories,
+  getResearchBlockReason,
+} from '@/game/domain/research/researchCommands';
+import type { GameState } from '@/game/domain/state/GameState';
 
 /** Dados de catálogo projetados para a interface, sem regras duplicadas. */
 function selectCosts(cost: ResourceRates) {
@@ -14,11 +21,42 @@ function selectCosts(cost: ResourceRates) {
   });
 }
 
-export const selectTechnologyCatalog = () =>
-  Object.values(TECHNOLOGY_DEFINITIONS).map((technology) => ({
+export const selectTechnologyCatalog = (state?: GameState) => {
+  const names = new Map<string, string>(
+    Object.values(TECHNOLOGY_DEFINITIONS).map((technology) => [technology.id, technology.name]),
+  );
+  return Object.values(TECHNOLOGY_DEFINITIONS).map((technology) => ({
     ...technology,
     costLines: selectCosts(technology.cost),
+    eraName: DEVELOPMENT_ERAS.find((era) => era.id === technology.era)?.name ?? technology.era,
+    categoryName: TECHNOLOGY_CATEGORY_LABELS[technology.category],
+    prerequisiteNames: technology.prerequisites.map((id) => names.get(id) ?? id),
+    blockReason: state ? getResearchBlockReason(state, technology.id) : null,
   }));
+};
+export const selectDevelopmentEraName = (id: EraId) =>
+  DEVELOPMENT_ERAS.find((era) => era.id === id)?.name ?? id;
+export function selectEraProgress(state: GameState) {
+  const currentIndex = DEVELOPMENT_ERAS.findIndex((era) => era.id === state.research.currentEra);
+  const nextEra = DEVELOPMENT_ERAS[currentIndex + 1];
+  if (!nextEra)
+    return { currentName: selectDevelopmentEraName(state.research.currentEra), next: null };
+  const names = new Map<string, string>(
+    Object.values(TECHNOLOGY_DEFINITIONS).map((technology) => [technology.id, technology.name]),
+  );
+  return {
+    currentName: selectDevelopmentEraName(state.research.currentEra),
+    next: {
+      name: nextEra.name,
+      milestones: nextEra.requires.map((id) => ({
+        name: names.get(id) ?? id,
+        completed: state.research.unlockedTechnologyIds.includes(id),
+      })),
+    },
+  };
+}
+export const selectFieldLaboratoryCount = (state: Pick<GameState, 'buildings' | 'settlements'>) =>
+  countFieldLaboratories(state);
 export const selectPointOfInterestCatalog = () =>
   Object.values(POINTS_OF_INTEREST).map((point) => ({
     ...point,

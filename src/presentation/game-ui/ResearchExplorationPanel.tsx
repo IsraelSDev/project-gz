@@ -7,11 +7,15 @@ import {
   subscribeToContentExpansionRejections,
   selectPointOfInterestCatalog,
   selectTechnologyCatalog,
+  selectFieldLaboratoryCount,
+  selectEraProgress,
 } from '@/game/application/contentExpansion';
 import { useGameSelector } from '../hooks/useGameSelector';
 
 export function ResearchExplorationPanel({ controller }: { readonly controller: GameController }) {
   const buildings = useGameSelector(controller, (snapshot) => snapshot.buildings);
+  const settlements = useGameSelector(controller, (snapshot) => snapshot.settlements);
+  const resources = useGameSelector(controller, (snapshot) => snapshot.resources);
   const research = useGameSelector(controller, (snapshot) => snapshot.research);
   const exploration = useGameSelector(controller, (snapshot) => snapshot.exploration);
   const scienceOfficeId = useGameSelector(
@@ -32,7 +36,14 @@ export function ResearchExplorationPanel({ controller }: { readonly controller: 
     );
   };
   const active = research.activeTechnologyId;
-  const labReady = buildings.some((building) => building.definitionId === 'field-laboratory');
+  const snapshot = controller.getSnapshot();
+  const labCount = selectFieldLaboratoryCount({ buildings, settlements });
+  const technologyCatalog = selectTechnologyCatalog({ ...snapshot, resources });
+  const eraProgress = selectEraProgress(snapshot);
+  const technologyNames = new Map<string, string>(
+    technologyCatalog.map((technology) => [technology.id, technology.name]),
+  );
+  const labReady = labCount > 0;
   const scientistReady = characters.some(
     (character) =>
       character.characterId === scienceOfficeId && character.alive && character.available,
@@ -41,28 +52,70 @@ export function ResearchExplorationPanel({ controller }: { readonly controller: 
     <section className="hud-panel" aria-label="Pesquisa e exploração">
       <h2 className="hud-panel__title">Pesquisa e exploração</h2>
       <h3 className="hud-panel__name">Tecnologias</h3>
+      <p>
+        Era atual: <strong>Era de {eraProgress.currentName}</strong>
+      </p>
+      {eraProgress.next ? (
+        <p>
+          Próxima era: {eraProgress.next.name} · Marcos:{' '}
+          {eraProgress.next.milestones
+            .map((milestone) => `${milestone.completed ? '✓' : '○'} ${milestone.name}`)
+            .join(', ')}
+        </p>
+      ) : (
+        <p>Última era alcançada.</p>
+      )}
+      <p>
+        Laboratórios: {labCount} · Cientista: {scientistReady ? 'designado' : 'indisponível'}
+      </p>
       {!labReady && <p>Construa um Laboratório de Campo para iniciar pesquisas.</p>}
       {labReady && !scientistReady && (
         <p>Designe um personagem apto ao cargo de ciência para iniciar pesquisas.</p>
       )}
       <ul>
-        {selectTechnologyCatalog().map((tech) => {
+        {technologyCatalog.map((tech) => {
           const complete = research.unlockedTechnologyIds.includes(tech.id);
-          const prerequisitesMet = tech.prerequisites.every((id) =>
-            research.unlockedTechnologyIds.includes(id),
-          );
+          const blockReason = tech.blockReason;
+          const reasonText =
+            blockReason === 'another-project'
+              ? `Conclua primeiro ${technologyNames.get(active ?? '') ?? 'a pesquisa ativa'}.`
+              : blockReason === 'in-progress'
+                ? 'Esta pesquisa já está em andamento.'
+                : blockReason === 'era'
+                  ? `Requer a Era de ${tech.eraName}.`
+                  : blockReason === 'prerequisites'
+                    ? `Pré-requisitos: ${tech.prerequisiteNames.join(', ')}.`
+                    : blockReason === 'laboratory'
+                      ? 'Construa um Laboratório de Campo em qualquer assentamento.'
+                      : blockReason === 'scientist'
+                        ? 'Designe um cientista apto ao cargo de ciência.'
+                        : blockReason === 'resources'
+                          ? 'Recursos insuficientes para iniciar.'
+                          : '';
           return (
             <li key={tech.id}>
-              <strong>{tech.name}</strong> —{' '}
-              {complete
-                ? 'Concluída'
-                : active === tech.id
-                  ? `Em andamento: ${research.progress}/${tech.researchPoints}`
-                  : tech.description}
+              <strong>{tech.name}</strong> · Era de {tech.eraName} · {tech.categoryName}
+              <p>{tech.description}</p>
+              <p>
+                {complete
+                  ? 'Concluída'
+                  : active === tech.id
+                    ? `Em andamento: ${research.progress}/${tech.researchPoints} pontos`
+                    : blockReason
+                      ? `Bloqueada: ${reasonText}`
+                      : 'Disponível'}
+              </p>
+              <p>
+                Pré-requisitos:{' '}
+                {tech.prerequisites.length ? tech.prerequisiteNames.join(', ') : 'nenhum'} · Custo:{' '}
+                {tech.costLines.map((line) => `${line.name} ${line.amount}`).join(', ')} · Pesquisa:{' '}
+                {tech.researchPoints} pontos
+              </p>
+              <p>Efeito: {tech.effectDescription}</p>
               {!complete && active !== tech.id && (
                 <button
                   type="button"
-                  disabled={!labReady || !scientistReady || active !== null || !prerequisitesMet}
+                  disabled={blockReason !== null}
                   onClick={() =>
                     submit(
                       () => requestResearch(controller, tech.id),
@@ -70,8 +123,7 @@ export function ResearchExplorationPanel({ controller }: { readonly controller: 
                     )
                   }
                 >
-                  Pesquisar (
-                  {tech.costLines.map((line) => `${line.name} ${line.amount}`).join(', ')})
+                  Pesquisar
                 </button>
               )}
             </li>

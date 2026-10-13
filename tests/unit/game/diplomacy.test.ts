@@ -178,7 +178,11 @@ describe('diplomacia da Fase 13', () => {
     const state = initial();
     const ready = {
       ...state,
-      research: { ...state.research, unlockedTechnologyIds: ['protein-cultures'] },
+      research: {
+        ...state.research,
+        currentEra: 'foundation' as const,
+        unlockedTechnologyIds: ['protein-cultures'],
+      },
     };
     const explored = run(ready, explorePointCommand('echo-ruins'));
     if (!explored.ok) throw new Error('A exploração inicial deveria funcionar.');
@@ -265,8 +269,8 @@ describe('diplomacia da Fase 13', () => {
     expect(decoded.ok).toBe(true);
     if (!decoded.ok) return;
     expect(decoded.value).toMatchObject({
-      schemaVersion: 7,
-      contentVersion: '0.10.0',
+      schemaVersion: 8,
+      contentVersion: '0.11.0',
       tick: state.tick,
     });
     expect(

@@ -43,8 +43,8 @@ export interface ScenarioDefinition {
 
 export const INITIAL_SCENARIO = {
   id: 'crash-site',
-  // 0.10.0: território e assentamentos da Fase 15.
-  contentVersion: '0.10.0',
+  // 0.11.0: eras e árvore tecnológica da Fase 16.
+  contentVersion: '0.11.0',
   terrain: {
     sizeCells: { width: 40, depth: 40 },
     buildableArea: { x: 12, y: 12, width: 16, depth: 16 },

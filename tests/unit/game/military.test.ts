@@ -98,7 +98,11 @@ describe('militar Fase 14', () => {
     const initialState = createInitialGameState(INITIAL_SCENARIO);
     let state: GameState = {
       ...initialState,
-      research: { ...initialState.research, unlockedTechnologyIds: ['protein-cultures'] },
+      research: {
+        ...initialState.research,
+        currentEra: 'foundation',
+        unlockedTechnologyIds: ['protein-cultures'],
+      },
     };
     const explored = run(state, explorePointCommand('echo-ruins'));
     if (!explored.ok) throw new Error('Exploração falhou');
@@ -187,7 +191,7 @@ describe('militar Fase 14', () => {
     );
     expect(decoded.ok).toBe(true);
     if (decoded.ok) {
-      expect(decoded.value.schemaVersion).toBe(7);
+      expect(decoded.value.schemaVersion).toBe(8);
       expect(decoded.value.diplomacy.civilizations.every((item) => item.warStatus === 'none')).toBe(
         true,
       );

@@ -8,6 +8,7 @@ import {
 } from '@/game/application/territory';
 import type { GameController } from '@/game/application/GameController';
 import { useGameSelector } from '@/presentation/hooks/useGameSelector';
+import { selectBuildingCost } from '@/game/application/buildSelectors';
 
 const format = new Intl.NumberFormat('pt-BR');
 const {
@@ -313,8 +314,9 @@ export function EmpirePanel({ controller }: { readonly controller: GameControlle
                       research.unlockedTechnologyIds.includes(definition.requiredTechnologyId)),
                 )
                 .map((definition: BuildingDefinition) => {
+                  const cost = selectBuildingCost(definition.cost, research.unlockedTechnologyIds);
                   const affordable = RESOURCE_IDS.every(
-                    (id) => selected.resources[id] >= (definition.cost[id] ?? 0),
+                    (id) => selected.resources[id] >= (cost[id] ?? 0),
                   );
                   return (
                     <li key={definition.id}>

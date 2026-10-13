@@ -1,6 +1,7 @@
 import { isBuildingDefinitionId } from '@/game/content/buildings';
 import { EVENT_DEFINITIONS, isEventId } from '@/game/content/events';
 import { RESOURCE_IDS } from '@/game/content/resources';
+import { DEVELOPMENT_ERAS, deriveCurrentEra } from '@/game/content/developmentEras';
 import { UNIT_DEFINITIONS } from '@/game/content/military';
 import { isRotation } from '@/shared/grid/gridMath';
 import type { CharacterSkill } from '@/game/content/characters';
@@ -55,12 +56,21 @@ export function validateGameState(state: GameState): readonly string[] {
     issues.push('research e exploration devem existir com listas válidas.');
   } else {
     if (
-      !hasExactKeys(state.research, ['unlockedTechnologyIds', 'activeTechnologyId', 'progress']) ||
+      !hasExactKeys(state.research, [
+        'currentEra',
+        'unlockedTechnologyIds',
+        'activeTechnologyId',
+        'progress',
+      ]) ||
       !hasExactKeys(state.exploration, ['discoveredPointIds'])
     ) {
       issues.push('research ou exploration têm campos desconhecidos ou ausentes.');
     }
     const unlocked = state.research.unlockedTechnologyIds;
+    if (state.research.currentEra !== deriveCurrentEra(unlocked.filter(isTechnologyId)))
+      issues.push('A era atual não corresponde às tecnologias concluídas.');
+    if (!DEVELOPMENT_ERAS.some((era) => era.id === state.research.currentEra))
+      issues.push('Era de desenvolvimento inválida.');
     if (new Set(unlocked).size !== unlocked.length || unlocked.some((id) => !isTechnologyId(id)))
       issues.push('Tecnologias desbloqueadas inválidas ou duplicadas.');
     if (
@@ -69,11 +79,10 @@ export function validateGameState(state: GameState): readonly string[] {
         unlocked.includes(state.research.activeTechnologyId))
     )
       issues.push('Pesquisa ativa inválida.');
+    const activeTechnologyId = state.research.activeTechnologyId;
     if (
-      isTechnologyId(state.research.activeTechnologyId) &&
-      !TECHNOLOGY_DEFINITIONS[state.research.activeTechnologyId]!.prerequisites.every((id) =>
-        unlocked.includes(id),
-      )
+      isTechnologyId(activeTechnologyId) &&
+      !TECHNOLOGY_DEFINITIONS[activeTechnologyId].prerequisites.every((id) => unlocked.includes(id))
     ) {
       issues.push('Pré-requisitos da pesquisa ativa não foram concluídos.');
     }
@@ -81,9 +90,8 @@ export function validateGameState(state: GameState): readonly string[] {
       !isWholeNumber(state.research.progress) ||
       state.research.progress < 0 ||
       (state.research.activeTechnologyId === null && state.research.progress !== 0) ||
-      (state.research.activeTechnologyId !== null &&
-        state.research.progress >=
-          (TECHNOLOGY_DEFINITIONS[state.research.activeTechnologyId]?.researchPoints ?? 0))
+      (isTechnologyId(activeTechnologyId) &&
+        state.research.progress >= TECHNOLOGY_DEFINITIONS[activeTechnologyId].researchPoints)
     )
       issues.push('Progresso de pesquisa inválido.');
     const points = state.exploration.discoveredPointIds;

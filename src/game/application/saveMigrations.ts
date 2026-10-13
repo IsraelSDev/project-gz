@@ -9,6 +9,7 @@ import {
 } from '@/game/content/characters';
 import { civilizationForDiscoveryPoint } from '@/game/content/independentCivilizations';
 import { REGION_DEFINITIONS, REGION_IDS } from '@/game/content/regions';
+import { deriveCurrentEra } from '@/game/content/developmentEras';
 import {
   createInitialDiplomacy,
   discoverIndependentCivilization,
@@ -91,6 +92,12 @@ export type LegacyGameStateV6 = Omit<
   readonly contentVersion: '0.9.0';
 };
 
+export type LegacyGameStateV7 = Omit<GameState, 'schemaVersion' | 'contentVersion' | 'research'> & {
+  readonly schemaVersion: 7;
+  readonly contentVersion: '0.10.0';
+  readonly research: Omit<GameState['research'], 'currentEra'>;
+};
+
 /** Migração pura: não altera o objeto v1 nem reaplica o tick já persistido. */
 export function migrateV1ToV2(state: LegacyGameStateV1): LegacyGameStateV2 {
   return {
@@ -133,7 +140,12 @@ export function migrateV3ToV4(state: LegacyGameStateV3): LegacyGameStateV4 {
           status: 'available' as const,
         })),
     ],
-    research: { unlockedTechnologyIds: [], activeTechnologyId: null, progress: 0 },
+    research: {
+      currentEra: 'survival',
+      unlockedTechnologyIds: [],
+      activeTechnologyId: null,
+      progress: 0,
+    },
     exploration: { discoveredPointIds: [] },
   };
 }
@@ -192,11 +204,14 @@ export function migrateV5ToV6(state: LegacyGameStateV5): LegacyGameStateV6 {
 }
 
 /** Fase 15: mantém integralmente o capital e adiciona território vazio às partidas anteriores. */
-export function migrateV6ToV7(state: LegacyGameStateV6): GameState {
+export function migrateV6ToV7(state: LegacyGameStateV6): LegacyGameStateV7 {
+  const { currentEra, ...research } = state.research;
+  void currentEra;
   return {
     ...state,
     schemaVersion: 7,
-    contentVersion: INITIAL_SCENARIO.contentVersion,
+    contentVersion: '0.10.0',
+    research,
     settlements: [],
     territory: {
       nextSettlementId: 1,
@@ -220,6 +235,19 @@ export function migrateV6ToV7(state: LegacyGameStateV6): GameState {
           settlementId: regionId === 'crash-site' ? 'settlement-capital' : null,
         };
       }),
+    },
+  };
+}
+
+/** Fase 16: deriva a era das pesquisas preservadas sem reaplicar custos ou efeitos. */
+export function migrateV7ToV8(state: LegacyGameStateV7): GameState {
+  return {
+    ...state,
+    schemaVersion: 8,
+    contentVersion: INITIAL_SCENARIO.contentVersion,
+    research: {
+      ...state.research,
+      currentEra: deriveCurrentEra(state.research.unlockedTechnologyIds),
     },
   };
 }

@@ -4,9 +4,10 @@ import type { ResourceId } from '@/game/content/resources';
 import type { GridPosition, Rotation } from '@/shared/grid/types';
 import type { Character, CharacterRelationship, Government } from '@/game/content/characters';
 import type { RegionId } from '@/game/content/regions';
+import type { EraId } from '@/game/content/developmentEras';
 
 /** Versão do formato do estado. Migrações encadeadas são definidas em `application/saveMigrations.ts`. */
-export const GAME_STATE_SCHEMA_VERSION = 7;
+export const GAME_STATE_SCHEMA_VERSION = 8;
 
 export interface PopulationState {
   readonly survivors: number;
@@ -78,6 +79,7 @@ export interface GameEventState {
 }
 
 export interface ResearchState {
+  readonly currentEra: EraId;
   readonly unlockedTechnologyIds: readonly string[];
   readonly activeTechnologyId: string | null;
   readonly progress: number;

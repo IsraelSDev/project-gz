@@ -181,8 +181,8 @@ describe('sobrevivência agregada', () => {
     expect(decoded.ok).toBe(true);
     if (!decoded.ok) return;
     expect(decoded.value).toMatchObject({
-      schemaVersion: 7,
-      contentVersion: '0.10.0',
+      schemaVersion: 8,
+      contentVersion: '0.11.0',
       tick: progressed.tick,
       resources: progressed.resources,
       buildings: progressed.buildings,
@@ -238,7 +238,7 @@ describe('sobrevivência agregada', () => {
     );
     expect(migrated.ok).toBe(true);
     if (!migrated.ok) return;
-    expect(migrated.value.schemaVersion).toBe(7);
+    expect(migrated.value.schemaVersion).toBe(8);
     expect(migrated.value.characters).toHaveLength(4);
     expect(migrated.value).toMatchObject({ tick: 45, population: progressedPopulation });
     expect(decodeGameSave(encodeGameSave(migrated.value))).toMatchObject({

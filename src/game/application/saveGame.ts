@@ -19,6 +19,7 @@ import {
   migrateV4ToV5,
   migrateV5ToV6,
   migrateV6ToV7,
+  migrateV7ToV8,
 } from './saveMigrations';
 import { err, ok, type Result } from '@/shared/result/result';
 
@@ -200,6 +201,35 @@ function copySaveState(value: unknown): Result<GameState, SaveError> {
       return err('CORRUPT_SAVE');
     return copySaveState(migrateV6ToV7(value as unknown as Parameters<typeof migrateV6ToV7>[0]));
   }
+  if (value.schemaVersion === 7) {
+    if (value.contentVersion !== '0.10.0') return err('INCOMPATIBLE_SAVE');
+    if (
+      !hasExactKeys(value, [
+        'schemaVersion',
+        'contentVersion',
+        'tick',
+        'resources',
+        'buildings',
+        'nextEntityId',
+        'events',
+        'population',
+        'characters',
+        'government',
+        'relationships',
+        'research',
+        'exploration',
+        'diplomacy',
+        'military',
+        'settlements',
+        'territory',
+      ]) ||
+      !isRecord(value.research) ||
+      !hasExactKeys(value.research, ['unlockedTechnologyIds', 'activeTechnologyId', 'progress']) ||
+      !Array.isArray(value.research.unlockedTechnologyIds)
+    )
+      return err('CORRUPT_SAVE');
+    return copySaveState(migrateV7ToV8(value as unknown as Parameters<typeof migrateV7ToV8>[0]));
+  }
   if (value.schemaVersion !== GAME_STATE_SCHEMA_VERSION) return err('INCOMPATIBLE_SAVE');
   if (typeof value.contentVersion !== 'string') return err('CORRUPT_SAVE');
   if (value.contentVersion !== INITIAL_SCENARIO.contentVersion) return err('INCOMPATIBLE_SAVE');
@@ -237,7 +267,12 @@ function copySaveState(value: unknown): Result<GameState, SaveError> {
     !hasExactKeys(value.government.offices, ['science', 'engineering', 'production']) ||
     !Array.isArray(value.relationships) ||
     !isRecord(value.research) ||
-    !hasExactKeys(value.research, ['unlockedTechnologyIds', 'activeTechnologyId', 'progress']) ||
+    !hasExactKeys(value.research, [
+      'currentEra',
+      'unlockedTechnologyIds',
+      'activeTechnologyId',
+      'progress',
+    ]) ||
     !Array.isArray(value.research.unlockedTechnologyIds) ||
     !isRecord(value.exploration) ||
     !hasExactKeys(value.exploration, ['discoveredPointIds']) ||

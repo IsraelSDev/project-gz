@@ -3,6 +3,7 @@ import type { CommandHandler, SimulationCommand } from '@/game/domain/commands/s
 import type { GameState, MilitaryUnitType } from '@/game/domain/state/GameState';
 import { UNIT_DEFINITIONS } from '@/game/content/military';
 import { freezeDeep } from '@/game/domain/state/freezeDeep';
+import { getTechnologyModifiers } from '@/game/domain/research/technologyEffects';
 import { err, ok } from '@/shared/result/result';
 
 export const MILITARY_ACTION = 'MilitaryAction';
@@ -255,7 +256,8 @@ export function advanceMilitary(state: GameState): GameState {
       ),
     );
   const postDefense =
-    result.buildings.filter((building) => building.definitionId === POST_ID).length * 3;
+    result.buildings.filter((building) => building.definitionId === POST_ID).length *
+    (3 + getTechnologyModifiers(result.research.unlockedTechnologyIds).defensePerPost);
   let incoming = Math.max(0, enemyFor(battle.civilizationId).attack - postDefense);
   const survivors = supplied
     .map((unit) => {

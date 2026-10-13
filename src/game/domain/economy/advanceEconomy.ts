@@ -1,5 +1,10 @@
 import { BUILDING_DEFINITIONS, type BuildingDefinition } from '@/game/content/buildings';
-import { MAX_RESOURCE_AMOUNT, RESOURCE_IDS, type ResourceId } from '@/game/content/resources';
+import {
+  MAX_RESOURCE_AMOUNT,
+  RESOURCE_IDS,
+  type ResourceId,
+  type ResourceRates,
+} from '@/game/content/resources';
 import { freezeDeep } from '@/game/domain/state/freezeDeep';
 import type { ResourceStock } from '@/game/domain/state/GameState';
 import { rateEntries, type RateEntry } from './resourceRates';
@@ -34,6 +39,7 @@ function selectOperatingBuildings(
   resources: ResourceStock,
   buildings: readonly EconomyBuilding[],
   definitions: EconomyDefinitions,
+  productionBonuses: Readonly<Record<string, ResourceRates>> = {},
 ): readonly BuildingFlow[] {
   const unreserved: MutableStock = { ...resources };
   const operating: BuildingFlow[] = [];
@@ -48,7 +54,10 @@ function selectOperatingBuildings(
 
     // Lê as duas taxas de todo edifício, mesmo parado, para que conteúdo inválido nunca passe calado.
     const flow: BuildingFlow = {
-      production: rateEntries(definition.production),
+      production: [
+        ...rateEntries(definition.production),
+        ...rateEntries(productionBonuses[building.definitionId] ?? {}),
+      ],
       consumption: rateEntries(definition.consumption),
     };
     if (flow.consumption.some(([id, amount]) => unreserved[id] < amount)) {
@@ -80,8 +89,9 @@ export function advanceEconomy(
   resources: ResourceStock,
   buildings: readonly EconomyBuilding[],
   definitions: EconomyDefinitions = BUILDING_DEFINITIONS,
+  productionBonuses: Readonly<Record<string, ResourceRates>> = {},
 ): ResourceStock {
-  const operating = selectOperatingBuildings(resources, buildings, definitions);
+  const operating = selectOperatingBuildings(resources, buildings, definitions, productionBonuses);
   const next: MutableStock = { ...resources };
 
   for (const { production } of operating) {

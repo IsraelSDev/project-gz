@@ -133,6 +133,7 @@ describe('PlaceBuilding: desconto dos recursos', () => {
           energy: 500,
         }),
         research: {
+          currentEra: 'foundation' as const,
           unlockedTechnologyIds: ['protein-cultures', 'thermal-engineering'],
           activeTechnologyId: null,
           progress: 0,

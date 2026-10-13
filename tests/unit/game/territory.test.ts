@@ -266,8 +266,8 @@ describe('território e cidades — Fase 15', () => {
     expect(decodedOldSave).toMatchObject({
       ok: true,
       value: {
-        schemaVersion: 7,
-        contentVersion: '0.10.0',
+        schemaVersion: 8,
+        contentVersion: '0.11.0',
         settlements: [],
         territory: { history: [] },
       },

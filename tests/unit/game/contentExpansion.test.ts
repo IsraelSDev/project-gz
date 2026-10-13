@@ -10,6 +10,7 @@ import { selectBuildCatalog } from '@/game/application/buildSelectors';
 import {
   describeContentExpansionError,
   selectPointOfInterestCatalog,
+  selectEraProgress,
   selectTechnologyCatalog,
 } from '@/game/application/contentExpansion';
 
@@ -43,6 +44,16 @@ describe('expansão de conteúdo da Fase 11', () => {
     expect(describeContentExpansionError('INSUFFICIENT_RESOURCES')).toBe(
       'Recursos insuficientes para esta ação.',
     );
+  });
+
+  it('mostra os marcos explícitos da próxima era', () => {
+    expect(selectEraProgress(initial())).toEqual({
+      currentName: 'Sobrevivência',
+      next: {
+        name: 'Fundação',
+        milestones: [{ name: 'Culturas Proteicas', completed: false }],
+      },
+    });
   });
 
   it('cobra a pesquisa uma vez, progride com cientista e laboratório, e desbloqueia a tecnologia', () => {
@@ -88,7 +99,12 @@ describe('expansão de conteúdo da Fase 11', () => {
           ? { ...character, skills: { ...character.skills, science: 2 } }
           : character,
       ),
-      research: { unlockedTechnologyIds: [], activeTechnologyId: 'protein-cultures', progress: 0 },
+      research: {
+        currentEra: 'survival' as const,
+        unlockedTechnologyIds: [],
+        activeTechnologyId: 'protein-cultures',
+        progress: 0,
+      },
     };
     expect(advanceResearch(slowerScientist).research.progress).toBe(2);
     const a = advanceResearch(advanceResearch(slowerScientist));
@@ -113,7 +129,11 @@ describe('expansão de conteúdo da Fase 11', () => {
     const state = initial();
     const prepared = {
       ...state,
-      research: { ...state.research, unlockedTechnologyIds: ['protein-cultures'] },
+      research: {
+        ...state.research,
+        currentEra: 'foundation' as const,
+        unlockedTechnologyIds: ['protein-cultures'],
+      },
     };
     const found = executeSimulationCommand(prepared, explorePointCommand('echo-ruins'));
     expect(found.ok).toBe(true);
@@ -145,6 +165,7 @@ describe('expansão de conteúdo da Fase 11', () => {
     expect(migrated.ok).toBe(true);
     if (!migrated.ok) return;
     expect(migrated.value.research).toEqual({
+      currentEra: 'survival',
       unlockedTechnologyIds: [],
       activeTechnologyId: null,
       progress: 0,

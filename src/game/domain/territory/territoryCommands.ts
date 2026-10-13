@@ -19,6 +19,10 @@ import { freezeDeep } from '@/game/domain/state/freezeDeep';
 import type { GameState, ResourceStock, SettlementState } from '@/game/domain/state/GameState';
 import type { CommandHandler, SimulationCommand } from '@/game/domain/commands/simulationCommand';
 import { err, ok } from '@/shared/result/result';
+import {
+  applyConstructionDiscount,
+  getTechnologyModifiers,
+} from '@/game/domain/research/technologyEffects';
 
 export const TERRITORY_ACTION = 'TerritoryAction';
 export interface TerritoryActionCommand extends SimulationCommand {
@@ -273,6 +277,7 @@ function buildInSettlement(state: GameState, settlementId: unknown, buildingId: 
     return err('INVALID_COMMAND' as const);
   const city = state.settlements.find((entry) => entry.settlementId === settlementId);
   const definition: BuildingDefinition = BUILDING_DEFINITIONS[buildingId];
+  const cost = applyConstructionDiscount(definition.cost, state.research.unlockedTechnologyIds);
   if (!city) return err('COMMAND_REJECTED' as const);
   if (definition.category === 'military') return err('COMMAND_REJECTED' as const);
   if (
@@ -280,7 +285,7 @@ function buildInSettlement(state: GameState, settlementId: unknown, buildingId: 
     !state.research.unlockedTechnologyIds.includes(definition.requiredTechnologyId)
   )
     return err('COMMAND_REJECTED' as const);
-  if (missingForCost(city.resources, definition.cost).length > 0)
+  if (missingForCost(city.resources, cost).length > 0)
     return err('INSUFFICIENT_RESOURCES' as const);
   let placement: ReturnType<typeof evaluatePlacementSpace> | undefined;
   let position: { x: number; y: number; rotation: 0 | 90 | 180 | 270 } | undefined;
@@ -302,7 +307,7 @@ function buildInSettlement(state: GameState, settlementId: unknown, buildingId: 
   }
   if (!placement?.ok || !position) return err('COMMAND_REJECTED' as const);
   const resources = { ...city.resources };
-  for (const id of RESOURCE_IDS) resources[id] -= definition.cost[id] ?? 0;
+  for (const id of RESOURCE_IDS) resources[id] -= cost[id] ?? 0;
   const building = {
     instanceId: `${city.settlementId}-building-${city.nextBuildingId}`,
     definitionId: buildingId,
@@ -349,8 +354,14 @@ export const handleTerritoryAction: CommandHandler = (state, command) => {
 export function advanceSettlements(state: GameState): GameState {
   if (state.settlements.length === 0) return state;
   let changed = false;
+  const modifiers = getTechnologyModifiers(state.research.unlockedTechnologyIds);
   const settlements = state.settlements.map((city) => {
-    const buildingProduction = advanceEconomy(city.resources, city.buildings);
+    const buildingProduction = advanceEconomy(
+      city.resources,
+      city.buildings,
+      undefined,
+      modifiers.productionByBuilding,
+    );
     const opportunities = REGION_DEFINITIONS[city.regionId].opportunities;
     const regionalProduction = RESOURCE_IDS.some((id) => opportunities[id] !== undefined)
       ? freezeDeep(
@@ -373,7 +384,10 @@ export function advanceSettlements(state: GameState): GameState {
     const resources = bonus
       ? freezeDeep({
           ...population.resources,
-          materials: Math.min(MAX_RESOURCE_AMOUNT, population.resources.materials + 1),
+          materials: Math.min(
+            MAX_RESOURCE_AMOUNT,
+            population.resources.materials + 1 + modifiers.governorMaterialsPerTenTicks,
+          ),
         })
       : population.resources;
     if (resources !== city.resources || population.population !== city.population) changed = true;

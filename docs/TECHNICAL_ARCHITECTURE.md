@@ -1328,3 +1328,19 @@ A migração v6/content 0.9.0 → v7/content 0.10.0 preserva campos da partida, 
 A navegação lateral acrescenta painel contextual de regiões e cidades. Como o mundo atual só oferece uma área 3D do local da queda e os pontos de interesse não têm coordenadas, esta fase usa uma visão textual fiel ao estado; não inventa posições nem desenha cidades distantes sobre o cenário da capital. Propriedade de regiões rivais/conquista, logística entre cidades e tropas fora do capital continuam fora do escopo.
 
 Os painéis de território e pesquisa usam `lazy`/`Suspense` e só montam ao serem abertos. A medição do build de produção deixa o chunk principal em 1.397,34 kB minificado/357,45 kB gzip, abaixo do limite Vite configurado de 1.400 kB; os chunks de painel são emitidos separadamente.
+
+## 28. Árvore tecnológica e modificadores derivados (Fase 16)
+
+`content/developmentEras.ts` define a ordem e os marcos de acesso às cinco eras. `ResearchState.currentEra` registra a era corrente; o domínio valida sua consistência com as pesquisas concluídas. O catálogo estático `content/technologies.ts` associa cada pesquisa à era, categoria, custo, pontos, pré-requisitos e um efeito tipado. `getResearchBlockReason` fornece a mesma decisão de disponibilidade ao comando e ao painel.
+
+`domain/research/technologyEffects.ts` deriva modificadores dos IDs concluídos. A economia do capital e das cidades recebe bônus de produção por edifício; `PlaceBuilding`, construção local e seletores aplicam o mesmo desconto antes de verificar e debitar custo; combate e administradores consultam os bônus durante a simulação. Definições estáticas não são modificadas e efeitos não são gravados, evitando acumulação ao carregar saves.
+
+Pesquisa mantém um projeto por civilização. `countFieldLaboratories` agrega estruturas do capital e assentamentos, enquanto ciência continua atribuída a um personagem no cargo existente. Redes de Pesquisa adiciona pontos ao mesmo progresso por laboratório além do primeiro. A interface projeta disponibilidade, bloqueio, custo, pré-requisitos, efeito e progresso do estado real.
+
+Schema 8/content 0.11.0 adiciona `currentEra`. `migrateV7ToV8` preserva o estado e deriva a era das tecnologias concluídas; saves v1–v6 continuam migrando em cadeia. Efeitos não são reexecutados durante migração ou carga.
+
+## 29. Pipeline visual incremental (Fase 16.1)
+
+A auditoria e o plano inicial estão em `docs/ART_DIRECTION_AUDIT.md`. A arquitetura atual recebe especificações por `WorldSnapshot` e mantém domínio, saves e objetos Babylon separados. Um carregador de GLB deverá ser integrado dentro de `rendering/`, preservando a criação de cena pelo `GameRenderer`, a sincronização por IDs, proxies de seleção, rotação/pivô do grid e descarte idempotente. `@babylonjs/loaders` ainda não está instalado e só deve ser avaliado quando o primeiro modelo aprovado existir; os modelos procedurais permanecem como fallback até a substituição passar por captura WebGL e comparação de custo.
+
+Fontes e licenças devem ser registradas num manifesto de assets. Arquivos runtime devem usar URLs compatíveis com `base` do Vite. Orçamentos de triângulos/texturas descritos no plano são tetos iniciais propostos e exigem medição real em navegador e hardware-alvo. Esta fase não muda renderizador, cena, economia, estado ou salvamento.
