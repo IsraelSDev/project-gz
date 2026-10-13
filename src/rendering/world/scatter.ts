@@ -1,11 +1,10 @@
-import { occupiedRect } from '@/shared/grid/gridMath';
 import { gridRectToWorldBounds, terrainWorldSize, type WorldBounds } from './gridToWorld';
 import { plantCoverAt, rockCoverAt } from './groundFields';
 import type { HeightField } from './heightField';
 import { createRandom, smoothstep } from './noise';
-import type { PlacedSpec, TerrainSpec } from './WorldSnapshot';
+import type { TerrainSpec } from './WorldSnapshot';
 
-export type SceneryKind = 'stalk' | 'mushroom' | 'crystal' | 'rockSmall' | 'rockLarge' | 'debris';
+export type SceneryKind = 'stalk' | 'mushroom' | 'crystal' | 'rockSmall' | 'rockLarge';
 
 export interface SceneryPlacement {
   readonly kind: SceneryKind;
@@ -43,8 +42,6 @@ const LONE_PLANT_SEPARATION = 7;
 const MAX_PLANT_SLOPE = 0.5;
 const MAX_ROCK_SLOPE = 1;
 const MAX_PLANT_HEIGHT = 4.5;
-const DEBRIS_COUNT = 16;
-const DEBRIS_RING = 3;
 
 type WeightedKind = readonly [SceneryKind, number];
 
@@ -85,8 +82,6 @@ function propRadius(kind: SceneryKind, scale: number): number {
       return 0.75 * scale;
     case 'stalk':
       return 0.65 * scale;
-    case 'debris':
-      return 0;
   }
 }
 
@@ -129,12 +124,11 @@ interface Site {
  *
  * Nada nasce solto ao acaso: a vegetação forma bosques (centro maior e mais denso, bordas menores),
  * as rochas formam campos (uma rocha-âncora com satélites e, às vezes, um cristal) e sobram
- * trechos limpos entre eles. A área construível e a faixa ao redor dela ficam livres, perto da
- * colônia os objetos são menores e os destroços ficam num anel ao redor da nave.
+ * trechos limpos entre eles. A área construível e a faixa ao redor dela ficam livres; perto da
+ * colônia os objetos são menores.
  */
 export function scatterScenery(
   terrain: TerrainSpec,
-  ship: PlacedSpec,
   field: HeightField,
 ): readonly SceneryPlacement[] {
   const world = terrainWorldSize(terrain.sizeCells);
@@ -192,7 +186,6 @@ export function scatterScenery(
     const radius = propRadius(kind, scale);
     const crowded = placements.some(
       (placed) =>
-        placed.kind !== 'debris' &&
         Math.hypot(placed.x - x, placed.z - z) <
           (radius + propRadius(placed.kind, placed.scale)) * 0.8 + 0.2,
     );
@@ -368,30 +361,6 @@ export function scatterScenery(
     if (place(loneRandom, kind, site.x, site.z, plantScale(kind, loneRandom())) !== null) {
       lone += 1;
     }
-  }
-
-  const shipBounds = gridRectToWorldBounds(
-    occupiedRect(ship.position, ship.size, ship.rotation),
-    terrain.sizeCells,
-  );
-  const debrisRandom = createRandom(seed ^ 0xde61);
-  let debris = 0;
-  for (let attempt = 0; attempt < 400 && debris < DEBRIS_COUNT; attempt += 1) {
-    const x =
-      shipBounds.minX -
-      DEBRIS_RING +
-      debrisRandom() * (shipBounds.maxX - shipBounds.minX + 2 * DEBRIS_RING);
-    const z =
-      shipBounds.minZ -
-      DEBRIS_RING +
-      debrisRandom() * (shipBounds.maxZ - shipBounds.minZ + 2 * DEBRIS_RING);
-    const yaw = debrisRandom() * Math.PI * 2;
-    const scale = 0.5 + debrisRandom() * 0.8;
-    if (inside(shipBounds, x, z, 0.5)) {
-      continue;
-    }
-    placements.push({ kind: 'debris', x, z, scale, yaw, stretch: 1 });
-    debris += 1;
   }
 
   return placements;

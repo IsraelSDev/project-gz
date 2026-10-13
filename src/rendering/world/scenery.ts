@@ -8,7 +8,7 @@ import type { SceneContext } from '../scene/createSceneContext';
 import type { HeightField } from './heightField';
 import type { SceneryKind, SceneryPlacement } from './scatter';
 
-const { plant, rock, metal, terrain } = PALETTE;
+const { plant, rock } = PALETTE;
 
 function buildStalk(kit: PropKit): Mesh {
   const blades = [0, 2.1, 4.2].map((yaw) =>
@@ -75,28 +75,12 @@ function buildRockLarge(kit: PropKit): Mesh {
   ]);
 }
 
-function buildDebris(kit: PropKit): Mesh {
-  return kit.merge('debris', [
-    kit.box({ w: 1.0, h: 0.12, d: 0.55 }, metal.hull, { y: 0.1, ry: 0.4, rz: 0.12 }),
-    kit.box({ w: 0.5, h: 0.4, d: 0.45 }, metal.burnt, { x: 0.9, y: 0.2, ry: 1.1 }),
-    kit.box({ w: 0.7, h: 0.08, d: 0.35 }, metal.accent, {
-      x: -0.7,
-      y: 0.08,
-      z: 0.4,
-      ry: 2.0,
-      rx: 0.15,
-    }),
-    kit.icosphere({ radius: 0.28 }, terrain.sand, { x: 0.2, y: 0.1, z: -0.5, sy: 0.6 }),
-  ]);
-}
-
 const BUILDERS: Record<SceneryKind, (kit: PropKit) => Mesh> = {
   stalk: buildStalk,
   mushroom: buildMushroom,
   crystal: buildCrystal,
   rockSmall: buildRockSmall,
   rockLarge: buildRockLarge,
-  debris: buildDebris,
 };
 
 /** Rochas ficam parcialmente enterradas (fração da escala), para assentarem no relevo. */

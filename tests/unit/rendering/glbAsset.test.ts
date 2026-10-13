@@ -6,6 +6,7 @@ import {
   loadGlbAssetWithFallback,
   resolvePublicAssetUrl,
 } from '@/rendering/assets/glbAsset';
+import { minimalGlbDataUrl } from './minimalGlbFixture';
 
 const engines: NullEngine[] = [];
 
@@ -20,63 +21,6 @@ afterEach(() => {
     engine.dispose();
   }
 });
-
-function minimalGlbDataUrl(): string {
-  const binaryLength = 44;
-  const gltf = {
-    asset: { version: '2.0', generator: 'Civilização Alienígena test fixture' },
-    scene: 0,
-    scenes: [{ nodes: [0] }],
-    nodes: [{ mesh: 0 }],
-    meshes: [{ primitives: [{ attributes: { POSITION: 0 }, indices: 1 }] }],
-    buffers: [{ byteLength: 42 }],
-    bufferViews: [
-      { buffer: 0, byteOffset: 0, byteLength: 36, target: 34962 },
-      { buffer: 0, byteOffset: 36, byteLength: 6, target: 34963 },
-    ],
-    accessors: [
-      {
-        bufferView: 0,
-        componentType: 5126,
-        count: 3,
-        type: 'VEC3',
-        min: [-1, 0, 0],
-        max: [1, 1, 0],
-      },
-      { bufferView: 1, componentType: 5123, count: 3, type: 'SCALAR' },
-    ],
-  };
-  const json = new TextEncoder().encode(JSON.stringify(gltf));
-  const jsonLength = Math.ceil(json.length / 4) * 4;
-  const totalLength = 12 + 8 + jsonLength + 8 + binaryLength;
-  const bytes = new Uint8Array(totalLength);
-  const view = new DataView(bytes.buffer);
-  view.setUint32(0, 0x46546c67, true);
-  view.setUint32(4, 2, true);
-  view.setUint32(8, totalLength, true);
-  view.setUint32(12, jsonLength, true);
-  view.setUint32(16, 0x4e4f534a, true);
-  bytes.fill(0x20, 20, 20 + jsonLength);
-  bytes.set(json, 20);
-  const binHeader = 20 + jsonLength;
-  view.setUint32(binHeader, binaryLength, true);
-  view.setUint32(binHeader + 4, 0x004e4942, true);
-  const binary = new DataView(bytes.buffer, binHeader + 8, binaryLength);
-  binary.setFloat32(0, -1, true);
-  binary.setFloat32(4, 0, true);
-  binary.setFloat32(8, 0, true);
-  binary.setFloat32(12, 1, true);
-  binary.setFloat32(16, 0, true);
-  binary.setFloat32(20, 0, true);
-  binary.setFloat32(24, 0, true);
-  binary.setFloat32(28, 1, true);
-  binary.setFloat32(32, 0, true);
-  binary.setUint16(36, 0, true);
-  binary.setUint16(38, 1, true);
-  binary.setUint16(40, 2, true);
-  const encoded = btoa(String.fromCharCode(...bytes));
-  return `data:application/octet-stream;base64,${encoded}`;
-}
 
 describe('pipeline de modelos GLB', () => {
   it('resolve assets de public usando o base path do Vite', () => {

@@ -20,7 +20,7 @@ export function createStaticWorld(
 ): StaticWorld {
   const terrainMesh: Mesh = createTerrainMesh(context, snapshot.terrain, field);
   const gridMeshes = createBuildableGrid(context, snapshot.terrain);
-  const placements = scatterScenery(snapshot.terrain, snapshot.crashedShip, field);
+  const placements = scatterScenery(snapshot.terrain, field);
   const scenery = createScenery(context, placements, field);
   const ship = createCrashedShip(context, snapshot.crashedShip, snapshot.terrain, field);
 

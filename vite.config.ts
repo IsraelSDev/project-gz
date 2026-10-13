@@ -8,6 +8,8 @@ export default defineConfig({
   base: './',
   plugins: [react()],
   resolve: { tsconfigPaths: true },
+  // Modelos 3D como assets: permite importá-los com `?url`/`?inline` (os testes leem o GLB assim).
+  assetsInclude: ['**/*.glb'],
   build: {
     // O núcleo do Babylon.js (engine, cena, sombras, materiais) tem ~1,3 MB minificado (~320 kB
     // com gzip); shaders e carregadores de textura já são divididos e carregados sob demanda.

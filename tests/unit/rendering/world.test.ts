@@ -15,10 +15,9 @@ import {
 } from '@/rendering/world/scatter';
 import { createScenery } from '@/rendering/world/scenery';
 import { createTerrainMesh } from '@/rendering/world/terrain';
-import type { PlacedSpec, TerrainSpec } from '@/rendering/world/WorldSnapshot';
+import type { TerrainSpec } from '@/rendering/world/WorldSnapshot';
 
 const terrain: TerrainSpec = INITIAL_SCENARIO.terrain;
-const ship: PlacedSpec = INITIAL_SCENARIO.crashedShip;
 const plateau = gridRectToWorldBounds(terrain.buildableArea, terrain.sizeCells);
 
 /** Alturas ao longo de um contorno do terreno a `distance` unidades da borda (do centro para fora). */
@@ -207,24 +206,24 @@ function groupCount(items: readonly SceneryPlacement[], link: number): number {
 
 describe('dispersão do cenário', () => {
   const field = createHeightField(terrain);
-  const placements = scatterScenery(terrain, ship, field);
-  const scenery = placements.filter((placement) => placement.kind !== 'debris');
+  const placements = scatterScenery(terrain, field);
+  const scenery = placements;
   const rocks = scenery.filter(isRock);
   const plants = scenery.filter(isPlant);
 
   it('é determinística para a mesma semente e muda com outra semente', () => {
-    expect(scatterScenery(terrain, ship, field)).toEqual(placements);
-    expect(scatterScenery({ ...terrain, seed: terrain.seed + 1 }, ship, field)).not.toEqual(
+    expect(scatterScenery(terrain, field)).toEqual(placements);
+    expect(scatterScenery({ ...terrain, seed: terrain.seed + 1 }, field)).not.toEqual(
       placements,
     );
   });
 
-  it('gera vegetação, rochas e destroços em quantidade moderada', () => {
+  it('gera vegetação e rochas em quantidade moderada', () => {
     const kinds = new Set(placements.map((placement) => placement.kind));
 
     expect(scenery.length).toBeGreaterThan(80);
     expect(scenery.length).toBeLessThanOrEqual(240);
-    for (const kind of ['stalk', 'mushroom', 'crystal', 'rockSmall', 'debris'] as const) {
+    for (const kind of ['stalk', 'mushroom', 'crystal', 'rockSmall'] as const) {
       expect(kinds.has(kind)).toBe(true);
     }
   });
@@ -346,9 +345,7 @@ describe('dispersão do cenário', () => {
     for (let offset = 1; offset <= 4; offset += 1) {
       const otherTerrain = { ...terrain, seed: terrain.seed + offset };
       const otherField = createHeightField(otherTerrain);
-      const other = scatterScenery(otherTerrain, ship, otherField).filter(
-        (placement) => placement.kind !== 'debris',
-      );
+      const other = scatterScenery(otherTerrain, otherField);
 
       expect(other.length).toBeGreaterThan(80);
       expect(other.length).toBeLessThanOrEqual(240);
@@ -363,20 +360,6 @@ describe('dispersão do cenário', () => {
     }
   });
 
-  it('não coloca destroços sobre a nave', () => {
-    const shipBounds = gridRectToWorldBounds({ ...ship.position, ...ship.size }, terrain.sizeCells);
-    const debris = placements.filter((placement) => placement.kind === 'debris');
-
-    expect(debris).toHaveLength(16);
-    for (const piece of debris) {
-      const onShip =
-        piece.x > shipBounds.minX &&
-        piece.x < shipBounds.maxX &&
-        piece.z > shipBounds.minZ &&
-        piece.z < shipBounds.maxZ;
-      expect(onShip).toBe(false);
-    }
-  });
 });
 
 describe('camadas do cenário', () => {
