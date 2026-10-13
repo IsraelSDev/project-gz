@@ -1275,6 +1275,72 @@ comando ela é `INVALID_COMMAND`.
 
 `GameState.schemaVersion` passa a 2 e guarda `population` (sobreviventes, contador de escassez, progresso de estabilidade e resultado). `contentVersion` passa a 0.5.0. A migração pura v1/0.4.0 para v2/0.5.0 preserva tick, estoques, edifícios, contador de entidades e eventos, acrescentando 8 sobreviventes e contadores zerados. A versão do envelope permanece 1. Saves v1 com conteúdo desconhecido são rejeitados sem substituir a partida ativa.
 
-Ordem do tick: incrementar tick, aplicar comandos pendentes, rodar produção e consumo dos edifícios, cobrar necessidades da população e avaliar eventos. Necessidades parciais consomem o estoque disponível; a falta de qualquer recurso conta como um tick de escassez, sem dívida. Cada 60 ticks seguidos em escassez remove 1 sobrevivente; abastecimento completo reinicia o contador. A vitória exige 900 ticks consecutivos abastecidos e alojados e pelo menos 6 sobreviventes; a derrota ocorre com zero sobreviventes. O controlador pausa em qualquer resultado.
+Ordem do tick: incrementar tick, aplicar comandos pendentes, rodar produção e consumo dos edifícios, cobrar necessidades da população e avaliar eventos. Necessidades parciais consomem o estoque disponível; a falta de qualquer recurso conta como um tick de escassez, sem dívida. Cada 60 ticks seguidos em escassez remove 1 sobrevivente; abastecimento completo reinicia o contador. A sequência abastecida e alojada é apenas informativa; não há vitória automática por estabilidade. A derrota ocorre com zero sobreviventes e é o único resultado de sobrevivência que pausa o controlador. Saves antigos com `population.outcome: victory` são retomados como `ongoing`, preservando tick, estoques e progresso.
 
-A capacidade habitacional deriva da soma de `housingCapacity` nas definições de edifícios presentes e não se duplica no save. O HUD mostra população, capacidade, estoques, necessidades do próximo tick, alertas, progresso e resultado.
+A capacidade habitacional deriva da soma de `housingCapacity` nas definições de edifícios presentes e não se duplica no save. O HUD mostra população, capacidade, estoques, necessidades do próximo tick, alertas, sequência sem crise e derrota.
+
+## 23. Personagens e cargos (Fase 10)
+
+`GameState` usa schema 3 e conteúdo 0.6.0. `characters` guarda apenas indivíduos importantes; `population.survivors` continua sendo o total de habitantes. O elenco inicial contém quatro personagens entre oito habitantes. IDs, nomes, espécie, estágio de vida, competências (0–5), traços e disponibilidade pertencem ao domínio; avatares CSS da HUD são provisórios e não são estado.
+
+`government` guarda um líder e ocupantes opcionais dos cargos de ciência, engenharia e produção. Nomeações são comandos do domínio: exigem pessoa viva, disponível, competência mínima 2 e nenhum outro cargo ocupado. Remoção deixa qualquer cargo vago, inclusive a liderança.
+
+`relationships` contém pares de personagens existentes com afinidade, confiança e rivalidade inteiras de -5 a 5. Os valores não alteram outros sistemas nesta fase. Quando uma baixa populacional afeta alguém do elenco, a pessoa com menor soma de competências (empate por ID) é marcada como falecida e seus cargos ficam vagos; assim o número de personagens vivos nunca excede a população agregada.
+
+A migração de save encadeia v1/0.4.0 → v2/0.5.0 → v3/0.6.0. Saves v2 preservam todos os campos existentes e recebem o elenco e governo iniciais. A carga valida campos, IDs únicos, elegibilidade, ocupação exclusiva e relações antes de substituir o estado ativo. A versão do envelope continua 1; saves inválidos não substituem a partida.
+
+
+
+## 24. Pesquisa e exploracao (Fase 11)
+
+O schema 4/content 0.7.0 persiste research (tecnologias concluidas, projeto ativo e progresso) e exploration (IDs de pontos descobertos). Os catalogos de tecnologias e pontos de interesse usam IDs estaveis. StartResearch verifica pre-requisitos, laboratorio, cientista e recursos, cobrando o custo ao iniciar; a simulacao avanca a pesquisa deterministicamente apos a economia. A competencia de ciencia define pontos por tick.
+
+ExplorePoint valida disponibilidade, requisito e custo, e aplica recompensa e descoberta atomicamente; repetir descoberta e recusado. As Ruinas de Eco acionam o motor de eventos existente. Edificios com requisito tecnologico sao recusados no comando e desabilitados no catalogo ate o desbloqueio. Saves schema 3 migram para schema 4 sem alterar progresso anterior; eventos novos comecam disponiveis. O envelope continua na versao 1.
+
+## 25. Diplomacia e civilizacoes independentes (Fase 13)
+
+O schema 5/content 0.8.0 adiciona `diplomacy.civilizations` ao `GameState`. O conteudo define tres IDs estaveis e liga cada sociedade a um ponto de interesse. `ExplorePoint` registra a descoberta no mesmo comando que registra o ponto; o validador exige consistencia entre ambas. O estado guarda descoberta, contato, relacao, solicitacao de informacoes, presente, pacto bilateral e historico datado; definicoes culturais e limiares permanecem no catalogo estatico.
+
+`DiplomaticAction` e um comando revalidado no envio e na aplicacao. A saudacao usa a competencia do lider designado. Solicitacao de informacoes e presente sao unicos por sociedade; o presente custa 10 materiais. Uma proposta de nao agressao e aceita se a relacao alcanca o limiar daquela sociedade; recusas tambem ficam persistidas e nao sao reapresentadas. Encerrar pacto ativo reduz a relacao em 20 pontos. A provocacao pode ser repetida, reduz 20 pontos por acao ate -100 e e bloqueada durante pacto ou guerra; em -30, o comando militar existente pode declarar guerra. Acoes nao avancam tick quando o jogo esta pausado.
+
+Eventos de primeiro sinal reutilizam o motor existente: saudacao cordial, resposta hostil sem combate ou adiamento. O contato pelo painel fecha um evento de sinal pendente; resolver um evento ja resolvido e recusado. V4/0.7.0 migra para v5/0.8.0 preservando exploracoes e derivando delas descobertas diplomaticas, alem de acrescentar eventos ausentes. Migre v1-v3 em cadeia por v4; IDs e efeitos nao se duplicam. O envelope de save permanece v1.
+
+## 26. Exército, defesa e combate (Fase 14)
+
+O `GameState` usa schema 6/content 0.9.0 e persiste `military` (contador, unidades, confronto atual e até 20 resultados) e `warStatus` por sociedade. Cada unidade guarda ID, tipo, célula, saúde e suprimento; o estado não guarda meshes. `toWorldSnapshot` converte essas posições em especificações de renderização e `UnitLayer` mantém os meshes Babylon fora do domínio. A camada do mundo observa a lista de unidades, não o objeto militar inteiro, para evitar redesenhar a guarnição em ticks nos quais ela não mudou.
+
+`MilitaryAction` revalida recrutamento, declaração, início de combate, recuo e paz no mesmo executor que os demais comandos. Postos fornecem quatro vagas e defesa agregada. Batedor, Guardião e Atacante têm valores estáticos em `game/content/military.ts`; a manutenção é cobrada uma vez por unidade em ordem estável de ID depois da economia. Sem alimento suficiente, a unidade fica sem suprimento e não ataca. Uma rodada subtrai o ataque total e a liderança do governante vivo do total de saúde adversária; o contra-ataque é reduzido pela defesa dos postos e distribuído deterministicamente, aplicando defesa unitária. Saúde zero remove a unidade. Vitória, derrota por perda da tropa e recuo são resultados distintos; a guerra persiste até o comando de paz.
+
+Guerra exige contato estabelecido, relação ≤ -30 e ausência de pacto ativo. A relação e o histórico datado são atualizados ao declarar guerra, resolver combate e estabelecer paz. Eventos estáticos alertam a guerra e registram o primeiro resultado de combate de cada sociedade; todos os resultados continuam no histórico militar. A Fase 14 migra schema 5/content 0.8.0 para schema 6/content 0.9.0, cria estado militar vazio e acrescenta eventos ausentes. Migrações antigas continuam encadeadas; saves inválidos continuam rejeitados antes de substituir a partida.
+
+Cobertura adicionada em `tests/unit/game/military.test.ts`: bloqueio sem posto, custo, manutenção, hostilidade, alerta, combate reproduzível, relatório, perdas/resultado e invariantes. Não foram executados testes manuais em navegador/WebGL nesta entrega. O inimigo é abstrato, não se move pelo mapa; há um confronto ativo por vez e não há cura, equipamento, recrutamento inimigo, IA de campo ou conquista territorial.
+
+## 27. Território e assentamentos (Fase 15)
+
+`GameState` usa schema 7/content 0.10.0. `territory.regions` é a fonte única do controle por região; exploração continua na lista existente e a interface deriva dela se a região é conhecida. O local da queda controla a capital. Ao explorar um ponto associado a uma civilização independente, a região passa ao controle dessa civilização. A fundação exige descoberta e, nessas regiões, um pacto de não agressão ativo e ausência de guerra; regiões sem civilização associada precisam estar livres. A validação do comando verifica controle exclusivo e os quatro estoques antes de debitar o capital. A operação instala o pacote de edifícios e suprimentos em uma cidade nova, transfere o controle para a colônia e registra a ação em um histórico territorial limitado a 100 entradas.
+
+Para evitar uma migração arquitetural ampla, os dados do capital permanecem nos campos `resources`, `buildings` e `population` usados desde as fases iniciais; `selectSettlements` os projeta como a cidade-capital sem duplicá-los no save. Cada item em `settlements` possui estoque, população, edifícios locais, identificador regional, administrador e contador local de edifícios. A economia chama `advanceEconomy` por cidade; a regra compartilhada `advancePopulationRecord` calcula consumo, escassez e baixas sem recriar a política de personagens importantes. Recursos naturais definidos para a região são adicionados ao estoque local no tick. Transferências só ocorrem do capital para uma cidade, debitam a origem e não alteram o total populacional; recursos e colonizadores são validados atomicamente.
+
+Construções locais usam catálogo, custos, tecnologias e `evaluatePlacementSpace` existentes em um grid local fixo de 16 × 16, com posicionamento automático no primeiro espaço válido. Construção de estruturas militares fica restrita ao capital, cuja camada de defesa segue a Fase 14. Laboratório em cidade habilita a pesquisa imperial existente. Administradores usam o elenco e a competência `leadership` existentes, são exclusivos dos cargos centrais e entre cidades e, com liderança 2+, geram 1 material a cada 10 ticks na própria cidade. Se o administrador morrer pela regra de sobrevivência do capital, a designação local é removida.
+
+A migração v6/content 0.9.0 → v7/content 0.10.0 preserva campos da partida, inicializa a capital como controlada e restaura o controle civilizacional nas regiões cujos pontos já foram descobertos, mantendo as demais sem dono e a lista de assentamentos vazia; os encadeamentos v1–v6 continuam ativos. A validação do save verifica IDs, associação região-civilização/cidade, descoberta, estoques, capacidade, população total, grid local, administradores e histórico antes de substituir o estado ativo.
+
+A navegação lateral acrescenta painel contextual de regiões e cidades. Como o mundo atual só oferece uma área 3D do local da queda e os pontos de interesse não têm coordenadas, esta fase usa uma visão textual fiel ao estado; não inventa posições nem desenha cidades distantes sobre o cenário da capital. Propriedade de regiões rivais/conquista, logística entre cidades e tropas fora do capital continuam fora do escopo.
+
+Os painéis de território e pesquisa usam `lazy`/`Suspense` e só montam ao serem abertos. A medição do build de produção deixa o chunk principal em 1.397,34 kB minificado/357,45 kB gzip, abaixo do limite Vite configurado de 1.400 kB; os chunks de painel são emitidos separadamente.
+
+## 28. Árvore tecnológica e modificadores derivados (Fase 16)
+
+`content/developmentEras.ts` define a ordem e os marcos de acesso às cinco eras. `ResearchState.currentEra` registra a era corrente; o domínio valida sua consistência com as pesquisas concluídas. O catálogo estático `content/technologies.ts` associa cada pesquisa à era, categoria, custo, pontos, pré-requisitos e um efeito tipado. `getResearchBlockReason` fornece a mesma decisão de disponibilidade ao comando e ao painel.
+
+`domain/research/technologyEffects.ts` deriva modificadores dos IDs concluídos. A economia do capital e das cidades recebe bônus de produção por edifício; `PlaceBuilding`, construção local e seletores aplicam o mesmo desconto antes de verificar e debitar custo; combate e administradores consultam os bônus durante a simulação. Definições estáticas não são modificadas e efeitos não são gravados, evitando acumulação ao carregar saves.
+
+Pesquisa mantém um projeto por civilização. `countFieldLaboratories` agrega estruturas do capital e assentamentos, enquanto ciência continua atribuída a um personagem no cargo existente. Redes de Pesquisa adiciona pontos ao mesmo progresso por laboratório além do primeiro. A interface projeta disponibilidade, bloqueio, custo, pré-requisitos, efeito e progresso do estado real.
+
+Schema 8/content 0.11.0 adiciona `currentEra`. `migrateV7ToV8` preserva o estado e deriva a era das tecnologias concluídas; saves v1–v6 continuam migrando em cadeia. Efeitos não são reexecutados durante migração ou carga.
+
+## 29. Pipeline visual incremental (Fase 16.1)
+
+A auditoria e o plano inicial estão em `docs/ART_DIRECTION_AUDIT.md`. A arquitetura atual recebe especificações por `WorldSnapshot` e mantém domínio, saves e objetos Babylon separados. Um carregador de GLB deverá ser integrado dentro de `rendering/`, preservando a criação de cena pelo `GameRenderer`, a sincronização por IDs, proxies de seleção, rotação/pivô do grid e descarte idempotente. `@babylonjs/loaders` ainda não está instalado e só deve ser avaliado quando o primeiro modelo aprovado existir; os modelos procedurais permanecem como fallback até a substituição passar por captura WebGL e comparação de custo.
+
+Fontes e licenças devem ser registradas num manifesto de assets. Arquivos runtime devem usar URLs compatíveis com `base` do Vite. Orçamentos de triângulos/texturas descritos no plano são tetos iniciais propostos e exigem medição real em navegador e hardware-alvo. Esta fase não muda renderizador, cena, economia, estado ou salvamento.

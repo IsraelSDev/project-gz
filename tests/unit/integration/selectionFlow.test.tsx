@@ -49,8 +49,11 @@ const liveScene = (): Scene => {
 };
 
 const markers = (scene: Scene) => scene.meshes.filter((mesh) => mesh.name === 'selection-marker');
-const panel = () => screen.getByRole('complementary', { name: 'Construção selecionada' });
-const selectedName = () => within(panel()).queryByRole('heading', { level: 3 })?.textContent;
+const panel = () => screen.queryByRole('complementary', { name: 'Construção selecionada' });
+const selectedName = () => {
+  const details = panel();
+  return details ? within(details).queryByRole('heading', { level: 3 })?.textContent : undefined;
+};
 const resourceTexts = () =>
   within(screen.getByRole('list', { name: 'Recursos da colônia' }))
     .getAllByRole('listitem')
@@ -66,7 +69,7 @@ describe('seleção de ponta a ponta (App + NullEngine, eventos sintéticos)', (
 
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Civilização Alienígena');
     expect(resourceTexts()).toEqual(['Alimentos300', 'Água300', 'Materiais150', 'Energia100']);
-    expect(within(panel()).getByText(/Selecione uma construção/)).toBeTruthy();
+    expect(screen.getByRole('region', { name: 'Sobrevivência' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Limpar seleção' })).toBeNull();
     expect(document.activeElement).toBe(document.querySelector('canvas'));
     expect(getLiveRendererCount()).toBe(1);
@@ -104,7 +107,7 @@ describe('seleção de ponta a ponta (App + NullEngine, eventos sintéticos)', (
     act(() => click(scene, emptyTerrainPoint(scene)));
 
     expect(selectedName()).toBeUndefined();
-    expect(within(panel()).getByText(/Selecione uma construção/)).toBeTruthy();
+    expect(screen.getByRole('region', { name: 'Sobrevivência' })).toBeTruthy();
     expect(markers(scene)).toHaveLength(0);
   });
 

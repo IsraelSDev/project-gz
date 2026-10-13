@@ -192,6 +192,8 @@ Habitantes comuns podem usar uma simulação agregada para evitar custo
 excessivo. Não é obrigatório simular individualmente todos os habitantes
 desde o início. No MVP, a população é um valor agregado simplificado.
 
+**Primeira camada (Fase 10):** quatro personagens importantes compõem o elenco inicial e representam indivíduos dentro dos oito habitantes, sem substituir o contador agregado. Eles têm espécie, estágio de vida, competências de 0 a 5, traços, disponibilidade e estado de vida. A interface usa avatares CSS provisórios com silhuetas e expressões simples; competências e traços ainda não alteram a economia.
+
 ### 8.3 Economia
 
 Recursos iniciais sugeridos: - Alimentos. - Água. - Materiais. -
@@ -233,6 +235,8 @@ Tributação e gastos públicos. - Cargos e competências administrativas. -
 Conselhos, facções e interesses. - Justiça, direitos e punições. -
 Legitimidade, protestos, revoltas e mudança de regime.
 
+**Primeira camada de governo (Fase 10):** uma liderança e três cargos exclusivos (ciência, engenharia e produção). A nomeação exige competência mínima 2; uma pessoa ocupa no máximo um cargo. Relações guardam afinidade, confiança e rivalidade em escala inteira de -5 a 5, sem efeitos simulados ainda.
+
 ### 8.6 Corte e dinastia
 
 Para governos monárquicos: - Soberano e atributos pessoais. - Camareiro,
@@ -256,12 +260,15 @@ governante.
 -   Exploração de locais, recursos e ruínas.
 -   Descobertas que podem gerar dilemas ou riscos.
 
+**Implementacao da Fase 11:** Culturas Proteicas desbloqueia o Cultivador de Proteinas; Engenharia Termica exige essa tecnologia e desbloqueia o Gerador Geotermico. A pesquisa exige Laboratorio de Campo e cientista no cargo de ciencia. Nascente Cristalina e Ruinas de Eco oferecem custos e recompensas; descobrir as ruinas ativa um evento existente. Nao inclui recuperacao da nave nem exploracao procedural.
+
 ### 8.8 Diplomacia e militar
 
-Planejados para etapas posteriores: - Contatos com outras comunidades e
-espécies. - Tratados, comércio, alianças, tributos e espionagem. -
-Recrutamento, equipamento, treinamento e defesa. - Conflitos com custos
-econômicos, humanos e políticos.
+Além da primeira camada da Fase 13, permanecem para etapas posteriores:
+comércio, alianças, tributos, espionagem, recrutamento, equipamento,
+treinamento, defesa e conflitos com custos econômicos, humanos e políticos.
+
+**Primeira camada diplomática (Fase 13, com provocação adicionada na integração da Fase 15):** três civilizações independentes originais são descobertas ao explorar pontos de interesse. O primeiro contato pode ser cordial, hostil ou adiado; o líder designado representa a colônia. A relação tem escala de -100 a 100 e categorias derivadas (hostil, tensa, neutra e amigável), com descoberta e contato representados separadamente. Uma solicitação de informações revela governo e desenvolvimento; um presente único custa 10 materiais; um pacto bilateral de não agressão é aceito deterministicamente quando a relação atinge o limiar de cada sociedade. O pacto pode ser encerrado (−20 relação), e uma provocação diplomática repetível reduz 20 pontos por ação até o limite de −100; a partir de −30, a declaração de guerra da Fase 14 fica disponível. Um pacto ativo precisa ser encerrado antes de provocar. Não há comércio, alianças militares ou diplomacia multilateral nesta camada.
 
 ## 9. Tempo e eventos
 
@@ -307,11 +314,11 @@ item é entregue.
 | 11 | Um evento com escolha e consequência.                                                     | 7    |
 | 12 | Salvamento e carregamento local.                                                          | 8    |
 | 13 | População inicial simplificada com necessidade de alimentos e água e alertas de crise.    | 9    |
-| 14 | Objetivo curto "estabilizar o acampamento", com resultado de sucesso ou fracasso.          | 9    |
+| 14 | Alertas de sobrevivência; escassez contínua pode eliminar a colônia. A estabilidade não encerra a simulação. | 9, 15 |
 | 15 | Tutorial mínimo.                                                                          | 9    |
 | 16 | Testes e build de produção.                                                               | todas |
 
-O salvamento (item 12) está no Roadmap e só sai do MVP por decisão registrada em `DECISIONS.md`. As condições do MVP foram definidas e implementadas na Fase 9 (D-62): vitória após 900 ticks seguidos com comida, água e abrigo para todos, mantendo ao menos 6 sobreviventes; derrota quando não restar nenhum sobrevivente após escassez contínua. O relógio pausa ao atingir um resultado. As condições do jogo completo continuam em aberto (seção 12).
+O salvamento (item 12) está no Roadmap e só sai do MVP por decisão registrada em `DECISIONS.md`. A versão original da Fase 9 (D-62) previa vitória após 900 ticks abastecidos e alojados; essa vitória automática foi removida na Fase 15. A estabilidade continua visível como indicador, mas a simulação segue indefinidamente enquanto houver sobreviventes. A derrota continua ocorrendo quando não restar nenhum sobrevivente após escassez contínua, e então o relógio pausa. As condições finais do jogo completo continuam em aberto (seção 12).
 
 Fora do MVP: - Multiplayer. - Backend obrigatório. - Economia
 avançada. - Guerras completas. - Dinastias completas. - Diplomacia
@@ -345,8 +352,9 @@ definitivo do jogo. - Estilo de arte final e grau de realismo. -
 Dimensão do mapa e geração do terreno. - Condições definitivas de
 vitória e derrota do jogo completo (as do MVP: D-62). -
 Profundidade da simulação individual de habitantes. - Escopo e regras
-detalhadas de combate. - Possível modo online futuro. - Estratégia final
-de distribuição para PC.
+detalhadas de combate. - Condição de vitória do jogo completo (não existe
+vitória por estabilidade na versão atual). - Possível modo online futuro. -
+Estratégia final de distribuição para PC.
 
 
 
@@ -355,4 +363,28 @@ de distribuição para PC.
 
 ### Sobrevivência do MVP (Fase 9)
 
-A colônia começa com 8 sobreviventes e capacidade habitacional 8. A cada tick, depois da economia dos edifícios, cada grupo de até 4 sobreviventes consome 1 unidade de comida e 1 de água. O estoque disponível é consumido até zero; recursos nunca ficam negativos. A falta de qualquer um dos dois recursos por 60 ticks consecutivos remove 1 sobrevivente; abastecimento completo reinicia a contagem. A capacidade é a soma de `housingCapacity` nas estruturas construídas. A vitória exige 900 ticks consecutivos com abastecimento e abrigo para todos e pelo menos 6 sobreviventes. Zero sobreviventes significa derrota.
+A colônia começa com 8 sobreviventes e capacidade habitacional 8. A cada tick, depois da economia dos edifícios, cada grupo de até 4 sobreviventes consome 1 unidade de comida e 1 de água. O estoque disponível é consumido até zero; recursos nunca ficam negativos. A falta de qualquer um dos dois recursos por 60 ticks consecutivos remove 1 sobrevivente; abastecimento completo reinicia a contagem. A capacidade é a soma de `housingCapacity` nas estruturas construídas. O painel mostra quantos ticks consecutivos a base está abastecida e alojada, sem transformar essa sequência em condição de vitória. Zero sobreviventes significa derrota e pausa a partida.
+
+### Complemento da seção 8.8 — Primeira camada militar (Fase 14)
+
+Um Posto de Defesa fornece quatro vagas e três perfis de unidade. Recrutamento custa materiais e cada unidade consome alimento por tick; falta de alimento suspende o suprimento e sua participação no combate. A guerra só pode ser declarada após contato, com relação hostil (≤ -30) e sem pacto ativo. O jogador inicia um confronto abstrato contra uma sociedade por vez. Ataque e defesa de unidades, defesa dos postos e liderança do governante produzem rodadas determinísticas; unidades derrotadas são perdidas. O jogador pode recuar e, fora de combate, estabelecer paz. Eventos notificam a declaração e o primeiro resultado de combate contra cada sociedade. Não existem exércitos inimigos no mapa, conquista territorial, pathfinding, cura ou combate automático.
+
+### Complemento — Primeira camada de território e cidades (Fase 15)
+
+O local da queda é a capital. Explorar Nascente Cristalina, Ruínas de Eco ou Bosque Luminescente revela uma região controlada pela civilização independente associada ao ponto. Cada região pode receber no máximo um assentamento. Para fundar ali, é necessário estabelecer um pacto de não agressão ativo com a civilização que controla a região; durante uma guerra, a fundação fica bloqueada. A fundação custa ao capital 30 alimentos, 60 águas, 220 materiais e 10 energias e instala um módulo habitacional, dois coletores solares, um extrator de água e uma estufa, além de suprimentos iniciais. Regiões sem civilização associada podem ser fundadas quando descobertas e livres. O jogador pode transferir recursos e colonizadores dentro dos limites de estoque, capacidade local e população restante no capital. A população total nunca é duplicada e os personagens importantes continuam sendo um elenco único da civilização.
+
+Cada assentamento secundário mantém recursos, população agregada e edifícios locais; os mesmos cálculos de produção e sobrevivência rodam a cada tick. O potencial da região produz recursos locais por tick. A construção local reutiliza custos e definições existentes e procura automaticamente a primeira posição livre de um grid de 16 × 16; edifícios militares não podem ser instalados fora do capital. Um administrador elegível tem liderança 2 ou maior, ocupa um único cargo e produz 1 material local a cada 10 ticks. A primeira interface territorial lista regiões, controle, assentamentos e dados da cidade selecionada; as cidades secundárias ainda não têm terreno ou meshes próprios na cena 3D. Não há transferência de volta para o capital, comércio/logística, territórios de civilizações rivais ou conquista por guerra nesta camada.
+
+### 8.9 Pesquisa e eras de desenvolvimento (Fase 16)
+
+A civilização progride pelas eras de Sobrevivência, Fundação, Industrial, Científica e Ascensão. O estado inicial é Sobrevivência. A conclusão de Culturas Proteicas libera Fundação; Engenharia Térmica e Construção Modular liberam Industrial; Restauração Agrícola e Síntese de Materiais liberam Científica; Redes de Pesquisa e Logística Cívica liberam Ascensão. O tempo, por si só, não muda a era.
+
+A árvore tem nove pesquisas nas categorias agricultura, energia, engenharia, ciência, sociedade e defesa. Culturas Proteicas e Engenharia Térmica mantêm seus IDs e custos históricos. Construção Modular reduz em 10% o custo de materiais de novas construções (arredondado para cima); Restauração Agrícola adiciona 2 alimentos por tick por estufa/cultivador; Síntese de Materiais adiciona 2 materiais por reciclador; Redes de Pesquisa dá 1 ponto por tick por laboratório além do primeiro; Logística Cívica acrescenta 1 material a cada dez ticks por administrador qualificado; Rede Planetária soma 2 energia por tick por matriz solar/gerador geotérmico; Coordenação Defensiva soma 1 defesa por posto. Engenharia Térmica mantém o desbloqueio do gerador geotérmico e acrescenta +2 energia por tick por gerador.
+
+Pesquisa é única por civilização, cobra o custo uma vez ao iniciar e progride em ticks conforme a competência do cientista. Laboratórios do capital e de assentamentos contam para a infraestrutura imperial; após Redes de Pesquisa, cada laboratório adicional acelera o mesmo projeto. Bônus não são gravados como estoque ou taxas alteradas: são calculados a partir das tecnologias concluídas.
+
+### 8.10 Direção de arte e produção visual incremental (Fase 16.1)
+
+A direção visual proposta combina aliens pequenos, robustos, expressivos e não humanoides com edifícios funcionais de formas suaves e materiais estilizados. O planeta inicial mantém céu violeta/coral, terreno ocre, vegetação verde-azulada e luzes ciano/âmbar; paletas futuras variam por bioma. Os detalhes precisam continuar legíveis à câmera de estratégia, com emissivos usados como informação e contraste preservado para seleção e UI.
+
+O inventário técnico, escala de referência, padrões de assets, orçamentos propostos, riscos e critérios do primeiro pacote estão em [ART_DIRECTION_AUDIT.md](ART_DIRECTION_AUDIT.md). A arte atualmente visível é provisória; não há modelos/texturas locais finais. A escala de alien/porta/edifício ainda requer folha comparativa e aprovação visual. O documento propõe primeiro refinar o terreno, produzir nave e três edifícios iniciais, vegetação/naturais e, depois, coletáveis e um alien com idle. Recursos coletáveis dependem de contrato de gameplay ainda inexistente.

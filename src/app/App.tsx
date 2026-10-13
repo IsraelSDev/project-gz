@@ -59,9 +59,10 @@ export function App() {
 
   // Só `buildings` alimenta a cena: os ticks não a refazem (a referência não muda a cada passo).
   const buildings = useGameSelector(controller, (snapshot) => snapshot.buildings);
+  const militaryUnits = useGameSelector(controller, (snapshot) => snapshot.military.units);
   const worldSnapshot = useMemo(
-    () => toWorldSnapshot({ buildings }, INITIAL_SCENARIO),
-    [buildings],
+    () => toWorldSnapshot({ buildings, militaryUnits }, INITIAL_SCENARIO),
+    [buildings, militaryUnits],
   );
 
   // Fechar o painel remove o botão que tinha o foco; devolve-o ao jogo para o teclado seguir útil.

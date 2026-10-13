@@ -23,7 +23,17 @@ const execute = (state: GameState, command: SimulationCommand) =>
 
 describe('executeSimulationCommand', () => {
   it('registra os comandos de construção e eventos; comandos desconhecidos não existem', () => {
-    expect(Object.keys(COMMAND_HANDLERS)).toEqual(['PlaceBuilding', 'ResolveEvent']);
+    expect(Object.keys(COMMAND_HANDLERS)).toEqual([
+      'PlaceBuilding',
+      'ResolveEvent',
+      'AppointCharacter',
+      'RemoveCharacterFromOffice',
+      'StartResearch',
+      'ExplorePoint',
+      'DiplomaticAction',
+      'MilitaryAction',
+      'TerritoryAction',
+    ]);
     expect(executeSimulationCommand(initial(), { type: 'ResolveEvent' })).toEqual({
       ok: false,
       error: 'INVALID_COMMAND',

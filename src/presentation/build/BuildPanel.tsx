@@ -21,6 +21,8 @@ export interface BuildPanelProps {
   /** Estado de sessão do modo de construção (fora do `GameState`). */
   readonly build: BuildStore;
   readonly actions: BuildActions;
+  /** Abre o catálogo quando a seção de construção é escolhida na navegação. */
+  readonly initialOpen?: boolean;
 }
 
 /** "Materiais 40", e "— faltam 10" quando o estoque não cobre. O texto, não só a cor, diz que falta. */
@@ -56,6 +58,7 @@ function CatalogItem({
         className="build-item"
         aria-pressed={selected}
         data-affordable={entry.affordable}
+        disabled={!entry.unlocked}
         onClick={onChoose}
       >
         <span className="build-item__name">{entry.name}</span>
@@ -68,6 +71,7 @@ function CatalogItem({
         {!entry.affordable && (
           <span className="build-item__warning">Recursos insuficientes agora</span>
         )}
+        {!entry.unlocked && <span className="build-item__warning">Requer tecnologia</span>}
       </button>
     </li>
   );
@@ -82,7 +86,9 @@ function placementStatusText(status: PlacementPreview['status']): string {
     case 'valid':
       return 'Posição válida.';
     case 'invalid':
-      return describeError(status.error);
+      return status.error === 'TECHNOLOGY_LOCKED'
+        ? 'Pesquise a tecnologia necessária primeiro.'
+        : describeError(status.error);
   }
 }
 
@@ -148,12 +154,16 @@ function BuildBody({ controller, build, actions, id }: BuildPanelProps & { reado
   // Só as fatias de que precisa: o estoque (custos e disponibilidade) e as construções (colisão).
   const resources = useGameSelector(controller, (snapshot) => snapshot.resources);
   const buildings = useGameSelector(controller, (snapshot) => snapshot.buildings);
+  const research = useGameSelector(controller, (snapshot) => snapshot.research);
   const state = useBuild(build);
 
-  const catalog = useMemo(() => selectBuildCatalog(resources), [resources]);
+  const catalog = useMemo(
+    () => selectBuildCatalog(resources, research.unlockedTechnologyIds),
+    [resources, research],
+  );
   const preview = useMemo(
-    () => selectPlacementPreview({ resources, buildings }, state),
-    [resources, buildings, state],
+    () => selectPlacementPreview({ resources, buildings, research }, state),
+    [resources, buildings, research, state],
   );
 
   // Esc e R funcionam também com o foco nos botões do painel (no canvas, quem trata é o GameCanvas).
@@ -204,8 +214,8 @@ function BuildBody({ controller, build, actions, id }: BuildPanelProps & { reado
  * as mesmas regras do comando `PlaceBuilding`, e envia a confirmação pelas ações. O estado do modo
  * (qual edifício, rotação, posição) vive no store de sessão, não aqui.
  */
-export function BuildPanel({ controller, build, actions }: BuildPanelProps) {
-  const [open, setOpen] = useState(false);
+export function BuildPanel({ controller, build, actions, initialOpen = false }: BuildPanelProps) {
+  const [open, setOpen] = useState(initialOpen);
   const bodyId = useId();
 
   const toggle = () => {
@@ -225,8 +235,8 @@ export function BuildPanel({ controller, build, actions }: BuildPanelProps) {
         aria-controls={open ? bodyId : undefined}
         onClick={toggle}
       >
-        <span aria-hidden="true">{open ? '×' : '+'}</span>
-        <span>{open ? 'Fechar construção' : 'Construir'}</span>
+        <span aria-hidden="true">{open ? '⌃' : '⌄'}</span>
+        <span>{open ? 'Recolher catálogo' : 'Exibir catálogo'}</span>
       </button>
       {open && <BuildBody controller={controller} build={build} actions={actions} id={bodyId} />}
     </section>

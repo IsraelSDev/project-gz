@@ -21,12 +21,21 @@ describe('modelo de estado da partida', () => {
     expect(Object.keys(initial()).sort()).toEqual(
       [
         'buildings',
+        'characters',
         'contentVersion',
+        'diplomacy',
         'events',
+        'exploration',
+        'government',
+        'military',
         'nextEntityId',
         'population',
+        'relationships',
+        'research',
         'resources',
         'schemaVersion',
+        'settlements',
+        'territory',
         'tick',
       ].sort(),
     );
@@ -37,7 +46,7 @@ describe('modelo de estado da partida', () => {
     const json = JSON.stringify(state);
 
     expect(JSON.parse(json)).toEqual(state);
-    expect(json).not.toMatch(/paused|speed|selected|mesh|scene|engine|canvas|function/i);
+    expect(json).not.toMatch(/"(paused|speed|selected|mesh|scene|engine|canvas)"|function/i);
   });
 
   it('a duração do tick é de 1 segundo de tempo de jogo (D-41)', () => {

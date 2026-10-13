@@ -2,9 +2,12 @@ import type { BuildingDefinitionId } from '@/game/content/buildings';
 import type { EventId } from '@/game/content/events';
 import type { ResourceId } from '@/game/content/resources';
 import type { GridPosition, Rotation } from '@/shared/grid/types';
+import type { Character, CharacterRelationship, Government } from '@/game/content/characters';
+import type { RegionId } from '@/game/content/regions';
+import type { EraId } from '@/game/content/developmentEras';
 
-/** Versão do formato do estado. Incrementar ao alterar o formato (migrações: Fase 8). */
-export const GAME_STATE_SCHEMA_VERSION = 2;
+/** Versão do formato do estado. Migrações encadeadas são definidas em `application/saveMigrations.ts`. */
+export const GAME_STATE_SCHEMA_VERSION = 8;
 
 export interface PopulationState {
   readonly survivors: number;
@@ -12,7 +15,45 @@ export interface PopulationState {
   readonly shortageTicks: number;
   /** Ticks consecutivos abastecidos e dentro da capacidade. */
   readonly stableTicks: number;
-  readonly outcome: 'ongoing' | 'victory' | 'defeat';
+  readonly outcome: 'ongoing' | 'defeat';
+}
+
+export interface TerritoryRegionState {
+  readonly regionId: RegionId;
+  readonly owner: 'colony' | 'civilization' | null;
+  readonly civilizationId: string | null;
+  readonly settlementId: string | null;
+}
+
+/** Dados próprios de cada assentamento secundário. O capital continua nos campos legados de GameState. */
+export interface SettlementState {
+  readonly settlementId: string;
+  readonly regionId: RegionId;
+  readonly name: string;
+  readonly resources: ResourceStock;
+  readonly buildings: readonly BuildingInstance[];
+  readonly population: PopulationState;
+  readonly administratorId: string | null;
+  readonly nextBuildingId: number;
+}
+
+export interface TerritoryState {
+  readonly regions: readonly TerritoryRegionState[];
+  readonly nextSettlementId: number;
+  readonly history: readonly TerritoryHistoryEntry[];
+}
+export interface TerritoryHistoryEntry {
+  readonly tick: number;
+  readonly action:
+    | 'settlement-founded'
+    | 'administrator-appointed'
+    | 'resources-transferred'
+    | 'population-transferred'
+    | 'building-constructed';
+  readonly regionId: RegionId;
+  readonly settlementId: string;
+  readonly amount: number;
+  readonly detail: string;
 }
 
 /** Edifício construído. Dados de domínio apenas: meshes e materiais nunca entram no estado. */
@@ -27,6 +68,7 @@ export interface BuildingInstance {
 export type ResourceStock = Readonly<Record<ResourceId, number>>;
 
 export type GameEventStatus = 'available' | 'active' | 'resolved' | 'closed';
+export type MilitaryUnitType = 'scout' | 'guardian' | 'striker';
 
 /** Estado serializável do evento; conteúdo narrativo fica separado em `game/content/events.ts`. */
 export interface GameEventState {
@@ -34,6 +76,82 @@ export interface GameEventState {
   readonly status: GameEventStatus;
   readonly chosenOptionId?: string;
   readonly resolvedAtTick?: number;
+}
+
+export interface ResearchState {
+  readonly currentEra: EraId;
+  readonly unlockedTechnologyIds: readonly string[];
+  readonly activeTechnologyId: string | null;
+  readonly progress: number;
+}
+
+export interface ExplorationState {
+  readonly discoveredPointIds: readonly string[];
+}
+
+export type DiplomaticContactStatus = 'unknown' | 'discovered' | 'contacted';
+export type DiplomaticTreatyStatus = 'none' | 'active' | 'rejected' | 'ended';
+export type DiplomaticAction =
+  | 'civilization-discovered'
+  | 'signal-deferred'
+  | 'contact-established'
+  | 'information-requested'
+  | 'gift-offered'
+  | 'pact-proposed'
+  | 'pact-accepted'
+  | 'pact-rejected'
+  | 'pact-ended'
+  | 'provocation'
+  | 'war-declared'
+  | 'war-ended'
+  | 'battle-resolved';
+
+export interface DiplomaticHistoryEntry {
+  readonly tick: number;
+  readonly action: DiplomaticAction;
+  readonly relationshipChange: number;
+}
+
+export interface CivilizationDiplomacyState {
+  readonly civilizationId: string;
+  readonly contactStatus: DiplomaticContactStatus;
+  readonly relationshipScore: number;
+  readonly informationRequested: boolean;
+  readonly giftOffered: boolean;
+  readonly nonAggressionPact: DiplomaticTreatyStatus;
+  readonly warStatus: 'none' | 'active' | 'ended';
+  readonly history: readonly DiplomaticHistoryEntry[];
+}
+
+export interface MilitaryUnit {
+  readonly unitId: string;
+  readonly type: MilitaryUnitType;
+  readonly position: GridPosition;
+  readonly health: number;
+  readonly supplied: boolean;
+}
+export interface MilitaryBattle {
+  readonly civilizationId: string;
+  readonly enemyHealth: number;
+  readonly round: number;
+  readonly status: 'active' | 'victory' | 'defeat' | 'retreated';
+  readonly commanderId: string | null;
+}
+export interface MilitaryHistoryEntry {
+  readonly tick: number;
+  readonly civilizationId: string;
+  readonly outcome: 'victory' | 'defeat' | 'retreated';
+  readonly rounds: number;
+}
+export interface MilitaryState {
+  readonly nextUnitId: number;
+  readonly units: readonly MilitaryUnit[];
+  readonly battle: MilitaryBattle | null;
+  readonly history: readonly MilitaryHistoryEntry[];
+}
+
+export interface DiplomacyState {
+  readonly civilizations: readonly CivilizationDiplomacyState[];
 }
 
 /**
@@ -55,4 +173,15 @@ export interface GameState {
   /** Estados de eventos do conteúdo (Fase 7), fora de qualquer componente visual. */
   readonly events: readonly GameEventState[];
   readonly population: PopulationState;
+  /** Elenco de personagens politicamente relevantes; população comum permanece agregada. */
+  readonly characters: readonly Character[];
+  readonly government: Government;
+  readonly relationships: readonly CharacterRelationship[];
+  readonly research: ResearchState;
+  readonly exploration: ExplorationState;
+  readonly diplomacy: DiplomacyState;
+  readonly military: MilitaryState;
+  /** Assentamentos secundários; o capital é projetado dos campos legados sem duplicar seus dados. */
+  readonly settlements: readonly SettlementState[];
+  readonly territory: TerritoryState;
 }

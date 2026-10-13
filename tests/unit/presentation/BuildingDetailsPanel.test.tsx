@@ -76,7 +76,7 @@ describe('BuildingDetailsPanel', () => {
     act(() => selection.select('building-solar-01'));
 
     expect(buildingName()).toBe('Matriz Solar');
-    expect(within(panel()).getByText('Infraestrutura')).toBeTruthy();
+    expect(within(panel()).getByText('Energia')).toBeTruthy();
     expect(factOf('Posição no grid')).toBe('x 23 · y 23');
     // 3x2 girada em 90°: ocupa 2 células em x e 3 em y.
     expect(factOf('Área ocupada')).toBe('2 × 3 células');

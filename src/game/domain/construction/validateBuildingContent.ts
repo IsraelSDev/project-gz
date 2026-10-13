@@ -1,7 +1,17 @@
 import type { BuildingDefinition } from '@/game/content/buildings';
 import { validateBuildingEconomy } from '@/game/domain/economy/validateBuildingEconomy';
+import { isTechnologyId } from '@/game/content/technologies';
 
-const CATEGORIES: readonly string[] = ['shelter', 'infrastructure'];
+const CATEGORIES: readonly string[] = [
+  'shelter',
+  'infrastructure',
+  'food',
+  'water',
+  'energy',
+  'industry',
+  'research',
+  'military',
+];
 
 const isPositiveInteger = (value: unknown): boolean =>
   Number.isSafeInteger(value) && Number(value) > 0;
@@ -30,6 +40,9 @@ export function validateBuildingContent(
     }
     if (!CATEGORIES.includes(definition.category)) {
       issues.push(`${key}: categoria desconhecida "${String(definition.category)}".`);
+    }
+    if (definition.requiredTechnologyId && !isTechnologyId(definition.requiredTechnologyId)) {
+      issues.push(`${key}: tecnologia de desbloqueio desconhecida.`);
     }
     if (
       definition.housingCapacity !== undefined &&

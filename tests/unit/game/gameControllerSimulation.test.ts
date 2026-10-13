@@ -155,12 +155,21 @@ describe('GameController: estado inicial e tick', () => {
     expect(Object.keys(controller.getSnapshot()).sort()).toEqual(
       [
         'buildings',
+        'characters',
         'contentVersion',
+        'diplomacy',
         'events',
+        'exploration',
+        'government',
+        'military',
         'nextEntityId',
         'population',
+        'relationships',
+        'research',
         'resources',
         'schemaVersion',
+        'settlements',
+        'territory',
         'tick',
       ].sort(),
     );

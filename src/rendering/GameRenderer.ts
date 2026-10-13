@@ -2,6 +2,7 @@ import type { AbstractEngine } from '@babylonjs/core/Engines/abstractEngine';
 import { Engine } from '@babylonjs/core/Engines/engine';
 import type { GridPosition, GridSize } from '@/shared/grid/types';
 import { createBuildingLayer } from './buildings/BuildingLayer';
+import { createUnitLayer } from './military/UnitLayer';
 import { createPlacementPreviewLayer } from './buildings/PlacementPreview';
 import { createCameraRig } from './camera/cameraRig';
 import { createBuildingPicking } from './interaction/BuildingPicking';
@@ -126,6 +127,7 @@ export function createGameRenderer(
   let sceneContext: ReturnType<typeof createSceneContext> | null = null;
   let cameraRig: ReturnType<typeof createCameraRig> | null = null;
   let buildingLayer: ReturnType<typeof createBuildingLayer> | null = null;
+  let unitLayer: ReturnType<typeof createUnitLayer> | null = null;
   let previewLayer: ReturnType<typeof createPlacementPreviewLayer> | null = null;
   let staticWorld: StaticWorld | null = null;
   let staticWorldKey: string | null = null;
@@ -153,6 +155,7 @@ export function createGameRenderer(
     }
     previewLayer?.dispose();
     buildingLayer?.dispose();
+    unitLayer?.dispose();
     staticWorld?.dispose();
     cameraRig?.dispose();
     sceneContext?.dispose();
@@ -185,6 +188,9 @@ export function createGameRenderer(
     terrainSize = snapshot.terrain.sizeCells;
     const field = heightField;
     buildingLayer.sync(snapshot.buildings, snapshot.terrain.sizeCells, (x, z) =>
+      field ? field.heightAt(x, z) : 0,
+    );
+    unitLayer?.sync(snapshot.units, snapshot.terrain.sizeCells, (x, z) =>
       field ? field.heightAt(x, z) : 0,
     );
     applyPreview();
@@ -229,6 +235,7 @@ export function createGameRenderer(
     cameraRig = createCameraRig(sceneContext.scene);
     cameraRig.setGroundHeight((x, z) => (heightField ? heightField.heightAt(x, z) : 0));
     buildingLayer = createBuildingLayer(sceneContext);
+    unitLayer = createUnitLayer(sceneContext);
     previewLayer = createPlacementPreviewLayer(sceneContext);
 
     const lostObserver = engine.onContextLostObservable.add(() => {

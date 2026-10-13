@@ -14,6 +14,8 @@ export const PALETTE = {
   terrain: {
     dust: '#cdb187',
     sand: '#b58a5c',
+    /** Poeira rosada: variação suave do solo em harmonia com o céu coral. */
+    clay: '#bf8f80',
     moss: '#3f8076',
     mossDark: '#2c5f5a',
     rock: '#6b5568',

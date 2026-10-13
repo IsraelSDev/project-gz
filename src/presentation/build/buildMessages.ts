@@ -14,6 +14,8 @@ export const ERROR_MESSAGES: Readonly<Record<CommandErrorCode, string>> = {
   COMMAND_REJECTED: 'A ação foi recusada.',
   INVALID_STATE: 'A ação foi cancelada porque deixaria a partida inválida.',
   EVENT_NOT_ACTIVE: 'Este evento não está mais disponível.',
+  DIPLOMACY_REQUIREMENT_NOT_MET: 'Ação diplomática indisponível; confira os requisitos.',
+  DIPLOMACY_ALREADY_COMPLETED: 'Esta ação diplomática já foi concluída.',
 };
 
 export function describeError(error: CommandErrorCode): string {

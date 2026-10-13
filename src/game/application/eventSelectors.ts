@@ -24,7 +24,9 @@ function canAfford(resources: ResourceStock, cost: Readonly<Record<string, numbe
 }
 
 /** Conteúdo visível de eventos, derivado do estado e entregue à apresentação pela aplicação. */
-export function selectVisibleEvents(state: GameState): readonly EventView[] {
+export function selectVisibleEvents(
+  state: Pick<GameState, 'events' | 'resources'>,
+): readonly EventView[] {
   return state.events.flatMap((event): EventView[] => {
     if (event.status !== 'active' && event.status !== 'resolved') return [];
     const definition = EVENT_DEFINITIONS[event.eventId];

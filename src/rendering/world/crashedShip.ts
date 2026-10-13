@@ -1,28 +1,99 @@
-import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
+import type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
+import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import type { Mesh } from '@babylonjs/core/Meshes/mesh';
+import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
+import { loadGlbAsset, resolvePublicAssetUrl, type LoadedGlbAsset } from '../assets/glbAsset';
+import { adaptGlbMaterialsToScene, type AdaptedMaterials } from '../assets/glbMaterials';
 import { createPropKit } from '../props/propKit';
 import type { SceneContext } from '../scene/createSceneContext';
 import { PALETTE } from '../scene/palette';
-import { placedCenterToWorld, rotationToRadians } from './gridToWorld';
+import { CELL_SIZE, gridPointToWorld, placedCenterToWorld, rotationToRadians } from './gridToWorld';
 import type { HeightField } from './heightField';
 import type { PlacedSpec, TerrainSpec } from './WorldSnapshot';
 
-const { metal, terrain, glow } = PALETTE;
+const { metal, glow } = PALETTE;
+
+/**
+ * Modelo GLB da nave (docs/ART_ASSET_MANIFEST.md, id `crashed-ship`), fornecido pelo usuário.
+ * Se o arquivo faltar, falhar ao carregar ou for recusado, a nave procedural abaixo continua sendo
+ * a representação exibida.
+ *
+ * O arquivo recebido tem escala normalizada (maior extensão = 1 unidade) e eixo longo em Z. O nó
+ * abaixo o gira para o eixo X e escala para caber no footprint de 16 × 10 unidades;
+ * comprimento horizontal entre 0,5× e 1,5× o maior lado é aceito (padrão: 8–24 unidades).
+ * A posição da nave continua vindo do cenário; a rotação e a escala abaixo são conversão de asset.
+ *  - sem compressão Draco/Meshopt/KTX2: o Babylon baixaria os decodificadores de um CDN externo.
+ * `scale`, `yaw` e `offset` existem só para absorver pequenos desvios do arquivo exportado.
+ */
+export interface CrashedShipModel {
+  /** URL final do GLB, já resolvida com o `base` do Vite. */
+  readonly url: string;
+  readonly scale: number;
+  /** Rotação em Y (radianos) aplicada ao modelo dentro do nó da nave. */
+  readonly yaw: number;
+  readonly offset: { readonly x: number; readonly y: number; readonly z: number };
+  /** Célula do mapa na qual centralizar o asset; quando definida, substitui x/z de `offset`. */
+  readonly gridPosition?: { readonly x: number; readonly y: number };
+}
+
+export const CRASHED_SHIP_MODEL: CrashedShipModel = {
+  url: resolvePublicAssetUrl('assets/ships/crashed-ship.glb'),
+  scale: 15,
+  yaw: Math.PI / 2,
+  offset: { x: 0, y: 0, z: 0 },
+};
+
+/** Fuselagem rompida, centralizada na célula (12, 17) do mapa. */
+export const CRASHED_SHIP_DEBRIS_MODEL: CrashedShipModel = {
+  url: resolvePublicAssetUrl('assets/ships/destrocos-1.glb'),
+  scale: 6.5,
+  yaw: 0.38,
+  offset: { x: 0, y: 0, z: 0 },
+  gridPosition: { x: 12, y: 17 },
+};
+
+/** Faixa aceita para o comprimento do modelo, em múltiplos do maior lado do footprint. */
+const MODEL_LENGTH_RANGE = { min: 0.5, max: 1.5 } as const;
+
+export type CrashedShipSource = 'procedural' | 'glb';
+
+export interface CrashedShipOptions {
+  /** Modelo a carregar; por padrão `CRASHED_SHIP_MODEL`. `null` mantém só a nave procedural. */
+  readonly model?: CrashedShipModel | null;
+  /** Asset de destroços adicional; `null` desativa o carregamento. */
+  readonly debrisModel?: CrashedShipModel | null;
+}
 
 export interface CrashedShip {
+  /** Representação exibida agora. Começa `procedural`; vira `glb` se o modelo carregar e for aceito. */
+  source(): CrashedShipSource;
+  /** Resolve quando a tentativa de carregar o GLB termina, com a representação final. Nunca rejeita. */
+  readonly ready: Promise<CrashedShipSource>;
+  /** Libera nós, meshes, sombras e o GLB carregado e cancela um carregamento em curso. Idempotente. */
   dispose(): void;
 }
 
 /**
- * Nave de exploração acidentada, modelada com primitivas. O comprimento segue o eixo X local
- * (nariz para -X, enterrado e inclinado); a posição e a orientação vêm dos dados do cenário.
+ * Nave de exploração acidentada. A versão procedural, feita de primitivas, é criada na hora: o jogo
+ * não espera rede e há sempre uma nave na cena. Em paralelo tenta-se carregar o GLB; se ele for
+ * aceito, substitui o casco procedural. O
+ * comprimento do modelo procedural segue o eixo X local (nariz para -X, enterrado e inclinado); a
+ * posição e a orientação vêm dos dados do cenário nos dois casos.
  */
 export function createCrashedShip(
   context: SceneContext,
   ship: PlacedSpec,
   terrainSpec: TerrainSpec,
   field: HeightField,
+  options: CrashedShipOptions = {},
 ): CrashedShip {
+  const model = options.model === undefined ? CRASHED_SHIP_MODEL : options.model;
+  const debrisModel =
+    options.debrisModel === undefined
+      ? options.model === undefined
+        ? CRASHED_SHIP_DEBRIS_MODEL
+        : null
+      : options.debrisModel;
   const kit = createPropKit(context.scene);
   const center = placedCenterToWorld(ship, terrainSpec.sizeCells);
 
@@ -135,47 +206,244 @@ export function createCrashedShip(
     part.parent = tilt;
   }
 
-  // Terra revolvida no nariz e marca de queimado sob a nave (não inclinadas).
-  const ground = kit.merge('ship-ground', [
-    kit.cylinder({ height: 0.05, bottom: 17, tessellation: 32 }, metal.burnt, {
-      y: 0.07,
-      sz: 0.62,
-    }),
-    kit.sphere({ diameter: 4, segments: 10, slice: 0.5 }, terrain.sand, {
-      x: -8.4,
-      y: 0,
-      sx: 1.3,
-      sy: 0.55,
-      sz: 1.0,
-    }),
-    kit.sphere({ diameter: 2.4, segments: 8, slice: 0.5 }, terrain.dust, {
-      x: -6.6,
-      y: 0,
-      z: 1.8,
-      sy: 0.4,
-    }),
-  ]);
-  ground.material = context.materials.solid;
-  ground.parent = root;
-  ground.isPickable = false;
-  ground.receiveShadows = true;
-
-  const shadowCasters: Mesh[] = [hull];
-  for (const caster of shadowCasters) {
+  const proceduralCasters: Mesh[] = [hull];
+  for (const caster of proceduralCasters) {
     context.shadows.add(caster);
   }
 
+  let source: CrashedShipSource = 'procedural';
   let disposed = false;
+  let modelAsset: LoadedGlbAsset | null = null;
+  let modelMaterials: AdaptedMaterials | null = null;
+  let debrisAsset: LoadedGlbAsset | null = null;
+  let debrisMaterials: AdaptedMaterials | null = null;
+  let modelCasters: readonly AbstractMesh[] = [];
+  const loading = new AbortController();
+  const footprintLength = Math.max(ship.size.width, ship.size.depth) * CELL_SIZE;
+
+  /**
+   * Troca o casco procedural pelo modelo carregado, só depois de os materiais dele compilarem: o
+   * Babylon não desenha malhas com material pendente, e trocar antes deixaria a cena sem nave por
+   * alguns instantes. Se o modelo for recusado, libera-o e deixa a nave procedural como estava. O
+   * modelo entra na cena sem metadados de entidade: continua "pickable" para ocultar o que está
+   * atrás (como o casco procedural), mas clicar nele não seleciona nada.
+   */
+  const adoptModel = async (asset: LoadedGlbAsset, placement: CrashedShipModel): Promise<void> => {
+    const modelRoot = new TransformNode('ship-model', context.scene);
+    modelRoot.parent = root;
+    modelRoot.position.set(placement.offset.x, placement.offset.y, placement.offset.z);
+    modelRoot.rotation.y = placement.yaw;
+    modelRoot.scaling.setAll(placement.scale);
+    modelRoot.setEnabled(false);
+    for (const node of asset.rootNodes) {
+      node.parent = modelRoot;
+    }
+    // Daqui em diante o descarte da nave também libera o GLB, mesmo se ele ainda estiver compilando.
+    modelAsset = asset;
+
+    const discard = (reason: string): void => {
+      console.warn(`[nave] Modelo GLB recusado (${reason}); mantida a nave procedural.`);
+      modelAsset = null;
+      modelMaterials?.dispose();
+      modelMaterials = null;
+      asset.dispose();
+      modelRoot.dispose(false, false);
+    };
+
+    const meshes = modelRoot.getChildMeshes().filter((mesh) => mesh.getTotalVertices() > 0);
+    const rejection = modelRejection(root, modelRoot, meshes, footprintLength);
+    if (rejection !== null) {
+      discard(rejection);
+      return;
+    }
+    // Os materiais PBR do arquivo viram StandardMaterial, o modelo de luz do resto da cena.
+    modelMaterials = adaptGlbMaterialsToScene(meshes, context.scene);
+    try {
+      await Promise.all(meshes.map((mesh) => mesh.material?.forceCompilationAsync(mesh)));
+    } catch (error) {
+      if (!disposed) {
+        discard(`os materiais não compilaram: ${String(error)}`);
+      }
+      return;
+    }
+    if (disposed) {
+      return;
+    }
+
+    for (const mesh of meshes) {
+      mesh.isPickable = true;
+      mesh.receiveShadows = true;
+      context.shadows.add(mesh);
+    }
+    for (const caster of proceduralCasters) {
+      context.shadows.remove(caster);
+    }
+    tilt.dispose(false, false);
+    modelRoot.setEnabled(true);
+    modelCasters = [...modelCasters, ...meshes];
+    source = 'glb';
+  };
+
+  const adoptDebrisModel = async (
+    asset: LoadedGlbAsset,
+    placement: CrashedShipModel,
+  ): Promise<void> => {
+    const debrisRoot = new TransformNode('ship-debris-1', context.scene);
+    debrisRoot.parent = root;
+    let offsetX = placement.offset.x;
+    let offsetZ = placement.offset.z;
+    if (placement.gridPosition !== undefined) {
+      const target = gridPointToWorld(
+        { x: placement.gridPosition.x + 0.5, y: placement.gridPosition.y + 0.5 },
+        terrainSpec.sizeCells,
+      );
+      const dx = target.x - root.position.x;
+      const dz = target.z - root.position.z;
+      const cos = Math.cos(root.rotation.y);
+      const sin = Math.sin(root.rotation.y);
+      offsetX = cos * dx - sin * dz;
+      offsetZ = sin * dx + cos * dz;
+    }
+    debrisRoot.position.set(offsetX, placement.offset.y, offsetZ);
+    debrisRoot.rotation.y = placement.yaw;
+    debrisRoot.scaling.setAll(placement.scale);
+    debrisRoot.setEnabled(false);
+    root.computeWorldMatrix(true);
+    const worldPosition = Vector3.TransformCoordinates(
+      new Vector3(offsetX, 0, offsetZ),
+      root.getWorldMatrix(),
+    );
+    debrisRoot.position.y = field.heightAt(worldPosition.x, worldPosition.z) - root.position.y;
+    for (const node of asset.rootNodes) {
+      node.parent = debrisRoot;
+    }
+    debrisAsset = asset;
+
+    const discard = (reason: string): void => {
+      console.warn(`[destroços] Modelo GLB recusado (${reason}); mantido o restante da nave.`);
+      debrisAsset = null;
+      debrisMaterials?.dispose();
+      debrisMaterials = null;
+      asset.dispose();
+      debrisRoot.dispose(false, false);
+    };
+
+    const meshes = debrisRoot.getChildMeshes().filter((mesh) => mesh.getTotalVertices() > 0);
+    const rejection = modelRejection(root, debrisRoot, meshes, 6);
+    if (rejection !== null) {
+      discard(rejection);
+      return;
+    }
+    debrisMaterials = adaptGlbMaterialsToScene(meshes, context.scene);
+    try {
+      await Promise.all(meshes.map((mesh) => mesh.material?.forceCompilationAsync(mesh)));
+    } catch (error) {
+      if (!disposed) {
+        discard(`os materiais não compilaram: ${String(error)}`);
+      }
+      return;
+    }
+    if (disposed) {
+      return;
+    }
+
+    for (const mesh of meshes) {
+      mesh.isPickable = true;
+      mesh.receiveShadows = true;
+      context.shadows.add(mesh);
+    }
+    debrisRoot.setEnabled(true);
+    modelCasters = [...modelCasters, ...meshes];
+  };
+
+  const loadShipModel = async (): Promise<void> => {
+    if (model === null) {
+      return;
+    }
+    try {
+      const asset = await loadGlbAsset(context.scene, model.url, loading.signal);
+      if (disposed) {
+        asset.dispose();
+      } else {
+        await adoptModel(asset, model);
+      }
+    } catch (error) {
+      if (!disposed) {
+        console.info('[nave] Modelo GLB indisponível; mantida a nave procedural.', error);
+      }
+    }
+  };
+
+  const loadDebrisModel = async (): Promise<void> => {
+    if (debrisModel === null) {
+      return;
+    }
+    try {
+      const asset = await loadGlbAsset(context.scene, debrisModel.url, loading.signal);
+      if (disposed) {
+        asset.dispose();
+      } else {
+        await adoptDebrisModel(asset, debrisModel);
+      }
+    } catch (error) {
+      if (!disposed) {
+        console.info('[destroços] Modelo GLB indisponível; nave mantida sem este asset.', error);
+      }
+    }
+  };
+
+  const ready = Promise.all([loadShipModel(), loadDebrisModel()]).then(() => source);
+
   return {
+    source: () => source,
+    ready,
     dispose: () => {
       if (disposed) {
         return;
       }
       disposed = true;
-      for (const caster of shadowCasters) {
+      loading.abort();
+      for (const caster of [...proceduralCasters, ...modelCasters]) {
         context.shadows.remove(caster);
       }
+      modelAsset?.dispose();
+      modelMaterials?.dispose();
+      debrisAsset?.dispose();
+      debrisMaterials?.dispose();
       root.dispose(false, false);
     },
   };
+}
+
+/** Motivo para recusar o modelo carregado, ou `null` se ele serve (tem malha e tamanho coerente). */
+function modelRejection(
+  root: TransformNode,
+  modelRoot: TransformNode,
+  meshes: readonly AbstractMesh[],
+  footprintLength: number,
+): string | null {
+  if (meshes.length === 0) {
+    return 'o arquivo não tem nenhuma malha';
+  }
+  root.computeWorldMatrix(true);
+  modelRoot.computeWorldMatrix(true);
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minZ = Infinity;
+  let maxZ = -Infinity;
+  for (const mesh of meshes) {
+    mesh.computeWorldMatrix(true);
+    const box = mesh.getBoundingInfo().boundingBox;
+    minX = Math.min(minX, box.minimumWorld.x);
+    maxX = Math.max(maxX, box.maximumWorld.x);
+    minZ = Math.min(minZ, box.minimumWorld.z);
+    maxZ = Math.max(maxZ, box.maximumWorld.z);
+  }
+  const length = Math.max(maxX - minX, maxZ - minZ);
+  const min = footprintLength * MODEL_LENGTH_RANGE.min;
+  const max = footprintLength * MODEL_LENGTH_RANGE.max;
+  if (!Number.isFinite(length) || length < min || length > max) {
+    return `comprimento de ${length.toFixed(1)} unidades fora da faixa de ${min} a ${max}`;
+  }
+  return null;
 }

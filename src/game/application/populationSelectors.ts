@@ -2,6 +2,8 @@ import { calculateNeeds, POPULATION_RULES } from '@/game/content/population';
 import type { GameSnapshot } from './GameController';
 import { calculateHousingCapacity } from '@/game/domain/population/housingCapacity';
 
+export type PopulationSelectorInput = Pick<GameSnapshot, 'population' | 'buildings' | 'resources'>;
+
 export interface PopulationSummary {
   readonly survivors: number;
   readonly capacity: number;
@@ -12,11 +14,10 @@ export interface PopulationSummary {
   readonly shortageTicks: number;
   readonly stableTicks: number;
   readonly shortageLimit: number;
-  readonly stabilityGoal: number;
   readonly outcome: GameSnapshot['population']['outcome'];
 }
 
-export function selectPopulationSummary(state: GameSnapshot): PopulationSummary {
+export function selectPopulationSummary(state: PopulationSelectorInput): PopulationSummary {
   const needs = calculateNeeds(state.population.survivors);
   return {
     survivors: state.population.survivors,
@@ -28,7 +29,6 @@ export function selectPopulationSummary(state: GameSnapshot): PopulationSummary 
     shortageTicks: state.population.shortageTicks,
     stableTicks: state.population.stableTicks,
     shortageLimit: POPULATION_RULES.shortageTicksBeforeLoss,
-    stabilityGoal: POPULATION_RULES.stableTicksForVictory,
     outcome: state.population.outcome,
   };
 }
