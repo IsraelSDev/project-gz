@@ -99,6 +99,9 @@ const BUILDERS: Record<SceneryKind, (kit: PropKit) => Mesh> = {
   debris: buildDebris,
 };
 
+/** Rochas ficam parcialmente enterradas (fração da escala), para assentarem no relevo. */
+const SINK: Partial<Record<SceneryKind, number>> = { rockSmall: 0.12, rockLarge: 0.2 };
+
 export interface SceneryLayer {
   dispose(): void;
 }
@@ -127,9 +130,9 @@ export function createScenery(
 
     const buffer = new Float32Array(ofKind.length * 16);
     ofKind.forEach((placement, index) => {
-      const y = field.heightAt(placement.x, placement.z);
+      const y = field.heightAt(placement.x, placement.z) - (SINK[kind] ?? 0) * placement.scale;
       Matrix.Compose(
-        new Vector3(placement.scale, placement.scale, placement.scale),
+        new Vector3(placement.scale, placement.scale * placement.stretch, placement.scale),
         Quaternion.RotationYawPitchRoll(placement.yaw, 0, 0),
         new Vector3(placement.x, y, placement.z),
       ).copyToArray(buffer, index * 16);
