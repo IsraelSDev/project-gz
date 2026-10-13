@@ -28,6 +28,11 @@ describe('executeSimulationCommand', () => {
       'ResolveEvent',
       'AppointCharacter',
       'RemoveCharacterFromOffice',
+      'StartResearch',
+      'ExplorePoint',
+      'DiplomaticAction',
+      'MilitaryAction',
+      'TerritoryAction',
     ]);
     expect(executeSimulationCommand(initial(), { type: 'ResolveEvent' })).toEqual({
       ok: false,

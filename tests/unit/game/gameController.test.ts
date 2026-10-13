@@ -20,7 +20,7 @@ describe('GameController', () => {
   it('expõe um snapshot inicial válido, derivado do cenário', () => {
     const snapshot = createController().getSnapshot();
 
-    expect(snapshot.schemaVersion).toBe(3);
+    expect(snapshot.schemaVersion).toBe(8);
     expect(snapshot.contentVersion).toBe(INITIAL_SCENARIO.contentVersion);
     expect(snapshot.tick).toBe(0);
     expect(snapshot.resources).toEqual(INITIAL_SCENARIO.initialResources);

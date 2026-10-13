@@ -4,8 +4,12 @@ import { defineConfig } from 'vitest/config';
 // O alias "@/" é resolvido a partir do "paths" de tsconfig.app.json (um único ponto de configuração).
 // Vitest reutiliza esta configuração. Domínio e aplicação são testados em ambiente Node (sem DOM).
 export default defineConfig({
+  // Assets relativos permitem publicar o build em uma raiz ou subpasta estática.
+  base: './',
   plugins: [react()],
   resolve: { tsconfigPaths: true },
+  // Modelos 3D como assets: permite importá-los com `?url`/`?inline` (os testes leem o GLB assim).
+  assetsInclude: ['**/*.glb'],
   build: {
     // O núcleo do Babylon.js (engine, cena, sombras, materiais) tem ~1,3 MB minificado (~320 kB
     // com gzip); shaders e carregadores de textura já são divididos e carregados sob demanda.

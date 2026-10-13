@@ -1,5 +1,6 @@
 import type { BuildingDefinitionId } from '@/game/content/buildings';
 import type { GridPosition, GridRect, GridSize, Rotation } from '@/shared/grid/types';
+import type { MilitaryUnitType } from '@/game/content/military';
 
 /*
  * Contrato entre a aplicação e a renderização (docs/TECHNICAL_ARCHITECTURE.md §3.6 e §11).
@@ -17,6 +18,13 @@ export interface PlacedSpec {
 export interface BuildingRenderSpec extends PlacedSpec {
   readonly instanceId: string;
   readonly definitionId: BuildingDefinitionId;
+}
+
+export interface MilitaryUnitRenderSpec extends PlacedSpec {
+  readonly unitId: string;
+  readonly type: MilitaryUnitType;
+  readonly health: number;
+  readonly supplied: boolean;
 }
 
 /**
@@ -40,4 +48,5 @@ export interface WorldSnapshot {
   readonly terrain: TerrainSpec;
   readonly crashedShip: PlacedSpec;
   readonly buildings: readonly BuildingRenderSpec[];
+  readonly units: readonly MilitaryUnitRenderSpec[];
 }

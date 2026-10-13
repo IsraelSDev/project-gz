@@ -3,18 +3,9 @@
 Jogo 3D de estratégia e simulação de civilização alienígena, executado no navegador.
 Stack: TypeScript (estrito), Vite, React e Babylon.js.
 
-**Status:** Fases 1 a 6 implementadas; a Fase 6 foi validada por testes, typecheck, lint, formatação e build. A Fase 7 aguarda aprovação explícita. Ao abrir o jogo você
-vê a cena 3D (terreno alienígena, céu, vegetação provisória, a nave acidentada e três construções
-iniciais), tudo derivado de um `GameState` somente leitura, com uma HUD: barra de recursos, controles
-de tempo e painel da construção selecionada. A simulação tem um relógio de passo fixo (1 tick = 1 s
-de jogo, velocidades 1x, 2x e 4x) e a partida **começa pausada**. A economia mínima roda a cada tick:
-cada edifício produz e consome recursos (o painel da construção mostra as taxas) e a barra de recursos
-mostra o estado real. Com a simulação em andamento, **água e energia sobem**; alimentos e materiais
-ainda não mudam, até você construir a Estufa Hidropônica (alimentos) ou o Reciclador de Materiais.
-Com o botão **Construir** você escolhe um edifício, vê a prévia no terreno (verde se a posição vale,
-vermelha e com um "X" se não vale), gira, confirma ou cancela; a construção custa recursos e só é
-cobrada quando é confirmada. **Ainda não há** população, eventos nem salvamento, e a construção é
-instantânea (sem tempo de obra nem demolição).
+**Status:** Fases 1 a 13 implementadas. A Fase 12 auditou estabilidade, experiencia, desempenho disponivel e build de distribuicao; veja [o relatorio de prontidao](docs/PHASE12_RELEASE_READINESS.md). A Fase 13 adiciona diplomacia bilateral deterministica com civilizacoes independentes. Typecheck, lint, formatacao, testes automatizados e build passam. A validacao em navegador desktop com WebGL real ainda nao foi executada neste ambiente.
+
+A partida comeca pausada. Use a HUD para acompanhar recursos e sobrevivencia, construir estruturas, designar personagens, pesquisar tecnologias, explorar pontos de interesse, responder a eventos e salvar ou carregar o progresso. Os saves ficam em um slot local do navegador.
 
 ## Controles da câmera
 
@@ -169,5 +160,3 @@ As demais pastas só são criadas quando houver código nelas. A estrutura-alvo 
   Se isso acontecer, restaure esses arquivos com `git checkout -- <arquivo>` e rode `npm ci`.
 - **`npm ci` falha por divergência entre `package.json` e `package-lock.json`:** não edite um sem o
   outro; use `npm install` de propósito e versione o lockfile.
-#   p r o j e c t - g z  
- 

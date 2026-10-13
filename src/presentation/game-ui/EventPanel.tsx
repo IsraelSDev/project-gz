@@ -7,11 +7,13 @@ import { useGameSelector } from '@/presentation/hooks/useGameSelector';
 
 export interface EventPanelProps {
   readonly controller: GameController;
+  readonly showEmptyState?: boolean;
 }
 
-export function EventPanel({ controller }: EventPanelProps) {
-  const state = useGameSelector(controller, (snapshot) => snapshot);
-  const visible = selectVisibleEvents(state);
+export function EventPanel({ controller, showEmptyState = false }: EventPanelProps) {
+  const events = useGameSelector(controller, (snapshot) => snapshot.events);
+  const resources = useGameSelector(controller, (snapshot) => snapshot.resources);
+  const visible = selectVisibleEvents({ events, resources });
   const [feedback, setFeedback] = useState<{ readonly eventId: string; readonly text: string }>();
   const [pendingEventId, setPendingEventId] = useState<string>();
 
@@ -27,10 +29,11 @@ export function EventPanel({ controller }: EventPanelProps) {
     [controller],
   );
 
-  if (visible.length === 0) return null;
+  if (visible.length === 0 && !showEmptyState) return null;
 
   return (
     <section className="hud-panel event-panel" aria-label="Eventos da colônia">
+      {visible.length === 0 && <p className="hud-panel__empty">Nenhum evento ativo no momento.</p>}
       {visible.map((event) => (
         <article key={event.id} data-event-status={event.status}>
           <header className="hud-panel__header">

@@ -130,13 +130,10 @@ const amountOf = (id: string) =>
   );
 const placementStatus = () => document.querySelector('.build-placement__status')?.textContent ?? '';
 const feedback = () => document.querySelector('.build-panel__feedback')?.textContent ?? '';
-const panelName = () =>
-  within(screen.getByRole('complementary', { name: 'Construção selecionada' })).queryByRole(
-    'heading',
-    {
-      level: 3,
-    },
-  )?.textContent;
+const panelName = () => {
+  const panel = screen.queryByRole('complementary', { name: 'Construção selecionada' });
+  return panel ? within(panel).queryByRole('heading', { level: 3 })?.textContent : undefined;
+};
 const previewNode = (scene: Scene) =>
   scene.transformNodes.find((node) => node.name === 'placement-preview');
 const crossMesh = (scene: Scene) => scene.getMeshByName('preview-cross');
@@ -144,7 +141,15 @@ const realBuildings = (scene: Scene) =>
   scene.transformNodes.filter((node) => node.name.startsWith('building-'));
 
 function startPlacing(name: RegExp) {
-  fireEvent.click(button('Construir'));
+  if (
+    !screen.queryByRole('button', { name: 'Exibir catálogo' }) &&
+    !screen.queryByRole('button', { name: 'Recolher catálogo' })
+  ) {
+    fireEvent.click(button('Construção'));
+  }
+  if (screen.queryByRole('button', { name: 'Exibir catálogo' })) {
+    fireEvent.click(button('Exibir catálogo'));
+  }
   fireEvent.click(screen.getByRole('button', { name }));
 }
 
@@ -300,8 +305,10 @@ describe('cancelar a prévia (App + tempo falso + NullEngine)', () => {
     expect(realBuildings(scene)).toHaveLength(INITIAL_COUNT);
     expect(amountOf('materials')).toBe(START.materials);
     expect(harness.syncCalls.count).toBe(syncs);
-    // Esc cancelou a construção e NÃO limpou a seleção.
-    expect(panelName()).toBe('Módulo Habitacional');
+    // Esc cancelou a construção e NÃO limpou a seleção; a navegação continua na seção de construção.
+    expect(scene.meshes.find((mesh) => mesh.name === 'selection-marker')?.parent).toBe(
+      buildingNode(scene, 'building-habitat-01'),
+    );
     expect(screen.queryByRole('button', { name: 'Confirmar construção' })).toBeNull();
   });
 
@@ -334,7 +341,7 @@ describe('cancelar a prévia (App + tempo falso + NullEngine)', () => {
     startPlacing(/Matriz Solar/);
     hover(SOLAR_OK);
 
-    fireEvent.click(button('Fechar construção'));
+    fireEvent.click(button('Recolher catálogo'));
 
     expect(previewNode(scene)).toBeUndefined();
     expect(realBuildings(scene)).toHaveLength(INITIAL_COUNT);
@@ -350,8 +357,10 @@ describe('selecionar e construir não se confundem (App + tempo falso + NullEngi
 
     act(() => click(scene, onBuilding(scene, 'building-extractor-01')));
 
-    // Continua selecionado o habitat; o clique só posicionou a prévia (sobre o extrator: inválida).
-    expect(panelName()).toBe('Módulo Habitacional');
+    // O habitat continua selecionado; o clique só posicionou a prévia (sobre o extrator: inválida).
+    expect(scene.meshes.find((mesh) => mesh.name === 'selection-marker')?.parent).toBe(
+      buildingNode(scene, 'building-habitat-01'),
+    );
     expect(placementStatus()).toContain('Sobrepõe outra construção.');
 
     fireEvent.click(button(/Cancelar/));

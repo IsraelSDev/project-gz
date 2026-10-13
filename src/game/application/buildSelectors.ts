@@ -19,6 +19,7 @@ import { INITIAL_PLACEMENT_TERRAIN } from '@/game/domain/construction/placementT
 import type { GameState, ResourceStock } from '@/game/domain/state/GameState';
 import { rotatedSize } from '@/shared/grid/gridMath';
 import type { GridPosition, GridSize, Rotation } from '@/shared/grid/types';
+import { applyConstructionDiscount } from '@/game/domain/research/technologyEffects';
 
 /*
  * Consultas do modo de construção (docs/TECHNICAL_ARCHITECTURE.md §21). São puras e derivam tudo do
@@ -36,6 +37,10 @@ export interface CostLine {
   readonly amount: number;
   readonly available: number;
   readonly missing: number;
+}
+
+export function selectBuildingCost(cost: ResourceRates, unlockedTechnologyIds: readonly string[]) {
+  return applyConstructionDiscount(cost, unlockedTechnologyIds);
 }
 
 function costLines(resources: ResourceStock, cost: ResourceRates): readonly CostLine[] {
@@ -65,12 +70,18 @@ export interface BuildCatalogEntry {
   readonly cost: readonly CostLine[];
   /** `true` quando os recursos atuais cobrem o custo inteiro. */
   readonly affordable: boolean;
+  readonly unlocked: boolean;
 }
 
 /** Edifícios que o jogador pode construir, na ordem do conteúdo, com o custo e a disponibilidade. */
-export function selectBuildCatalog(resources: ResourceStock): readonly BuildCatalogEntry[] {
+export function selectBuildCatalog(
+  resources: ResourceStock,
+  unlockedTechnologyIds: readonly string[] = [],
+): readonly BuildCatalogEntry[] {
   return Object.values(BUILDING_DEFINITIONS).map((definition) => {
-    const cost = costLines(resources, definition.cost);
+    const cost = costLines(resources, selectBuildingCost(definition.cost, unlockedTechnologyIds));
+    const requiredTechnologyId =
+      'requiredTechnologyId' in definition ? definition.requiredTechnologyId : undefined;
     return {
       definitionId: definition.id,
       name: definition.name,
@@ -78,6 +89,7 @@ export function selectBuildCatalog(resources: ResourceStock): readonly BuildCata
       footprint: definition.footprint,
       cost,
       affordable: cost.every((line) => line.missing === 0),
+      unlocked: !requiredTechnologyId || unlockedTechnologyIds.includes(requiredTechnologyId),
     };
   });
 }
@@ -92,7 +104,7 @@ export interface PlacementInput {
 export type PlacementStatus =
   | { readonly kind: 'no-position' }
   | { readonly kind: 'valid' }
-  | { readonly kind: 'invalid'; readonly error: PlacementErrorCode };
+  | { readonly kind: 'invalid'; readonly error: PlacementErrorCode | 'TECHNOLOGY_LOCKED' };
 
 /** Pedido de construção já resolvido (célula apontada convertida em `position`). */
 export interface ResolvedPlacement {
@@ -121,31 +133,43 @@ export interface PlacementPreview {
  * edifício está em posicionamento.
  */
 export function selectPlacementPreview(
-  state: Pick<GameState, 'buildings' | 'resources'>,
+  state: Pick<GameState, 'buildings' | 'resources'> & Partial<Pick<GameState, 'research'>>,
   input: PlacementInput,
 ): PlacementPreview | null {
   if (input.definitionId === null) {
     return null;
   }
   const definition = getBuildingDefinition(input.definitionId);
+  const unlockedTechnologyIds = state.research?.unlockedTechnologyIds ?? [];
+  const cost = selectBuildingCost(definition.cost, unlockedTechnologyIds);
+  const adjustedDefinition = { ...definition, cost };
   const base = {
     definitionId: input.definitionId,
     name: definition.name,
     rotation: input.rotation,
     footprint: definition.footprint,
     occupied: rotatedSize(definition.footprint, input.rotation),
-    cost: costLines(state.resources, definition.cost),
+    cost: costLines(state.resources, cost),
   };
 
   if (input.cell === null) {
     return { ...base, request: null, status: { kind: 'no-position' } };
+  }
+  if (
+    definition.requiredTechnologyId &&
+    !state.research?.unlockedTechnologyIds.includes(definition.requiredTechnologyId)
+  ) {
+    return { ...base, request: null, status: { kind: 'invalid', error: 'TECHNOLOGY_LOCKED' } };
   }
   const request: ResolvedPlacement = {
     definitionId: input.definitionId,
     position: positionForAnchorCell(input.cell, definition.footprint, input.rotation),
     rotation: input.rotation,
   };
-  const checked = evaluatePlacement(state, request, INITIAL_PLACEMENT_TERRAIN);
+  const checked = evaluatePlacement(state, request, INITIAL_PLACEMENT_TERRAIN, {
+    ...BUILDING_DEFINITIONS,
+    [input.definitionId]: adjustedDefinition,
+  });
   return {
     ...base,
     request,

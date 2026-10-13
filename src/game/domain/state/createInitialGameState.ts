@@ -18,6 +18,8 @@ import {
   INITIAL_GOVERNMENT,
   INITIAL_RELATIONSHIPS,
 } from '@/game/content/characters';
+import { createInitialDiplomacy } from '@/game/domain/diplomacy/diplomacyState';
+import { REGION_IDS } from '@/game/content/regions';
 
 function copyResources(scenario: ScenarioDefinition): ResourceStock {
   const entries = RESOURCE_IDS.map((id): [ResourceId, number] => [
@@ -68,6 +70,26 @@ export function createInitialGameState(scenario: ScenarioDefinition): GameState 
     characters: INITIAL_CHARACTERS,
     government: INITIAL_GOVERNMENT,
     relationships: INITIAL_RELATIONSHIPS,
+    research: {
+      currentEra: 'survival',
+      unlockedTechnologyIds: [],
+      activeTechnologyId: null,
+      progress: 0,
+    },
+    exploration: { discoveredPointIds: [] },
+    diplomacy: createInitialDiplomacy(),
+    military: { nextUnitId: 1, units: [], battle: null, history: [] },
+    settlements: [],
+    territory: {
+      nextSettlementId: 1,
+      history: [],
+      regions: REGION_IDS.map((regionId) => ({
+        regionId,
+        owner: regionId === 'crash-site' ? ('colony' as const) : null,
+        civilizationId: null,
+        settlementId: regionId === 'crash-site' ? 'settlement-capital' : null,
+      })),
+    },
   });
 
   const stateIssues = validateGameState(state);

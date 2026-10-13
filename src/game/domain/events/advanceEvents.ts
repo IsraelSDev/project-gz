@@ -1,4 +1,4 @@
-import { EVENT_DEFINITIONS, type EventId } from '@/game/content/events';
+import { getEventDefinition } from '@/game/content/events';
 import { freezeDeep } from '@/game/domain/state/freezeDeep';
 import type { GameEventState, GameState } from '@/game/domain/state/GameState';
 
@@ -7,8 +7,28 @@ export function advanceEvents(state: GameState): GameState {
   let changed = false;
   const events = state.events.map((event): GameEventState => {
     if (event.status !== 'available') return event;
-    const definition = EVENT_DEFINITIONS[event.eventId as EventId];
-    if (state.tick < definition.trigger.minTick) return event;
+    const definition = getEventDefinition(event.eventId);
+    let triggered = false;
+    if (definition.trigger.kind === 'tick') {
+      triggered = state.tick >= definition.trigger.minTick;
+    } else if (definition.trigger.kind === 'point-discovered') {
+      triggered = state.exploration.discoveredPointIds.includes(definition.trigger.pointId);
+    } else if (definition.trigger.kind === 'civilization-discovered') {
+      const civilizationId = definition.trigger.civilizationId;
+      triggered = state.diplomacy.civilizations.some(
+        (relation) =>
+          relation.civilizationId === civilizationId && relation.contactStatus !== 'unknown',
+      );
+    } else if (definition.trigger.kind === 'war-declared') {
+      const civilizationId = definition.trigger.civilizationId;
+      triggered = state.diplomacy.civilizations.some(
+        (relation) => relation.civilizationId === civilizationId && relation.warStatus === 'active',
+      );
+    } else if (definition.trigger.kind === 'battle-resolved') {
+      const civilizationId = definition.trigger.civilizationId;
+      triggered = state.military.history.some((entry) => entry.civilizationId === civilizationId);
+    }
+    if (!triggered) return event;
     changed = true;
     return { ...event, status: 'active' };
   });

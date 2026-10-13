@@ -350,6 +350,65 @@ const buildRecycler: BuildingModelBuilder = (kit, materials, size) => {
   return { solid, glowing: [vent] };
 };
 
+const buildLaboratory: BuildingModelBuilder = (kit, materials, size) => {
+  const solid = kit.merge('field-laboratory', [
+    kit.box({ w: size.width - 0.15, h: 0.18, d: size.depth - 0.15 }, metal.pad, { y: 0.09 }),
+    kit.box({ w: size.width - 0.45, h: 1.5, d: size.depth - 0.45 }, metal.hullLight, { y: 0.85 }),
+    kit.box({ w: 0.12, h: 2.1, d: 0.12 }, metal.steel, { x: -0.55, y: 2.55, z: -0.35 }),
+    kit.box({ w: 0.12, h: 2.1, d: 0.12 }, metal.steel, { x: 0.55, y: 2.55, z: -0.35 }),
+    kit.box({ w: 1.25, h: 0.1, d: 0.9 }, solar.cell, { y: 2.9, z: -0.35 }),
+  ]);
+  solid.material = materials.solid;
+  return { solid, glowing: [] };
+};
+
+const buildThermalGenerator: BuildingModelBuilder = (kit, materials, size) => {
+  const solid = kit.merge('thermal-generator', [
+    kit.box({ w: size.width - 0.15, h: 0.18, d: size.depth - 0.15 }, metal.pad, { y: 0.09 }),
+    kit.cylinder({ height: 1.5, bottom: 1.15, top: 0.95, tessellation: 12 }, metal.hullDark, {
+      x: -0.48,
+      y: 0.9,
+      z: 0.35,
+    }),
+    kit.cylinder({ height: 0.75, bottom: 0.66, top: 0.66, tessellation: 12 }, metal.steel, {
+      x: -0.48,
+      y: 1.9,
+      z: 0.35,
+    }),
+    kit.box({ w: 0.7, h: 1.1, d: 0.7 }, metal.hullLight, { x: 0.55, y: 0.7, z: -0.32 }),
+    kit.cylinder({ height: 1.9, bottom: 0.22, top: 0.18, tessellation: 8 }, metal.steel, {
+      x: 0.55,
+      y: 2.15,
+      z: -0.32,
+    }),
+  ]);
+  solid.material = materials.solid;
+  const vent = kit.merge('thermal-vent', [
+    kit.sphere({ diameter: 0.28, segments: 8 }, glow.cyan, { x: -0.48, y: 2.65, z: 0.35 }),
+  ]);
+  vent.material = materials.glowCyan;
+  return { solid, glowing: [vent] };
+};
+
+const buildGuardPost: BuildingModelBuilder = (kit, materials, size) => {
+  const solid = kit.merge('guard-post', [
+    kit.cylinder({ height: 0.25, bottom: size.width * 0.43, tessellation: 16 }, metal.pad, {
+      y: 0.12,
+    }),
+    kit.cylinder({ height: 1.8, bottom: 0.72, top: 0.58, tessellation: 12 }, metal.hullLight, {
+      y: 1.05,
+    }),
+    kit.box({ w: 1.8, h: 0.2, d: 0.2 }, metal.steel, { y: 1.9 }),
+    kit.box({ w: 0.2, h: 1.1, d: 0.2 }, metal.steel, { y: 2.15 }),
+  ]);
+  solid.material = materials.solid;
+  const beacon = kit.merge('guard-post-beacon', [
+    kit.sphere({ diameter: 0.38, segments: 8 }, glow.ember, { y: 2.2 }),
+  ]);
+  beacon.material = materials.glowEmber;
+  return { solid, glowing: [beacon] };
+};
+
 /** Um construtor por definição: o compilador exige um modelo para cada `BuildingDefinitionId`. */
 export const BUILDING_MODELS: Record<BuildingDefinitionId, BuildingModelBuilder> = {
   'habitat-module': buildHabitat,
@@ -357,4 +416,8 @@ export const BUILDING_MODELS: Record<BuildingDefinitionId, BuildingModelBuilder>
   'solar-array': buildSolar,
   'hydroponic-farm': buildFarm,
   'materials-recycler': buildRecycler,
+  'field-laboratory': buildLaboratory,
+  'protein-cultivator': buildFarm,
+  'thermal-generator': buildThermalGenerator,
+  'guard-post': buildGuardPost,
 };

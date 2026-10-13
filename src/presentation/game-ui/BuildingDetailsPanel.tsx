@@ -9,6 +9,12 @@ import { useSelection } from '../hooks/useSelection';
 const CATEGORY_LABELS: Readonly<Record<BuildingDefinition['category'], string>> = {
   shelter: 'Abrigo',
   infrastructure: 'Infraestrutura',
+  food: 'Alimento',
+  water: 'Água',
+  energy: 'Energia',
+  industry: 'Indústria',
+  research: 'Pesquisa',
+  military: 'Militar',
 };
 
 export interface BuildingDetailsPanelProps {
@@ -117,11 +123,11 @@ export function BuildingDetailsPanel({
         {details && (
           <button
             type="button"
-            className="hud-panel__close"
+            className="hud-panel__clear-selection"
             aria-label="Limpar seleção"
             onClick={dismiss}
           >
-            <span aria-hidden="true">×</span>
+            Limpar seleção
           </button>
         )}
       </header>

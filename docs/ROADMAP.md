@@ -334,32 +334,19 @@ Implementação e validação automatizada do ciclo concluídas. O critério de 
 A corte avançada, formas de governo, leis, legitimidade, dinastias, sucessão e intrigas continuam fora do escopo desta fase.
 ## Fase 11 — Expansão de conteúdo
 
-Possíveis sistemas, em ordem a definir após testes: - Tecnologia e
-recuperação da nave. - Exploração territorial. - Saúde e doenças. -
-Cultura e religião. - Comércio e cadeias produtivas. - Diplomacia e
-facções. - Segurança, forças militares e guerras. - Sociedades
-alienígenas. - Progressão de cidade para reino e império.
+**Status: concluída.** O catálogo passou a oito edifícios em sete categorias, incluindo laboratório, cultivador proteico e gerador geotérmico, usando os quatro recursos existentes. Culturas Proteicas e Engenharia Térmica têm custos, pré-requisito explícito e desbloqueiam edifícios. Pesquisa exige laboratório e cientista no cargo de ciência; sua competência define a velocidade. Nascente Cristalina e Ruínas de Eco têm custos e recompensas, e as ruínas ativam um evento no motor existente. Saves schema 3/content 0.6.0 migram para schema 4/content 0.7.0 com pesquisa, exploração e descobertas persistidas.
 
-## Fase 12 — Polimento e preparação para distribuição
+Recuperação da nave, saúde, cultura, comércio, diplomacia, facções, guerra e progressão de reinos e impérios continuam fora desta fase.
 
-### Tarefas
+## Fase 12 — Polimento, estabilidade e distribuição
 
--   Testes de desempenho com cenas representativas.
--   Otimização de meshes, materiais, sombras e objetos repetidos.
--   Melhorias de acessibilidade e usabilidade.
--   Tratamento de erros e salvamentos.
--   Arte, animação, som e feedback.
--   Verificação do build de produção.
--   Avaliar empacotamento desktop com Electron ou Tauri (P-13).
--   Testar diferenças de armazenamento, tela cheia, entrada e
-    desempenho.
+**Auditoria e correções automatizadas concluídas; validação pública em navegador permanece pendente.** O relatório [PHASE12_RELEASE_READINESS.md](PHASE12_RELEASE_READINESS.md) registra a linha de base, problemas priorizados, correções, comandos executados e checklist de liberação. Não declarar compatibilidade de navegador nem metas de FPS antes de testes WebGL reais.
 
-### Critério de saída
+## Fase 13 — Diplomacia e civilizações independentes
 
-O jogo possui um ciclo central estável, documentação de instalação e um
-plano validado para a distribuição escolhida.
+**Verificação desta entrega:** `npm run validate` passou (typecheck, lint, Prettier, 49 arquivos de teste/741 testes e build). O bundle principal de produção mede 1.365,35 kB minificado / 349,24 kB gzip. Não houve teste manual em navegador/WebGL neste ambiente.
 
-------------------------------------------------------------------------
+**Status: implementada e validada por testes automatizados.** Três sociedades originais são reveladas ao explorar seus pontos de interesse; o primeiro contato usa o evento de sinal existente e o painel da HUD. Relações determinísticas suportam contato cordial ou hostil, solicitação única de informações, presente de 10 materiais, pacto bilateral de não agressão e provocação diplomática repetível (−20 por ação) que habilita declaração de guerra ao atingir −30. O líder vigente representa a colônia. O save avança para schema 5/content 0.8.0, com migração retrocompatível desde schema 4 e encadeamento dos formatos anteriores. Typecheck, lint, testes e build são verificados na entrega; nenhum sistema militar, conquista, comércio ou aliança foi implementado.
 
 ## Modelo de trabalho com o Claude Sonnet
 
@@ -388,3 +375,32 @@ Não estimar a data de lançamento com precisão antes de concluir as
 primeiras fases e medir a velocidade real de desenvolvimento. A
 prioridade é validar o ciclo de jogo e a arquitetura antes de aumentar o
 escopo.
+
+## Fase 14 — Exército, defesa e combate
+
+**Status: implementada e validada por testes automatizados.** Adicionado Posto de Defesa que libera quatro vagas por posto, três perfis de unidade com custo, saúde, ataque, defesa e manutenção em alimentos; tropas sem alimento ficam sem suprimento. A hostilidade existente permite declarar guerra com relação em -30 ou menos; pactos ativos bloqueiam essa ação. O jogador inicia um confronto contra uma das três sociedades por vez, pode recuar ou estabelecer paz, e o líder atual comanda automaticamente. Combates por tick usam valores determinísticos, registram baixas e resultado, e geram alertas/relatórios no motor de eventos. Unidades são estado do domínio com posições no grid e recebem representação Babylon.js sem meshes no save.
+
+O save avança para schema 6/content 0.9.0; saves v1–v5 migram preservando estoques, progresso, eventos e descobertas. `npm run validate` passou: typecheck, lint, Prettier, 50 arquivos/746 testes e build. Não houve teste manual em navegador/WebGL. O combate é abstrato, há uma batalha ativa por vez, não há IA de campo, movimentação/pathfinding, equipamento, cura ou guerra autônoma; os relatórios estáticos não se repetem para a mesma civilização.
+
+## Fase 15 — Território, cidades e império
+
+**Status: implementada e validada por testes automatizados.** A exploração existente revela três regiões originais além do local da queda e associa cada uma à civilização independente já ligada ao ponto. Fundar cidade em região civilizacional exige um pacto de não agressão ativo e não pode ocorrer durante uma guerra; a ação transfere o controle para a colônia depois de cobrar o pacote de infraestrutura e suprimentos do capital atomicamente. Cada cidade secundária mantém estoque, edifícios, população, grid de construção e governador próprios; o capital continua usando o estado das fases anteriores e é projetado junto das cidades na interface, sem cópia dos seus dados.
+
+As cidades usam o mesmo motor de economia e a mesma regra de necessidades por tick. Potenciais regionais geram recursos locais; transferências explícitas partem do capital e respeitam estoque, capacidade e população total. Edifícios locais reutilizam catálogo e custos. Governadores elegíveis precisam de liderança 2; cada um gera 1 material a cada 10 ticks. O painel territorial mostra exploração, controle, capital, cidades, população, estoques, edifícios e ações. O domínio registra o histórico territorial e o save passa a schema 7/content 0.10.0, com migração v6→v7 e migrações anteriores encadeadas.
+
+Integração posterior: a estabilidade da base é somente um indicador e não encerra mais a partida. O jogo continua enquanto houver sobreviventes; zero sobreviventes ainda causa derrota e pausa. Saves antigos com vitória por estabilidade voltam como partidas em andamento, sem perder tick, recursos ou construções.
+
+Validação automatizada registrada nesta fase: typecheck, lint, Prettier, suíte de testes e build de produção (resultados finais após ajustes registrados abaixo). O chunk principal final mede 1.398,50 kB minificado/357,67 kB gzip, abaixo do limite configurado de 1.400 kB; painéis de império e pesquisa são carregados sob demanda. Na Fase 12, o principal media 1.348,98/344,84 kB; a diferença atual é +49,52 kB minificados e +12,83 kB gzip. Não houve teste manual em navegador/WebGL nem medição de FPS. Limitações: mapa territorial textual sem coordenadas geográficas ou assentamentos renderizados em 3D; transferências são capital→cidade; não há conquista territorial. Pesquisa continua sendo um sistema imperial único; unidades e defesa da Fase 14 continuam no capital.
+
+## Fase 16 — Tecnologia avançada e eras de desenvolvimento
+
+**Status: concluída e validada.** `npm run validate` passou: typecheck, lint, Prettier, 52 arquivos de teste/763 testes aprovados e build de produção. O chunk principal mediu 1.405,78 kB minificado/359,76 kB gzip e excedeu em 5,78 kB o limite de aviso configurado (1.400 kB); o build terminou com aviso. Não houve teste manual WebGL. A pesquisa da Fase 11 foi ampliada para cinco eras e nove tecnologias. As eras avançam por pesquisas-marco concluídas, nunca por tempo decorrido. IDs e custos das duas tecnologias antigas foram preservados. As novas tecnologias adicionam desconto de materiais, produção especializada, pesquisa distribuída entre laboratórios, bônus administrativo e defesa por posto. Os efeitos são derivados dos IDs concluídos e não são acumulados no save.
+
+A pesquisa permanece imperial e possui um projeto ativo; laboratórios no capital e em assentamentos contribuem para o mesmo progresso. O save avança para schema 8/content 0.11.0; a migração v7 preserva pesquisas concluídas, projeto ativo, progresso e recursos, derivando a era a partir dos marcos antigos. A interface expõe era, categoria, requisitos, custo, pontos necessários, progresso, efeito e motivo de bloqueio e marcos pendentes da próxima era.
+
+Fase 16.1 só começou após a conclusão e validação da Fase 16, conforme solicitado.
+
+
+## Fase 16.1 — Auditoria visual e definição da direção de arte
+
+**Auditoria e planejamento documental concluídos; produção visual aguarda aprovação.** O inventário está em [ART_DIRECTION_AUDIT.md](ART_DIRECTION_AUDIT.md): registra o conteúdo procedural atual, integração/ciclo de vida, ausência de assets e medições disponíveis, direção de arte oficial proposta, riscos e pacote inicial priorizado com dependências, dificuldade e critérios de aceite. Nenhum modelo, textura, regra ou dependência foi alterado. A auditoria não teve visualização manual em navegador/WebGL. A produção em escala só começa após aprovação do plano.
